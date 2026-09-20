@@ -1,0 +1,6 @@
+# Copy values into a private android/key.properties file (UTF-8).
+# Never commit the real file or keystore. Enter passwords only locally.
+storeFile=/absolute/path/outside/project/kopikot-release.jks
+storePassword=
+keyAlias=kopikot
+keyPassword=

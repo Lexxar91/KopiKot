@@ -1,12 +1,22 @@
 # Miscellaneous
 *.class
 *.lock
+# Для приложения сохраняем точные версии зависимостей в Git.
+!pubspec.lock
 *.log
 *.pyc
 *.swp
+.idea/
+*.iml
+.vscode/
+.env
+.env.*
+!.env.example
+*.pem
+*.key
 .buildlog/
 .history
-
+.idea
 
 
 # Flutter repo-specific
@@ -47,15 +57,14 @@ unlinked.ds
 unlinked_spec.ds
 
 # Android related
-**/android/**/gradle-wrapper.jar
 .gradle/
 **/android/captures/
-**/android/gradlew
-**/android/gradlew.bat
 **/android/local.properties
 **/android/**/GeneratedPluginRegistrant.java
 **/android/key.properties
 *.jks
+*.keystore
+*.p12
 
 # iOS/XCode related
 **/ios/**/*.mode1v3
@@ -106,6 +115,9 @@ unlinked_spec.ds
 
 # Coverage
 coverage/
+
+# Original task specification is not published with the repository.
+/docs/specification.txt
 
 # Symbols
 app.*.symbols

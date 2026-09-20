@@ -1,0 +1,18 @@
+{
+  "version": 1,
+  "products": [
+    {"id":"porridge","title":"Каша с тыквой","category":"needs","price":25,"satiety":20,"mood":0,"description":"Сытный обед: сытость +20."},
+    {"id":"water","title":"Свежая вода","category":"needs","price":10,"satiety":5,"mood":0,"description":"Вода к обеду: сытость +5."},
+    {"id":"shampoo","title":"Пенный уход","category":"needs","price":20,"satiety":0,"mood":10,"description":"Чистая шёрстка: настроение +10."},
+    {"id":"soup","title":"Овощной суп","category":"needs","price":35,"satiety":30,"mood":5,"description":"Тёплый обед: сытость +30, настроение +5."},
+    {"id":"ball","title":"Полосатый мяч","category":"wants","price":30,"satiety":0,"mood":15,"description":"Весёлая игра: настроение +15. Покупку можно отложить."},
+    {"id":"kite","title":"Воздушный змей","category":"wants","price":55,"satiety":0,"mood":20,"description":"Игра на прогулке: настроение +20. Покупку можно отложить."},
+    {"id":"ribbon","title":"Праздничная лента","category":"wants","price":15,"satiety":0,"mood":5,"description":"Маленькое украшение: настроение +5. Покупку можно отложить."},
+    {"id":"puzzle","title":"Большая головоломка","category":"wants","price":80,"satiety":0,"mood":25,"description":"Новая игра: настроение +25. Покупку можно отложить."}
+  ],
+  "goals": [
+    {"id":"tent","title":"Уютная палатка","price":120,"description":"Свой уголок для игр и отдыха."},
+    {"id":"telescope","title":"Телескоп","price":180,"description":"Наблюдать звёзды вместе с питомцем."},
+    {"id":"garden","title":"Маленький сад","price":240,"description":"Место для цветов и прогулок."}
+  ]
+}

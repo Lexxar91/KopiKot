@@ -1,0 +1,29 @@
+name: kopikot
+description: A virtual pet that teaches children financial literacy.
+publish_to: none
+version: 0.1.0+1
+
+environment:
+  sdk: '>=3.12.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_riverpod: ^3.4.3
+  isar_community: 3.3.2
+  isar_community_flutter_libs: 3.3.2
+  path_provider: ^2.1.6
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+  isar_community_generator: 3.3.2
+  build_runner: ^2.4.13
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/content/help.json
+    - assets/content/catalog.json
+    - assets/content/tasks.json

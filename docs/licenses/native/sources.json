@@ -1,0 +1,37 @@
+{
+  "isar_version": "3.3.2",
+  "isar_commit": "4c2cd02d4e5c17b7edca89d141d1729ddc1698ff",
+  "libmdbx_commit": "924581bdc8a1e217139c1d286c1ffb0ef0f9d14d",
+  "files": [
+    {
+      "file": "isar_NOTICE.txt",
+      "url": "https://raw.githubusercontent.com/isar-community/isar-community/4c2cd02d4e5c17b7edca89d141d1729ddc1698ff/NOTICE",
+      "upstream_sha256": "e9c699c01ab3b6201ddff1f8b317f72ec65bd1b0dca61eb4ef515448e0d4cb13",
+      "newline_added": false
+    },
+    {
+      "file": "mdbx_sys_Cargo.toml",
+      "url": "https://raw.githubusercontent.com/isar-community/isar-community/4c2cd02d4e5c17b7edca89d141d1729ddc1698ff/packages/mdbx_sys/Cargo.toml",
+      "upstream_sha256": "f362993fcf02ddfb20d27a8136c5877b5135413fe2da5d21f92e5b850b9df4e6",
+      "newline_added": true
+    },
+    {
+      "file": "libmdbx_COPYRIGHT.txt",
+      "url": "https://raw.githubusercontent.com/isar-community/libmdbx/924581bdc8a1e217139c1d286c1ffb0ef0f9d14d/COPYRIGHT",
+      "upstream_sha256": "14d17dfaa57c8d3546cd4714e95a40fbb58950a31dcd6a6b0f4149cd68c897b8",
+      "newline_added": false
+    },
+    {
+      "file": "libmdbx_LICENSE.txt",
+      "url": "https://raw.githubusercontent.com/isar-community/libmdbx/924581bdc8a1e217139c1d286c1ffb0ef0f9d14d/LICENSE",
+      "upstream_sha256": "0d542e0c8804e39aa7f37eb00da5a762149dc682d7829451287e11b938e94594",
+      "newline_added": false
+    },
+    {
+      "file": "libmdbx_NOTICE.txt",
+      "url": "https://raw.githubusercontent.com/isar-community/libmdbx/924581bdc8a1e217139c1d286c1ffb0ef0f9d14d/NOTICE",
+      "upstream_sha256": "651f71b46c6bb0046d2122df7f9def9cb24f4dc28c5b11cef059f66565cda30f",
+      "newline_added": false
+    }
+  ]
+}

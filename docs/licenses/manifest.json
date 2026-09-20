@@ -1,0 +1,2065 @@
+{
+  "scope": "Installed Pub packages and debugRuntimeClasspath; not a complete native SBOM",
+  "pubspec_lock_sha256": "d9b5d8fb7d44f93535d35b2bf2980c0053b179795f5eba261ea86a1eb3b99478",
+  "flutter_version": "3.47.2",
+  "flutter_revision": "d3b14c876900e553bc736ca19295fc09e3853e8e",
+  "engine_revision": "a804b261645ef8c13eb3d5c44a5c2fb0340c5539",
+  "dart_version": "3.13.2",
+  "apk_name": "app-debug.apk",
+  "apk_sha256": "07238d28ec8353bd451d0b8a05ed1b1b8c2dd829e68da2f422dab3aa15ac4d02",
+  "apk_notices_sha256": "8445ac5d6fef4f82fc5d1c518ad78f0214478abe0c691d14a15d3dd5acdb3573",
+  "pub_packages": [
+    {
+      "name": "_fe_analyzer_shared",
+      "version": "96.0.0",
+      "source": "hosted",
+      "role": "Косвенная",
+      "reachable_from_main": false,
+      "dependencies": [
+        "meta",
+        "source_span"
+      ],
+      "license": "BSD-3-Clause",
+      "license_origin": "LICENSE пакета",
+      "license_file": "pub/_fe_analyzer_shared.txt",
+      "license_sha256": "efa31b5ac790016736fa9761642b0af16d37cd4fb483de2905adb5258cb89722"
+    },
+    {
+      "name": "analyzer",
+      "version": "10.2.0",
+      "source": "hosted",
+      "role": "Косвенная",
+      "reachable_from_main": false,
+      "dependencies": [
+        "_fe_analyzer_shared",
+        "collection",
+        "convert",
+        "crypto",
+        "glob",
+        "meta",
+        "package_config",
+        "path",
+        "pub_semver",
+        "source_span",
+        "watcher",
+        "yaml"
+      ],
+      "license": "BSD-3-Clause",
+      "license_origin": "LICENSE пакета",
+      "license_file": "pub/analyzer.txt",
+      "license_sha256": "7e124af6a556f045cb3a20cafbdaa31602ac2c82cbcb3c3b15faaaf514b06028"
+    },
+    {
+      "name": "args",
+      "version": "2.7.0",
+      "source": "hosted",
+      "role": "Косвенная",
+      "reachable_from_main": true,
+      "dependencies": [],
+      "license": "BSD-3-Clause",
+      "license_origin": "LICENSE пакета",
+      "license_file": "pub/args.txt",
+      "license_sha256": "dfb09c74e29386cd3e2719f32d4995d59526179753931d31840757c77fbf2791"
+    },
+    {
+      "name": "async",
+      "version": "2.13.1",
+      "source": "hosted",
+      "role": "Косвенная",
+      "reachable_from_main": true,
+      "dependencies": [
+        "collection",
+        "meta"
+      ],
+      "license": "BSD-3-Clause",
+      "license_origin": "LICENSE пакета",
+      "license_file": "pub/async.txt",
+      "license_sha256": "ff15faa32a2e638107b7789592b14426162a75ba620044ee2340a20ec6ce5e73"
+    },
+    {
+      "name": "boolean_selector",
+      "version": "2.1.2",
+      "source": "hosted",
+      "role": "Косвенная",
+      "reachable_from_main": true,
+      "dependencies": [
+        "source_span",
+        "string_scanner"
+      ],
+      "license": "BSD-3-Clause",
+      "license_origin": "LICENSE пакета",
+      "license_file": "pub/boolean_selector.txt",
+      "license_sha256": "b71519245009a3b8f126196a5408ec031e216e8e0d985085958c6543f82a8a2a"
+    },
+    {
+      "name": "build",
+      "version": "4.0.7",
+      "source": "hosted",
+      "role": "Косвенная",
+      "reachable_from_main": false,
+      "dependencies": [
+        "analyzer",
+        "crypto",
+        "glob",
+        "logging",
+        "package_config",
+        "path"
+      ],
+      "license": "BSD-3-Clause",
+      "license_origin": "LICENSE пакета",
+      "license_file": "pub/build.txt",
+      "license_sha256": "a4b5d7d31626e90b77e8696f1c47643aa31f52e17c1907c1ab60b068110e6e10"
+    },
+    {
+      "name": "build_config",
+      "version": "1.3.3",
+      "source": "hosted",
+      "role": "Косвенная",
+      "reachable_from_main": false,
+      "dependencies": [
+        "checked_yaml",
+        "json_annotation",
+        "path",
+        "pubspec_parse"
+      ],
+      "license": "BSD-3-Clause",
+      "license_origin": "LICENSE пакета",
+      "license_file": "pub/build_config.txt",
+      "license_sha256": "ea97a7558a7bd7cee4e2355f7529e3cbebb0dcbb546ddb9a90f10c9eb6b08da5"
+    },
+    {
+      "name": "build_daemon",
+      "version": "4.1.6",
+      "source": "hosted",
+      "role": "Косвенная",
+      "reachable_from_main": false,
+      "dependencies": [
+        "built_collection",
+        "built_value",
+        "crypto",
+        "http_multi_server",
+        "logging",
+        "package_config",
+        "path",
+        "pool",
+        "pub_semver",
+        "shelf",
+        "shelf_web_socket",
+        "stream_transform",
+        "watcher",
+        "web_socket_channel",
+        "yaml"
+      ],
+      "license": "BSD-3-Clause",
+      "license_origin": "LICENSE пакета",
+      "license_file": "pub/build_daemon.txt",
+      "license_sha256": "0371d1da6a57fb791db29d29b95333429205f51f3cb2eb3a0c12d91838a38744"
+    },
+    {
+      "name": "build_runner",
+      "version": "2.15.1",
+      "source": "hosted",
+      "role": "Прямая dev",
+      "reachable_from_main": false,
+      "dependencies": [
+        "analyzer",
+        "args",
+        "async",
+        "build",
+        "build_config",
+        "build_daemon",
+        "built_collection",
+        "built_value",
+        "collection",
+        "convert",
+        "crypto",
+        "dart_style",
+        "glob",
+        "graphs",
+        "http_multi_server",
+        "io",
+        "json_annotation",
+        "logging",
+        "meta",
+        "mime",
+        "package_config",
+        "path",
+        "pool",
+        "pub_semver",
+        "shelf",
+        "shelf_web_socket",
+        "stream_transform",
+        "watcher",
+        "web_socket_channel",
+        "yaml"
+      ],
+      "license": "BSD-3-Clause",
+      "license_origin": "LICENSE пакета",
+      "license_file": "pub/build_runner.txt",
+      "license_sha256": "a4b5d7d31626e90b77e8696f1c47643aa31f52e17c1907c1ab60b068110e6e10"
+    },
+    {
+      "name": "built_collection",
+      "version": "5.1.1",
+      "source": "hosted",
+      "role": "Косвенная",
+      "reachable_from_main": false,
+      "dependencies": [],
+      "license": "BSD-3-Clause",
+      "license_origin": "LICENSE пакета",
+      "license_file": "pub/built_collection.txt",
+      "license_sha256": "4f1b0f444c862e8dc586122c00592538fb0e9dd6d81a5214882b25b8054f7dfa"
+    },
+    {
+      "name": "built_value",
+      "version": "8.13.0",
+      "source": "hosted",
+      "role": "Косвенная",
+      "reachable_from_main": false,
+      "dependencies": [
+        "built_collection",
+        "collection",
+        "fixnum",
+        "meta"
+      ],
+      "license": "BSD-3-Clause",
+      "license_origin": "LICENSE пакета",
+      "license_file": "pub/built_value.txt",
+      "license_sha256": "4f1b0f444c862e8dc586122c00592538fb0e9dd6d81a5214882b25b8054f7dfa"
+    },
+    {
+      "name": "characters",
+      "version": "1.4.1",
+      "source": "hosted",
+      "role": "Косвенная",
+      "reachable_from_main": true,
+      "dependencies": [],
+      "license": "BSD-3-Clause",
+      "license_origin": "LICENSE пакета",
+      "license_file": "pub/characters.txt",
+      "license_sha256": "0371d1da6a57fb791db29d29b95333429205f51f3cb2eb3a0c12d91838a38744"
+    },
+    {
+      "name": "checked_yaml",
+      "version": "2.0.4",
+      "source": "hosted",
+      "role": "Косвенная",
+      "reachable_from_main": false,
+      "dependencies": [
+        "json_annotation",
+        "source_span",
+        "yaml"
+      ],
+      "license": "BSD-3-Clause",
+      "license_origin": "LICENSE пакета",
+      "license_file": "pub/checked_yaml.txt",
+      "license_sha256": "4771d808721f4d5f02318ab857c92f5a5dce87b14ae1c3770fe21ca7fd4a9280"
+    },
+    {
+      "name": "clock",
+      "version": "1.1.3",
+      "source": "hosted",
+      "role": "Косвенная",
+      "reachable_from_main": true,
+      "dependencies": [],
+      "license": "Apache-2.0",
+      "license_origin": "LICENSE пакета",
+      "license_file": "pub/clock.txt",
+      "license_sha256": "58d1e17ffe5109a7ae296caafcadfdbe6a7d176f0bc4ab01e12a689b0499d8bd"
+    },
+    {
+      "name": "code_assets",
+      "version": "1.2.1",
+      "source": "hosted",
+      "role": "Косвенная",
+      "reachable_from_main": true,
+      "dependencies": [
+        "collection",
+        "hooks"
+      ],
+      "license": "BSD-3-Clause",
+      "license_origin": "LICENSE пакета",
+      "license_file": "pub/code_assets.txt",
+      "license_sha256": "21ae23b0b9ff67a2dc75ab085d1e8db8ac548c5faf370af17f28dd2ef3b52b7b"
+    },
+    {
+      "name": "collection",
+      "version": "1.19.1",
+      "source": "hosted",
+      "role": "Косвенная",
+      "reachable_from_main": true,
+      "dependencies": [],
+      "license": "BSD-3-Clause",
+      "license_origin": "LICENSE пакета",
+      "license_file": "pub/collection.txt",
+      "license_sha256": "ff15faa32a2e638107b7789592b14426162a75ba620044ee2340a20ec6ce5e73"
+    },
+    {
+      "name": "convert",
+      "version": "3.1.2",
+      "source": "hosted",
+      "role": "Косвенная",
+      "reachable_from_main": false,
+      "dependencies": [
+        "typed_data"
+      ],
+      "license": "BSD-3-Clause",
+      "license_origin": "LICENSE пакета",
+      "license_file": "pub/convert.txt",
+      "license_sha256": "ad6a71997da90924b2cfb1fb47ec46537f70faf469efe016168794ae45ed6888"
+    },
+    {
+      "name": "crypto",
+      "version": "3.0.7",
+      "source": "hosted",
+      "role": "Косвенная",
+      "reachable_from_main": true,
+      "dependencies": [
+        "typed_data"
+      ],
+      "license": "BSD-3-Clause",
+      "license_origin": "LICENSE пакета",
+      "license_file": "pub/crypto.txt",
+      "license_sha256": "ad6a71997da90924b2cfb1fb47ec46537f70faf469efe016168794ae45ed6888"
+    },
+    {
+      "name": "dart_style",
+      "version": "3.1.7",
+      "source": "hosted",
+      "role": "Косвенная",
+      "reachable_from_main": false,
+      "dependencies": [
+        "analyzer",
+        "args",
+        "collection",
+        "package_config",
+        "path",
+        "pub_semver",
+        "source_span",
+        "yaml"
+      ],
+      "license": "BSD-3-Clause",
+      "license_origin": "LICENSE пакета",
+      "license_file": "pub/dart_style.txt",
+      "license_sha256": "3c32b53167c7dae9190c38dab5dd9fe1789c53623ebc7d1babcb29914c5b3f16"
+    },
+    {
+      "name": "dartx",
+      "version": "1.2.0",
+      "source": "hosted",
+      "role": "Косвенная",
+      "reachable_from_main": false,
+      "dependencies": [
+        "characters",
+        "collection",
+        "crypto",
+        "meta",
+        "path",
+        "time"
+      ],
+      "license": "Apache-2.0",
+      "license_origin": "LICENSE пакета",
+      "license_file": "pub/dartx.txt",
+      "license_sha256": "347ddeffb5175ccb290ef8b96adce2faea1a3f2e465983deeff9d230269b5fa5"
+    },
+    {
+      "name": "fake_async",
+      "version": "1.3.3",
+      "source": "hosted",
+      "role": "Косвенная",
+      "reachable_from_main": true,
+      "dependencies": [
+        "clock",
+        "collection"
+      ],
+      "license": "Apache-2.0",
+      "license_origin": "LICENSE пакета",
+      "license_file": "pub/fake_async.txt",
+      "license_sha256": "58d1e17ffe5109a7ae296caafcadfdbe6a7d176f0bc4ab01e12a689b0499d8bd"
+    },
+    {
+      "name": "ffi",
+      "version": "2.2.0",
+      "source": "hosted",
+      "role": "Косвенная",
+      "reachable_from_main": true,
+      "dependencies": [],
+      "license": "BSD-3-Clause",
+      "license_origin": "LICENSE пакета",
+      "license_file": "pub/ffi.txt",
+      "license_sha256": "0371d1da6a57fb791db29d29b95333429205f51f3cb2eb3a0c12d91838a38744"
+    },
+    {
+      "name": "file",
+      "version": "7.0.1",
+      "source": "hosted",
+      "role": "Косвенная",
+      "reachable_from_main": false,
+      "dependencies": [
+        "meta",
+        "path"
+      ],
+      "license": "BSD-3-Clause",
+      "license_origin": "LICENSE пакета",
+      "license_file": "pub/file.txt",
+      "license_sha256": "f6df86b1412172537273e8e80ee2fb8a66aa7307ce0b39ea5ddab47ca41b8c49"
+    },
+    {
+      "name": "fixnum",
+      "version": "1.1.1",
+      "source": "hosted",
+      "role": "Косвенная",
+      "reachable_from_main": true,
+      "dependencies": [],
+      "license": "BSD-3-Clause",
+      "license_origin": "LICENSE пакета",
+      "license_file": "pub/fixnum.txt",
+      "license_sha256": "ff0b91d4f3c32b25cb6ec84985e8da89b0ba2a2b2f7eef353cda5e5423a20390"
+    },
+    {
+      "name": "flutter",
+      "version": "0.0.0",
+      "source": "sdk",
+      "role": "Прямая",
+      "reachable_from_main": true,
+      "dependencies": [
+        "characters",
+        "collection",
+        "material_color_utilities",
+        "meta",
+        "vector_math",
+        "sky_engine"
+      ],
+      "license": "BSD-3-Clause",
+      "license_origin": "LICENSE пакета",
+      "license_file": "pub/flutter.txt",
+      "license_sha256": "a598db94b6290ffbe10b5ecf911057b6a943351c727fdda9e5f2891d68700a20"
+    },
+    {
+      "name": "flutter_lints",
+      "version": "6.0.0",
+      "source": "hosted",
+      "role": "Прямая dev",
+      "reachable_from_main": false,
+      "dependencies": [
+        "lints"
+      ],
+      "license": "BSD-3-Clause",
+      "license_origin": "LICENSE пакета",
+      "license_file": "pub/flutter_lints.txt",
+      "license_sha256": "89519eca6f7b9529b35bdddd623a58c3af06a88c458dbd6531ddb4675acf75a9"
+    },
+    {
+      "name": "flutter_riverpod",
+      "version": "3.4.3",
+      "source": "hosted",
+      "role": "Прямая",
+      "reachable_from_main": true,
+      "dependencies": [
+        "collection",
+        "flutter",
+        "flutter_test",
+        "meta",
+        "riverpod",
+        "state_notifier"
+      ],
+      "license": "MIT",
+      "license_origin": "LICENSE пакета",
+      "license_file": "pub/flutter_riverpod.txt",
+      "license_sha256": "757d9c09a9a2a701144328c0fd596234ea287ff62952b39cd22f9ad4caed1171"
+    },
+    {
+      "name": "flutter_test",
+      "version": "0.0.0",
+      "source": "sdk",
+      "role": "Прямая dev",
+      "reachable_from_main": true,
+      "dependencies": [
+        "flutter",
+        "test_api",
+        "matcher",
+        "path",
+        "fake_async",
+        "clock",
+        "stack_trace",
+        "vector_math",
+        "leak_tracker_flutter_testing",
+        "collection",
+        "meta",
+        "stream_channel"
+      ],
+      "license": "BSD-3-Clause",
+      "license_origin": "LICENSE корня Flutter SDK",
+      "license_file": "pub/flutter_test.txt",
+      "license_sha256": "a598db94b6290ffbe10b5ecf911057b6a943351c727fdda9e5f2891d68700a20"
+    },
+    {
+      "name": "glob",
+      "version": "2.2.0",
+      "source": "hosted",
+      "role": "Косвенная",
+      "reachable_from_main": false,
+      "dependencies": [
+        "async",
+        "collection",
+        "file",
+        "path",
+        "string_scanner"
+      ],
+      "license": "BSD-3-Clause",
+      "license_origin": "LICENSE пакета",
+      "license_file": "pub/glob.txt",
+      "license_sha256": "3c32b53167c7dae9190c38dab5dd9fe1789c53623ebc7d1babcb29914c5b3f16"
+    },
+    {
+      "name": "graphs",
+      "version": "2.3.2",
+      "source": "hosted",
+      "role": "Косвенная",
+      "reachable_from_main": false,
+      "dependencies": [
+        "collection"
+      ],
+      "license": "BSD-3-Clause",
+      "license_origin": "LICENSE пакета",
+      "license_file": "pub/graphs.txt",
+      "license_sha256": "ea97a7558a7bd7cee4e2355f7529e3cbebb0dcbb546ddb9a90f10c9eb6b08da5"
+    },
+    {
+      "name": "hooks",
+      "version": "2.0.2",
+      "source": "hosted",
+      "role": "Косвенная",
+      "reachable_from_main": true,
+      "dependencies": [
+        "collection",
+        "crypto",
+        "logging",
+        "meta",
+        "pub_semver",
+        "record_use",
+        "yaml"
+      ],
+      "license": "BSD-3-Clause",
+      "license_origin": "LICENSE пакета",
+      "license_file": "pub/hooks.txt",
+      "license_sha256": "21ae23b0b9ff67a2dc75ab085d1e8db8ac548c5faf370af17f28dd2ef3b52b7b"
+    },
+    {
+      "name": "http_multi_server",
+      "version": "3.2.2",
+      "source": "hosted",
+      "role": "Косвенная",
+      "reachable_from_main": false,
+      "dependencies": [
+        "async"
+      ],
+      "license": "BSD-3-Clause",
+      "license_origin": "LICENSE пакета",
+      "license_file": "pub/http_multi_server.txt",
+      "license_sha256": "ff0b91d4f3c32b25cb6ec84985e8da89b0ba2a2b2f7eef353cda5e5423a20390"
+    },
+    {
+      "name": "http_parser",
+      "version": "4.1.2",
+      "source": "hosted",
+      "role": "Косвенная",
+      "reachable_from_main": false,
+      "dependencies": [
+        "collection",
+        "source_span",
+        "string_scanner",
+        "typed_data"
+      ],
+      "license": "BSD-3-Clause",
+      "license_origin": "LICENSE пакета",
+      "license_file": "pub/http_parser.txt",
+      "license_sha256": "3c32b53167c7dae9190c38dab5dd9fe1789c53623ebc7d1babcb29914c5b3f16"
+    },
+    {
+      "name": "io",
+      "version": "1.1.0",
+      "source": "hosted",
+      "role": "Косвенная",
+      "reachable_from_main": false,
+      "dependencies": [
+        "meta",
+        "path",
+        "string_scanner"
+      ],
+      "license": "BSD-3-Clause",
+      "license_origin": "LICENSE пакета",
+      "license_file": "pub/io.txt",
+      "license_sha256": "ea97a7558a7bd7cee4e2355f7529e3cbebb0dcbb546ddb9a90f10c9eb6b08da5"
+    },
+    {
+      "name": "isar_community",
+      "version": "3.3.2",
+      "source": "hosted",
+      "role": "Прямая",
+      "reachable_from_main": true,
+      "dependencies": [
+        "ffi",
+        "js",
+        "meta"
+      ],
+      "license": "Apache-2.0",
+      "license_origin": "LICENSE пакета",
+      "license_file": "pub/isar_community.txt",
+      "license_sha256": "c41a720c120c21505f1a313781e0d5d699877b33399bbb802ccd7fa416ed5052"
+    },
+    {
+      "name": "isar_community_flutter_libs",
+      "version": "3.3.2",
+      "source": "hosted",
+      "role": "Прямая",
+      "reachable_from_main": true,
+      "dependencies": [
+        "flutter",
+        "isar_community"
+      ],
+      "license": "Apache-2.0",
+      "license_origin": "LICENSE пакета",
+      "license_file": "pub/isar_community_flutter_libs.txt",
+      "license_sha256": "58d1e17ffe5109a7ae296caafcadfdbe6a7d176f0bc4ab01e12a689b0499d8bd"
+    },
+    {
+      "name": "isar_community_generator",
+      "version": "3.3.2",
+      "source": "hosted",
+      "role": "Прямая dev",
+      "reachable_from_main": false,
+      "dependencies": [
+        "analyzer",
+        "build",
+        "dart_style",
+        "dartx",
+        "glob",
+        "isar_community",
+        "path",
+        "source_gen",
+        "xxh3"
+      ],
+      "license": "Apache-2.0",
+      "license_origin": "LICENSE пакета",
+      "license_file": "pub/isar_community_generator.txt",
+      "license_sha256": "58d1e17ffe5109a7ae296caafcadfdbe6a7d176f0bc4ab01e12a689b0499d8bd"
+    },
+    {
+      "name": "jni",
+      "version": "1.0.3",
+      "source": "hosted",
+      "role": "Косвенная",
+      "reachable_from_main": true,
+      "dependencies": [
+        "args",
+        "collection",
+        "ffi",
+        "jni_util",
+        "meta",
+        "package_config",
+        "path",
+        "plugin_platform_interface"
+      ],
+      "license": "BSD-3-Clause",
+      "license_origin": "LICENSE пакета",
+      "license_file": "pub/jni.txt",
+      "license_sha256": "08a004aa8956c3cf3b24f7f69c966247233953e18e6afaa61191ea47b7eb70f6"
+    },
+    {
+      "name": "jni_flutter",
+      "version": "1.0.3",
+      "source": "hosted",
+      "role": "Косвенная",
+      "reachable_from_main": true,
+      "dependencies": [
+        "flutter",
+        "jni"
+      ],
+      "license": "BSD-3-Clause",
+      "license_origin": "LICENSE пакета",
+      "license_file": "pub/jni_flutter.txt",
+      "license_sha256": "b1fcb475d67817411f335ac92872507011e574c4cb29cfdaaf7707b75641932c"
+    },
+    {
+      "name": "jni_util",
+      "version": "1.0.0",
+      "source": "hosted",
+      "role": "Косвенная",
+      "reachable_from_main": true,
+      "dependencies": [
+        "path"
+      ],
+      "license": "BSD-3-Clause",
+      "license_origin": "LICENSE пакета",
+      "license_file": "pub/jni_util.txt",
+      "license_sha256": "b1fcb475d67817411f335ac92872507011e574c4cb29cfdaaf7707b75641932c"
+    },
+    {
+      "name": "js",
+      "version": "0.7.2",
+      "source": "hosted",
+      "role": "Косвенная",
+      "reachable_from_main": true,
+      "dependencies": [],
+      "license": "BSD-3-Clause",
+      "license_origin": "LICENSE пакета",
+      "license_file": "pub/js.txt",
+      "license_sha256": "efa4eaf6fdec22a36a61395ea70843db9ae815760bf663e068012c92b93c0184"
+    },
+    {
+      "name": "json_annotation",
+      "version": "4.12.0",
+      "source": "hosted",
+      "role": "Косвенная",
+      "reachable_from_main": false,
+      "dependencies": [
+        "meta"
+      ],
+      "license": "BSD-3-Clause",
+      "license_origin": "LICENSE пакета",
+      "license_file": "pub/json_annotation.txt",
+      "license_sha256": "143839f62c9b7f88143ea9f688361c27050888acde7696b34e04414bd254fafc"
+    },
+    {
+      "name": "leak_tracker",
+      "version": "11.0.2",
+      "source": "hosted",
+      "role": "Косвенная",
+      "reachable_from_main": true,
+      "dependencies": [
+        "clock",
+        "collection",
+        "meta",
+        "path",
+        "vm_service"
+      ],
+      "license": "BSD-3-Clause",
+      "license_origin": "LICENSE пакета",
+      "license_file": "pub/leak_tracker.txt",
+      "license_sha256": "08a004aa8956c3cf3b24f7f69c966247233953e18e6afaa61191ea47b7eb70f6"
+    },
+    {
+      "name": "leak_tracker_flutter_testing",
+      "version": "3.0.10",
+      "source": "hosted",
+      "role": "Косвенная",
+      "reachable_from_main": true,
+      "dependencies": [
+        "flutter",
+        "leak_tracker",
+        "leak_tracker_testing",
+        "matcher",
+        "meta"
+      ],
+      "license": "BSD-3-Clause",
+      "license_origin": "LICENSE пакета",
+      "license_file": "pub/leak_tracker_flutter_testing.txt",
+      "license_sha256": "08a004aa8956c3cf3b24f7f69c966247233953e18e6afaa61191ea47b7eb70f6"
+    },
+    {
+      "name": "leak_tracker_testing",
+      "version": "3.0.2",
+      "source": "hosted",
+      "role": "Косвенная",
+      "reachable_from_main": true,
+      "dependencies": [
+        "leak_tracker",
+        "matcher",
+        "meta"
+      ],
+      "license": "BSD-3-Clause",
+      "license_origin": "LICENSE пакета",
+      "license_file": "pub/leak_tracker_testing.txt",
+      "license_sha256": "08a004aa8956c3cf3b24f7f69c966247233953e18e6afaa61191ea47b7eb70f6"
+    },
+    {
+      "name": "lints",
+      "version": "6.1.0",
+      "source": "hosted",
+      "role": "Косвенная",
+      "reachable_from_main": false,
+      "dependencies": [],
+      "license": "BSD-3-Clause",
+      "license_origin": "LICENSE пакета",
+      "license_file": "pub/lints.txt",
+      "license_sha256": "421fe78c3b5df297f8b4ab2c74f2450a274ee6d245a113091f6b9f90570af193"
+    },
+    {
+      "name": "listen",
+      "version": "1.0.1",
+      "source": "hosted",
+      "role": "Косвенная",
+      "reachable_from_main": true,
+      "dependencies": [
+        "meta"
+      ],
+      "license": "BSD-3-Clause",
+      "license_origin": "LICENSE пакета",
+      "license_file": "pub/listen.txt",
+      "license_sha256": "420f7739f169097f0aad1242045169cd643c8f1d94e62866fad265ae4c369b7d"
+    },
+    {
+      "name": "logging",
+      "version": "1.3.0",
+      "source": "hosted",
+      "role": "Косвенная",
+      "reachable_from_main": true,
+      "dependencies": [],
+      "license": "BSD-3-Clause",
+      "license_origin": "LICENSE пакета",
+      "license_file": "pub/logging.txt",
+      "license_sha256": "dfb09c74e29386cd3e2719f32d4995d59526179753931d31840757c77fbf2791"
+    },
+    {
+      "name": "matcher",
+      "version": "0.12.20",
+      "source": "hosted",
+      "role": "Косвенная",
+      "reachable_from_main": true,
+      "dependencies": [
+        "async",
+        "meta",
+        "stack_trace",
+        "term_glyph",
+        "test_api"
+      ],
+      "license": "BSD-3-Clause",
+      "license_origin": "LICENSE пакета",
+      "license_file": "pub/matcher.txt",
+      "license_sha256": "3c32b53167c7dae9190c38dab5dd9fe1789c53623ebc7d1babcb29914c5b3f16"
+    },
+    {
+      "name": "material_color_utilities",
+      "version": "0.13.0",
+      "source": "hosted",
+      "role": "Косвенная",
+      "reachable_from_main": true,
+      "dependencies": [
+        "collection"
+      ],
+      "license": "Apache-2.0",
+      "license_origin": "LICENSE пакета",
+      "license_file": "pub/material_color_utilities.txt",
+      "license_sha256": "d103f246ef4c18dab8af0c1dcf6a8af884e5cff554da7261a48ac43c17d98f2e"
+    },
+    {
+      "name": "meta",
+      "version": "1.18.3",
+      "source": "hosted",
+      "role": "Косвенная",
+      "reachable_from_main": true,
+      "dependencies": [],
+      "license": "BSD-3-Clause",
+      "license_origin": "LICENSE пакета",
+      "license_file": "pub/meta.txt",
+      "license_sha256": "b71519245009a3b8f126196a5408ec031e216e8e0d985085958c6543f82a8a2a"
+    },
+    {
+      "name": "mime",
+      "version": "2.1.0",
+      "source": "hosted",
+      "role": "Косвенная",
+      "reachable_from_main": false,
+      "dependencies": [],
+      "license": "BSD-3-Clause",
+      "license_origin": "LICENSE пакета",
+      "license_file": "pub/mime.txt",
+      "license_sha256": "ff15faa32a2e638107b7789592b14426162a75ba620044ee2340a20ec6ce5e73"
+    },
+    {
+      "name": "objective_c",
+      "version": "9.5.0",
+      "source": "hosted",
+      "role": "Косвенная",
+      "reachable_from_main": true,
+      "dependencies": [
+        "code_assets",
+        "collection",
+        "ffi",
+        "hooks",
+        "logging",
+        "meta",
+        "pub_semver"
+      ],
+      "license": "BSD-3-Clause",
+      "license_origin": "LICENSE пакета",
+      "license_file": "pub/objective_c.txt",
+      "license_sha256": "1cda25a8de6880c5338de0b4a06ee89e8537c213eb1379c16a4c035bfd198b5c"
+    },
+    {
+      "name": "package_config",
+      "version": "2.2.0",
+      "source": "hosted",
+      "role": "Косвенная",
+      "reachable_from_main": true,
+      "dependencies": [
+        "path"
+      ],
+      "license": "BSD-3-Clause",
+      "license_origin": "LICENSE пакета",
+      "license_file": "pub/package_config.txt",
+      "license_sha256": "0371d1da6a57fb791db29d29b95333429205f51f3cb2eb3a0c12d91838a38744"
+    },
+    {
+      "name": "path",
+      "version": "1.9.1",
+      "source": "hosted",
+      "role": "Косвенная",
+      "reachable_from_main": true,
+      "dependencies": [],
+      "license": "BSD-3-Clause",
+      "license_origin": "LICENSE пакета",
+      "license_file": "pub/path.txt",
+      "license_sha256": "3c32b53167c7dae9190c38dab5dd9fe1789c53623ebc7d1babcb29914c5b3f16"
+    },
+    {
+      "name": "path_provider",
+      "version": "2.1.6",
+      "source": "hosted",
+      "role": "Прямая",
+      "reachable_from_main": true,
+      "dependencies": [
+        "flutter",
+        "path_provider_android",
+        "path_provider_foundation",
+        "path_provider_linux",
+        "path_provider_platform_interface",
+        "path_provider_windows"
+      ],
+      "license": "BSD-3-Clause",
+      "license_origin": "LICENSE пакета",
+      "license_file": "pub/path_provider.txt",
+      "license_sha256": "420f7739f169097f0aad1242045169cd643c8f1d94e62866fad265ae4c369b7d"
+    },
+    {
+      "name": "path_provider_android",
+      "version": "2.3.1",
+      "source": "hosted",
+      "role": "Косвенная",
+      "reachable_from_main": true,
+      "dependencies": [
+        "flutter",
+        "jni",
+        "jni_flutter",
+        "path_provider_platform_interface"
+      ],
+      "license": "BSD-3-Clause",
+      "license_origin": "LICENSE пакета",
+      "license_file": "pub/path_provider_android.txt",
+      "license_sha256": "420f7739f169097f0aad1242045169cd643c8f1d94e62866fad265ae4c369b7d"
+    },
+    {
+      "name": "path_provider_foundation",
+      "version": "2.6.0",
+      "source": "hosted",
+      "role": "Косвенная",
+      "reachable_from_main": true,
+      "dependencies": [
+        "ffi",
+        "flutter",
+        "objective_c",
+        "path_provider_platform_interface"
+      ],
+      "license": "BSD-3-Clause",
+      "license_origin": "LICENSE пакета",
+      "license_file": "pub/path_provider_foundation.txt",
+      "license_sha256": "420f7739f169097f0aad1242045169cd643c8f1d94e62866fad265ae4c369b7d"
+    },
+    {
+      "name": "path_provider_linux",
+      "version": "2.2.2",
+      "source": "hosted",
+      "role": "Косвенная",
+      "reachable_from_main": true,
+      "dependencies": [
+        "ffi",
+        "flutter",
+        "path",
+        "path_provider_platform_interface",
+        "xdg_directories"
+      ],
+      "license": "BSD-3-Clause",
+      "license_origin": "LICENSE пакета",
+      "license_file": "pub/path_provider_linux.txt",
+      "license_sha256": "420f7739f169097f0aad1242045169cd643c8f1d94e62866fad265ae4c369b7d"
+    },
+    {
+      "name": "path_provider_platform_interface",
+      "version": "2.1.3",
+      "source": "hosted",
+      "role": "Косвенная",
+      "reachable_from_main": true,
+      "dependencies": [
+        "flutter",
+        "platform",
+        "plugin_platform_interface"
+      ],
+      "license": "BSD-3-Clause",
+      "license_origin": "LICENSE пакета",
+      "license_file": "pub/path_provider_platform_interface.txt",
+      "license_sha256": "420f7739f169097f0aad1242045169cd643c8f1d94e62866fad265ae4c369b7d"
+    },
+    {
+      "name": "path_provider_windows",
+      "version": "2.3.0",
+      "source": "hosted",
+      "role": "Косвенная",
+      "reachable_from_main": true,
+      "dependencies": [
+        "ffi",
+        "flutter",
+        "path",
+        "path_provider_platform_interface"
+      ],
+      "license": "BSD-3-Clause",
+      "license_origin": "LICENSE пакета",
+      "license_file": "pub/path_provider_windows.txt",
+      "license_sha256": "89519eca6f7b9529b35bdddd623a58c3af06a88c458dbd6531ddb4675acf75a9"
+    },
+    {
+      "name": "platform",
+      "version": "3.2.0",
+      "source": "hosted",
+      "role": "Косвенная",
+      "reachable_from_main": true,
+      "dependencies": [
+        "meta"
+      ],
+      "license": "BSD-3-Clause",
+      "license_origin": "LICENSE пакета",
+      "license_file": "pub/platform.txt",
+      "license_sha256": "143839f62c9b7f88143ea9f688361c27050888acde7696b34e04414bd254fafc"
+    },
+    {
+      "name": "plugin_platform_interface",
+      "version": "2.1.8",
+      "source": "hosted",
+      "role": "Косвенная",
+      "reachable_from_main": true,
+      "dependencies": [
+        "meta"
+      ],
+      "license": "BSD-3-Clause",
+      "license_origin": "LICENSE пакета",
+      "license_file": "pub/plugin_platform_interface.txt",
+      "license_sha256": "89519eca6f7b9529b35bdddd623a58c3af06a88c458dbd6531ddb4675acf75a9"
+    },
+    {
+      "name": "pool",
+      "version": "1.5.3",
+      "source": "hosted",
+      "role": "Косвенная",
+      "reachable_from_main": false,
+      "dependencies": [
+        "async",
+        "stack_trace"
+      ],
+      "license": "BSD-3-Clause",
+      "license_origin": "LICENSE пакета",
+      "license_file": "pub/pool.txt",
+      "license_sha256": "3c32b53167c7dae9190c38dab5dd9fe1789c53623ebc7d1babcb29914c5b3f16"
+    },
+    {
+      "name": "pub_semver",
+      "version": "2.2.1",
+      "source": "hosted",
+      "role": "Косвенная",
+      "reachable_from_main": true,
+      "dependencies": [
+        "collection"
+      ],
+      "license": "BSD-3-Clause",
+      "license_origin": "LICENSE пакета",
+      "license_file": "pub/pub_semver.txt",
+      "license_sha256": "3c32b53167c7dae9190c38dab5dd9fe1789c53623ebc7d1babcb29914c5b3f16"
+    },
+    {
+      "name": "pubspec_parse",
+      "version": "1.6.0",
+      "source": "hosted",
+      "role": "Косвенная",
+      "reachable_from_main": false,
+      "dependencies": [
+        "checked_yaml",
+        "collection",
+        "json_annotation",
+        "pub_semver",
+        "yaml"
+      ],
+      "license": "BSD-3-Clause",
+      "license_origin": "LICENSE пакета",
+      "license_file": "pub/pubspec_parse.txt",
+      "license_sha256": "479bb84361ed3d6b78f55871c9ae5d6c8f15f49c2089e59fc1d6644d8b0ed32b"
+    },
+    {
+      "name": "record_use",
+      "version": "0.6.0",
+      "source": "hosted",
+      "role": "Косвенная",
+      "reachable_from_main": true,
+      "dependencies": [
+        "collection",
+        "meta",
+        "pub_semver"
+      ],
+      "license": "BSD-3-Clause",
+      "license_origin": "LICENSE пакета",
+      "license_file": "pub/record_use.txt",
+      "license_sha256": "1cda25a8de6880c5338de0b4a06ee89e8537c213eb1379c16a4c035bfd198b5c"
+    },
+    {
+      "name": "riverpod",
+      "version": "3.4.3",
+      "source": "hosted",
+      "role": "Косвенная",
+      "reachable_from_main": true,
+      "dependencies": [
+        "async",
+        "clock",
+        "collection",
+        "listen",
+        "meta",
+        "stack_trace",
+        "state_notifier",
+        "test_api",
+        "uuid"
+      ],
+      "license": "MIT",
+      "license_origin": "LICENSE пакета",
+      "license_file": "pub/riverpod.txt",
+      "license_sha256": "757d9c09a9a2a701144328c0fd596234ea287ff62952b39cd22f9ad4caed1171"
+    },
+    {
+      "name": "shelf",
+      "version": "1.4.2",
+      "source": "hosted",
+      "role": "Косвенная",
+      "reachable_from_main": false,
+      "dependencies": [
+        "async",
+        "collection",
+        "http_parser",
+        "path",
+        "stack_trace",
+        "stream_channel"
+      ],
+      "license": "BSD-3-Clause",
+      "license_origin": "LICENSE пакета",
+      "license_file": "pub/shelf.txt",
+      "license_sha256": "ff0b91d4f3c32b25cb6ec84985e8da89b0ba2a2b2f7eef353cda5e5423a20390"
+    },
+    {
+      "name": "shelf_web_socket",
+      "version": "3.0.0",
+      "source": "hosted",
+      "role": "Косвенная",
+      "reachable_from_main": false,
+      "dependencies": [
+        "shelf",
+        "stream_channel",
+        "web_socket_channel"
+      ],
+      "license": "BSD-3-Clause",
+      "license_origin": "LICENSE пакета",
+      "license_file": "pub/shelf_web_socket.txt",
+      "license_sha256": "ff0b91d4f3c32b25cb6ec84985e8da89b0ba2a2b2f7eef353cda5e5423a20390"
+    },
+    {
+      "name": "sky_engine",
+      "version": "0.0.0",
+      "source": "sdk",
+      "role": "Косвенная",
+      "reachable_from_main": true,
+      "dependencies": [],
+      "license": "Сборник лицензий движка",
+      "license_origin": "LICENSE пакета",
+      "license_file": "pub/sky_engine.txt",
+      "license_sha256": "3c0040023a5789bf56d6bf41fd44f08b21758523d41f128fb7dd6beb398d1191"
+    },
+    {
+      "name": "source_gen",
+      "version": "4.2.4",
+      "source": "hosted",
+      "role": "Косвенная",
+      "reachable_from_main": false,
+      "dependencies": [
+        "analyzer",
+        "async",
+        "build",
+        "dart_style",
+        "glob",
+        "path",
+        "pub_semver",
+        "source_span",
+        "yaml"
+      ],
+      "license": "BSD-3-Clause",
+      "license_origin": "LICENSE пакета",
+      "license_file": "pub/source_gen.txt",
+      "license_sha256": "ad6a71997da90924b2cfb1fb47ec46537f70faf469efe016168794ae45ed6888"
+    },
+    {
+      "name": "source_span",
+      "version": "1.10.2",
+      "source": "hosted",
+      "role": "Косвенная",
+      "reachable_from_main": true,
+      "dependencies": [
+        "collection",
+        "path",
+        "term_glyph"
+      ],
+      "license": "BSD-3-Clause",
+      "license_origin": "LICENSE пакета",
+      "license_file": "pub/source_span.txt",
+      "license_sha256": "3c32b53167c7dae9190c38dab5dd9fe1789c53623ebc7d1babcb29914c5b3f16"
+    },
+    {
+      "name": "stack_trace",
+      "version": "1.12.2",
+      "source": "hosted",
+      "role": "Косвенная",
+      "reachable_from_main": true,
+      "dependencies": [
+        "path"
+      ],
+      "license": "BSD-3-Clause",
+      "license_origin": "LICENSE пакета",
+      "license_file": "pub/stack_trace.txt",
+      "license_sha256": "ff0b91d4f3c32b25cb6ec84985e8da89b0ba2a2b2f7eef353cda5e5423a20390"
+    },
+    {
+      "name": "state_notifier",
+      "version": "1.0.0",
+      "source": "hosted",
+      "role": "Косвенная",
+      "reachable_from_main": true,
+      "dependencies": [
+        "meta"
+      ],
+      "license": "MIT",
+      "license_origin": "LICENSE пакета",
+      "license_file": "pub/state_notifier.txt",
+      "license_sha256": "757d9c09a9a2a701144328c0fd596234ea287ff62952b39cd22f9ad4caed1171"
+    },
+    {
+      "name": "stream_channel",
+      "version": "2.1.4",
+      "source": "hosted",
+      "role": "Косвенная",
+      "reachable_from_main": true,
+      "dependencies": [
+        "async"
+      ],
+      "license": "BSD-3-Clause",
+      "license_origin": "LICENSE пакета",
+      "license_file": "pub/stream_channel.txt",
+      "license_sha256": "ff15faa32a2e638107b7789592b14426162a75ba620044ee2340a20ec6ce5e73"
+    },
+    {
+      "name": "stream_transform",
+      "version": "2.1.2",
+      "source": "hosted",
+      "role": "Косвенная",
+      "reachable_from_main": false,
+      "dependencies": [],
+      "license": "BSD-3-Clause",
+      "license_origin": "LICENSE пакета",
+      "license_file": "pub/stream_transform.txt",
+      "license_sha256": "ea97a7558a7bd7cee4e2355f7529e3cbebb0dcbb546ddb9a90f10c9eb6b08da5"
+    },
+    {
+      "name": "string_scanner",
+      "version": "1.4.1",
+      "source": "hosted",
+      "role": "Косвенная",
+      "reachable_from_main": true,
+      "dependencies": [
+        "source_span"
+      ],
+      "license": "BSD-3-Clause",
+      "license_origin": "LICENSE пакета",
+      "license_file": "pub/string_scanner.txt",
+      "license_sha256": "3c32b53167c7dae9190c38dab5dd9fe1789c53623ebc7d1babcb29914c5b3f16"
+    },
+    {
+      "name": "term_glyph",
+      "version": "1.2.2",
+      "source": "hosted",
+      "role": "Косвенная",
+      "reachable_from_main": true,
+      "dependencies": [],
+      "license": "BSD-3-Clause",
+      "license_origin": "LICENSE пакета",
+      "license_file": "pub/term_glyph.txt",
+      "license_sha256": "ea97a7558a7bd7cee4e2355f7529e3cbebb0dcbb546ddb9a90f10c9eb6b08da5"
+    },
+    {
+      "name": "test_api",
+      "version": "0.7.12",
+      "source": "hosted",
+      "role": "Косвенная",
+      "reachable_from_main": true,
+      "dependencies": [
+        "async",
+        "boolean_selector",
+        "collection",
+        "meta",
+        "source_span",
+        "stack_trace",
+        "stream_channel",
+        "string_scanner",
+        "term_glyph"
+      ],
+      "license": "BSD-3-Clause",
+      "license_origin": "LICENSE пакета",
+      "license_file": "pub/test_api.txt",
+      "license_sha256": "ff1b9f0df9036c04be424b1e3ce12789bea880ad5ffc3a48e069ae2d40a087a4"
+    },
+    {
+      "name": "time",
+      "version": "2.1.6",
+      "source": "hosted",
+      "role": "Косвенная",
+      "reachable_from_main": false,
+      "dependencies": [
+        "clock"
+      ],
+      "license": "MIT",
+      "license_origin": "LICENSE пакета",
+      "license_file": "pub/time.txt",
+      "license_sha256": "a992e80fde9630e9f2d3ca68cad031d4d843469487da5a619164464402dcba9c"
+    },
+    {
+      "name": "typed_data",
+      "version": "1.4.0",
+      "source": "hosted",
+      "role": "Косвенная",
+      "reachable_from_main": true,
+      "dependencies": [
+        "collection"
+      ],
+      "license": "BSD-3-Clause",
+      "license_origin": "LICENSE пакета",
+      "license_file": "pub/typed_data.txt",
+      "license_sha256": "ff15faa32a2e638107b7789592b14426162a75ba620044ee2340a20ec6ce5e73"
+    },
+    {
+      "name": "uuid",
+      "version": "4.6.0",
+      "source": "hosted",
+      "role": "Косвенная",
+      "reachable_from_main": true,
+      "dependencies": [
+        "crypto",
+        "fixnum"
+      ],
+      "license": "MIT",
+      "license_origin": "LICENSE пакета",
+      "license_file": "pub/uuid.txt",
+      "license_sha256": "ad3e5523e51004e94ba9ce728805b1b4242dbccdb65e62b523800e35a8a7cfdc"
+    },
+    {
+      "name": "vector_math",
+      "version": "2.4.0",
+      "source": "hosted",
+      "role": "Косвенная",
+      "reachable_from_main": true,
+      "dependencies": [],
+      "license": "BSD-3-Clause",
+      "license_origin": "LICENSE пакета",
+      "license_file": "pub/vector_math.txt",
+      "license_sha256": "420f7739f169097f0aad1242045169cd643c8f1d94e62866fad265ae4c369b7d"
+    },
+    {
+      "name": "vm_service",
+      "version": "15.3.0",
+      "source": "hosted",
+      "role": "Косвенная",
+      "reachable_from_main": true,
+      "dependencies": [],
+      "license": "BSD-3-Clause",
+      "license_origin": "LICENSE пакета",
+      "license_file": "pub/vm_service.txt",
+      "license_sha256": "ad6a71997da90924b2cfb1fb47ec46537f70faf469efe016168794ae45ed6888"
+    },
+    {
+      "name": "watcher",
+      "version": "1.2.1",
+      "source": "hosted",
+      "role": "Косвенная",
+      "reachable_from_main": false,
+      "dependencies": [
+        "async",
+        "path"
+      ],
+      "license": "BSD-3-Clause",
+      "license_origin": "LICENSE пакета",
+      "license_file": "pub/watcher.txt",
+      "license_sha256": "3c32b53167c7dae9190c38dab5dd9fe1789c53623ebc7d1babcb29914c5b3f16"
+    },
+    {
+      "name": "web",
+      "version": "1.1.1",
+      "source": "hosted",
+      "role": "Косвенная",
+      "reachable_from_main": false,
+      "dependencies": [],
+      "license": "BSD-3-Clause",
+      "license_origin": "LICENSE пакета",
+      "license_file": "pub/web.txt",
+      "license_sha256": "aa913ff50d7542eb8cc35b9f48a80928ac6819ba9057f85d424655e3e8dc271c"
+    },
+    {
+      "name": "web_socket",
+      "version": "1.0.1",
+      "source": "hosted",
+      "role": "Косвенная",
+      "reachable_from_main": false,
+      "dependencies": [
+        "web"
+      ],
+      "license": "BSD-3-Clause",
+      "license_origin": "LICENSE пакета",
+      "license_file": "pub/web_socket.txt",
+      "license_sha256": "cbe822ef3446af4366b2b82c48b0979d0b12865edfe74c22b9aa617fc362d6e0"
+    },
+    {
+      "name": "web_socket_channel",
+      "version": "3.0.3",
+      "source": "hosted",
+      "role": "Косвенная",
+      "reachable_from_main": false,
+      "dependencies": [
+        "async",
+        "crypto",
+        "stream_channel",
+        "web",
+        "web_socket"
+      ],
+      "license": "BSD-3-Clause",
+      "license_origin": "LICENSE пакета",
+      "license_file": "pub/web_socket_channel.txt",
+      "license_sha256": "a4b5d7d31626e90b77e8696f1c47643aa31f52e17c1907c1ab60b068110e6e10"
+    },
+    {
+      "name": "xdg_directories",
+      "version": "1.1.0",
+      "source": "hosted",
+      "role": "Косвенная",
+      "reachable_from_main": true,
+      "dependencies": [
+        "meta",
+        "path"
+      ],
+      "license": "BSD-3-Clause",
+      "license_origin": "LICENSE пакета",
+      "license_file": "pub/xdg_directories.txt",
+      "license_sha256": "89519eca6f7b9529b35bdddd623a58c3af06a88c458dbd6531ddb4675acf75a9"
+    },
+    {
+      "name": "xxh3",
+      "version": "1.2.0",
+      "source": "hosted",
+      "role": "Косвенная",
+      "reachable_from_main": false,
+      "dependencies": [],
+      "license": "MIT",
+      "license_origin": "LICENSE пакета",
+      "license_file": "pub/xxh3.txt",
+      "license_sha256": "9a1e81c2a0f8f7e798bc548b9de8e0aafd816da1377866571fce5b5cc9667757"
+    },
+    {
+      "name": "yaml",
+      "version": "3.1.4",
+      "source": "hosted",
+      "role": "Косвенная",
+      "reachable_from_main": true,
+      "dependencies": [
+        "collection",
+        "source_span",
+        "string_scanner"
+      ],
+      "license": "MIT",
+      "license_origin": "LICENSE пакета",
+      "license_file": "pub/yaml.txt",
+      "license_sha256": "d47b93335401b052d79a2f5a3710e4cf7b5aed782faedf84d40fbdd6eb934ec7"
+    }
+  ],
+  "android_components": [
+    {
+      "coordinate": "androidx.activity:activity:1.8.1",
+      "licenses": [
+        {
+          "name": "The Apache Software License, Version 2.0",
+          "url": "http://www.apache.org/licenses/LICENSE-2.0.txt"
+        }
+      ],
+      "pom_file": "android/androidx.activity__activity__1.8.1.pom",
+      "pom_sha256": "c0ccbb0f6bd3f3a4fe338811dd8aee19b4919f4197613ee801bf33dd6dd702d7",
+      "parent_poms": []
+    },
+    {
+      "coordinate": "androidx.annotation:annotation:1.8.1",
+      "licenses": [
+        {
+          "name": "The Apache Software License, Version 2.0",
+          "url": "http://www.apache.org/licenses/LICENSE-2.0.txt"
+        }
+      ],
+      "pom_file": "android/androidx.annotation__annotation__1.8.1.pom",
+      "pom_sha256": "b71225974ec087eb96c25ef6819f55b1c22f530e85ca446ba735fb66ed04ff5c",
+      "parent_poms": []
+    },
+    {
+      "coordinate": "androidx.annotation:annotation-experimental:1.4.0",
+      "licenses": [
+        {
+          "name": "The Apache Software License, Version 2.0",
+          "url": "http://www.apache.org/licenses/LICENSE-2.0.txt"
+        }
+      ],
+      "pom_file": "android/androidx.annotation__annotation-experimental__1.4.0.pom",
+      "pom_sha256": "41d2b9d879fc9221acda8e873ec7d26b153b9b8e04770ac79491e0576baef038",
+      "parent_poms": []
+    },
+    {
+      "coordinate": "androidx.annotation:annotation-jvm:1.8.1",
+      "licenses": [
+        {
+          "name": "The Apache Software License, Version 2.0",
+          "url": "http://www.apache.org/licenses/LICENSE-2.0.txt"
+        }
+      ],
+      "pom_file": "android/androidx.annotation__annotation-jvm__1.8.1.pom",
+      "pom_sha256": "d49203733aa6fae046c3a3de4e796eed347595755486a64273989844759750b4",
+      "parent_poms": []
+    },
+    {
+      "coordinate": "androidx.arch.core:core-common:2.2.0",
+      "licenses": [
+        {
+          "name": "The Apache Software License, Version 2.0",
+          "url": "http://www.apache.org/licenses/LICENSE-2.0.txt"
+        }
+      ],
+      "pom_file": "android/androidx.arch.core__core-common__2.2.0.pom",
+      "pom_sha256": "1e17d4af8d6425be2a69f8af4d654a87e0456259a9eef1542869bcb023547e28",
+      "parent_poms": []
+    },
+    {
+      "coordinate": "androidx.arch.core:core-runtime:2.2.0",
+      "licenses": [
+        {
+          "name": "The Apache Software License, Version 2.0",
+          "url": "http://www.apache.org/licenses/LICENSE-2.0.txt"
+        }
+      ],
+      "pom_file": "android/androidx.arch.core__core-runtime__2.2.0.pom",
+      "pom_sha256": "0f953706598140d9d8735cdd5aeb1fa35933f4e2f31c0bf3eb81a053a4c8c1a5",
+      "parent_poms": []
+    },
+    {
+      "coordinate": "androidx.collection:collection:1.1.0",
+      "licenses": [
+        {
+          "name": "The Apache Software License, Version 2.0",
+          "url": "http://www.apache.org/licenses/LICENSE-2.0.txt"
+        }
+      ],
+      "pom_file": "android/androidx.collection__collection__1.1.0.pom",
+      "pom_sha256": "67e9066ca4acfdc6e3cc508293c31ba0398057ff118e4f70b1e1813c9a3456d1",
+      "parent_poms": []
+    },
+    {
+      "coordinate": "androidx.concurrent:concurrent-futures:1.1.0",
+      "licenses": [
+        {
+          "name": "The Apache Software License, Version 2.0",
+          "url": "http://www.apache.org/licenses/LICENSE-2.0.txt"
+        }
+      ],
+      "pom_file": "android/androidx.concurrent__concurrent-futures__1.1.0.pom",
+      "pom_sha256": "748a34eb5d13d19d187adecaea82667fded5f1b0b98a655e13ed2e4a8b3d8ae6",
+      "parent_poms": []
+    },
+    {
+      "coordinate": "androidx.core:core:1.13.1",
+      "licenses": [
+        {
+          "name": "The Apache Software License, Version 2.0",
+          "url": "http://www.apache.org/licenses/LICENSE-2.0.txt"
+        }
+      ],
+      "pom_file": "android/androidx.core__core__1.13.1.pom",
+      "pom_sha256": "527abfa5a8d6af748b37e1c0162d1633a2d5ea4387b0205a8b436b6214ba1cf6",
+      "parent_poms": []
+    },
+    {
+      "coordinate": "androidx.core:core-ktx:1.13.1",
+      "licenses": [
+        {
+          "name": "The Apache Software License, Version 2.0",
+          "url": "http://www.apache.org/licenses/LICENSE-2.0.txt"
+        }
+      ],
+      "pom_file": "android/androidx.core__core-ktx__1.13.1.pom",
+      "pom_sha256": "31cc345b8c6cdd2046dcf67872df8a8cb4f44ea0cade4df80002caa7e3b71809",
+      "parent_poms": []
+    },
+    {
+      "coordinate": "androidx.customview:customview:1.0.0",
+      "licenses": [
+        {
+          "name": "The Apache Software License, Version 2.0",
+          "url": "http://www.apache.org/licenses/LICENSE-2.0.txt"
+        }
+      ],
+      "pom_file": "android/androidx.customview__customview__1.0.0.pom",
+      "pom_sha256": "ce9e47b87184f5bd5e139e9becd5b26476d42d78c31bf2fdedc37acb41b9ad49",
+      "parent_poms": []
+    },
+    {
+      "coordinate": "androidx.exifinterface:exifinterface:1.4.1",
+      "licenses": [
+        {
+          "name": "The Apache Software License, Version 2.0",
+          "url": "http://www.apache.org/licenses/LICENSE-2.0.txt"
+        }
+      ],
+      "pom_file": "android/androidx.exifinterface__exifinterface__1.4.1.pom",
+      "pom_sha256": "944e867584e20748613cc7610bd5fa10a968cc98cb59fdfdb863e9f0201df289",
+      "parent_poms": []
+    },
+    {
+      "coordinate": "androidx.fragment:fragment:1.7.1",
+      "licenses": [
+        {
+          "name": "The Apache Software License, Version 2.0",
+          "url": "http://www.apache.org/licenses/LICENSE-2.0.txt"
+        }
+      ],
+      "pom_file": "android/androidx.fragment__fragment__1.7.1.pom",
+      "pom_sha256": "18bbbd3a53f8c1f026be496a847d9607ae06da9cb0f85f47f702fd27e2bd3906",
+      "parent_poms": []
+    },
+    {
+      "coordinate": "androidx.interpolator:interpolator:1.0.0",
+      "licenses": [
+        {
+          "name": "The Apache Software License, Version 2.0",
+          "url": "http://www.apache.org/licenses/LICENSE-2.0.txt"
+        }
+      ],
+      "pom_file": "android/androidx.interpolator__interpolator__1.0.0.pom",
+      "pom_sha256": "0ddc07cc39699f48ecd9ec894b5830c0f09e22e82959294edf37217224c88b7b",
+      "parent_poms": []
+    },
+    {
+      "coordinate": "androidx.lifecycle:lifecycle-common:2.7.0",
+      "licenses": [
+        {
+          "name": "The Apache Software License, Version 2.0",
+          "url": "http://www.apache.org/licenses/LICENSE-2.0.txt"
+        }
+      ],
+      "pom_file": "android/androidx.lifecycle__lifecycle-common__2.7.0.pom",
+      "pom_sha256": "8a7c2448917f84fa6793dfe8563b49c96562d6e86eed19c642ef300d5cd16bc0",
+      "parent_poms": []
+    },
+    {
+      "coordinate": "androidx.lifecycle:lifecycle-common-java8:2.7.0",
+      "licenses": [
+        {
+          "name": "The Apache Software License, Version 2.0",
+          "url": "http://www.apache.org/licenses/LICENSE-2.0.txt"
+        }
+      ],
+      "pom_file": "android/androidx.lifecycle__lifecycle-common-java8__2.7.0.pom",
+      "pom_sha256": "c29de269fca03230d0fb5ebf9c9560950b9f9bcd540ed7fcf85c08beca1afddb",
+      "parent_poms": []
+    },
+    {
+      "coordinate": "androidx.lifecycle:lifecycle-livedata:2.7.0",
+      "licenses": [
+        {
+          "name": "The Apache Software License, Version 2.0",
+          "url": "http://www.apache.org/licenses/LICENSE-2.0.txt"
+        }
+      ],
+      "pom_file": "android/androidx.lifecycle__lifecycle-livedata__2.7.0.pom",
+      "pom_sha256": "69885fd126b6866da760421636cb31cbf0fc5195f9962f45b9775c2d18496fc8",
+      "parent_poms": []
+    },
+    {
+      "coordinate": "androidx.lifecycle:lifecycle-livedata-core:2.7.0",
+      "licenses": [
+        {
+          "name": "The Apache Software License, Version 2.0",
+          "url": "http://www.apache.org/licenses/LICENSE-2.0.txt"
+        }
+      ],
+      "pom_file": "android/androidx.lifecycle__lifecycle-livedata-core__2.7.0.pom",
+      "pom_sha256": "d8e8a0ccedc798db560c637df432159cb05ec3ad18f9b8f6648f59bd4580acd6",
+      "parent_poms": []
+    },
+    {
+      "coordinate": "androidx.lifecycle:lifecycle-livedata-core-ktx:2.7.0",
+      "licenses": [
+        {
+          "name": "The Apache Software License, Version 2.0",
+          "url": "http://www.apache.org/licenses/LICENSE-2.0.txt"
+        }
+      ],
+      "pom_file": "android/androidx.lifecycle__lifecycle-livedata-core-ktx__2.7.0.pom",
+      "pom_sha256": "67502b56b0695b2c2a1c8ff2b93ebd23b6c3d0c214f1ea3b96211eca98960fc4",
+      "parent_poms": []
+    },
+    {
+      "coordinate": "androidx.lifecycle:lifecycle-process:2.7.0",
+      "licenses": [
+        {
+          "name": "The Apache Software License, Version 2.0",
+          "url": "http://www.apache.org/licenses/LICENSE-2.0.txt"
+        }
+      ],
+      "pom_file": "android/androidx.lifecycle__lifecycle-process__2.7.0.pom",
+      "pom_sha256": "7b07a80cb709396b69b071ea1a9177846ed699b4b44bebb1f9bad8bbbf21a23d",
+      "parent_poms": []
+    },
+    {
+      "coordinate": "androidx.lifecycle:lifecycle-runtime:2.7.0",
+      "licenses": [
+        {
+          "name": "The Apache Software License, Version 2.0",
+          "url": "http://www.apache.org/licenses/LICENSE-2.0.txt"
+        }
+      ],
+      "pom_file": "android/androidx.lifecycle__lifecycle-runtime__2.7.0.pom",
+      "pom_sha256": "fec5849eef5069ae19f0c6270d76421485f461f1025c90277b05ddd713c7e365",
+      "parent_poms": []
+    },
+    {
+      "coordinate": "androidx.lifecycle:lifecycle-viewmodel:2.7.0",
+      "licenses": [
+        {
+          "name": "The Apache Software License, Version 2.0",
+          "url": "http://www.apache.org/licenses/LICENSE-2.0.txt"
+        }
+      ],
+      "pom_file": "android/androidx.lifecycle__lifecycle-viewmodel__2.7.0.pom",
+      "pom_sha256": "700f289173adcd0c6144da0c692c4e40b0a83af5a1392c544da982f4aabbd48e",
+      "parent_poms": []
+    },
+    {
+      "coordinate": "androidx.lifecycle:lifecycle-viewmodel-savedstate:2.7.0",
+      "licenses": [
+        {
+          "name": "The Apache Software License, Version 2.0",
+          "url": "http://www.apache.org/licenses/LICENSE-2.0.txt"
+        }
+      ],
+      "pom_file": "android/androidx.lifecycle__lifecycle-viewmodel-savedstate__2.7.0.pom",
+      "pom_sha256": "df0107a734b53080a2847bfabbf8e127958b765f6d5a0d5e028281af3964623f",
+      "parent_poms": []
+    },
+    {
+      "coordinate": "androidx.loader:loader:1.0.0",
+      "licenses": [
+        {
+          "name": "The Apache Software License, Version 2.0",
+          "url": "http://www.apache.org/licenses/LICENSE-2.0.txt"
+        }
+      ],
+      "pom_file": "android/androidx.loader__loader__1.0.0.pom",
+      "pom_sha256": "c978d550808b47434aa49a63164110a50b55b0bcc6160a93a2e37d5110df8c5e",
+      "parent_poms": []
+    },
+    {
+      "coordinate": "androidx.profileinstaller:profileinstaller:1.3.1",
+      "licenses": [
+        {
+          "name": "The Apache Software License, Version 2.0",
+          "url": "http://www.apache.org/licenses/LICENSE-2.0.txt"
+        }
+      ],
+      "pom_file": "android/androidx.profileinstaller__profileinstaller__1.3.1.pom",
+      "pom_sha256": "08263eb70a814a7cb26d11d3a83825f84c29f3e4b59f9134724e0e02e2bbd768",
+      "parent_poms": []
+    },
+    {
+      "coordinate": "androidx.savedstate:savedstate:1.2.1",
+      "licenses": [
+        {
+          "name": "The Apache Software License, Version 2.0",
+          "url": "http://www.apache.org/licenses/LICENSE-2.0.txt"
+        }
+      ],
+      "pom_file": "android/androidx.savedstate__savedstate__1.2.1.pom",
+      "pom_sha256": "0d33bc285df1e12f22780f1624a6f0b38ea2a6181b0955ec6641caf620c50cbf",
+      "parent_poms": []
+    },
+    {
+      "coordinate": "androidx.startup:startup-runtime:1.1.1",
+      "licenses": [
+        {
+          "name": "The Apache Software License, Version 2.0",
+          "url": "http://www.apache.org/licenses/LICENSE-2.0.txt"
+        }
+      ],
+      "pom_file": "android/androidx.startup__startup-runtime__1.1.1.pom",
+      "pom_sha256": "f4114b5c6859bb1bc3caf281cb6d6f25998fa7f7292c64ceaea74a93210e746b",
+      "parent_poms": []
+    },
+    {
+      "coordinate": "androidx.tracing:tracing:1.2.0",
+      "licenses": [
+        {
+          "name": "The Apache Software License, Version 2.0",
+          "url": "http://www.apache.org/licenses/LICENSE-2.0.txt"
+        }
+      ],
+      "pom_file": "android/androidx.tracing__tracing__1.2.0.pom",
+      "pom_sha256": "f34bec4eb58871d31002901377108aaa1ebfe77fa6d882b8b86200b158e26ea1",
+      "parent_poms": []
+    },
+    {
+      "coordinate": "androidx.versionedparcelable:versionedparcelable:1.1.1",
+      "licenses": [
+        {
+          "name": "The Apache Software License, Version 2.0",
+          "url": "http://www.apache.org/licenses/LICENSE-2.0.txt"
+        }
+      ],
+      "pom_file": "android/androidx.versionedparcelable__versionedparcelable__1.1.1.pom",
+      "pom_sha256": "5f51e65873ca612de3838fa90d2ee95b8d040efd31b9c390a19bf94d615cdb2f",
+      "parent_poms": []
+    },
+    {
+      "coordinate": "androidx.viewpager:viewpager:1.0.0",
+      "licenses": [
+        {
+          "name": "The Apache Software License, Version 2.0",
+          "url": "http://www.apache.org/licenses/LICENSE-2.0.txt"
+        }
+      ],
+      "pom_file": "android/androidx.viewpager__viewpager__1.0.0.pom",
+      "pom_sha256": "1f72f836339d03c6eb013f65075e76ca87075a577578eb4f95f74a3a5d253128",
+      "parent_poms": []
+    },
+    {
+      "coordinate": "androidx.window:window:1.2.0",
+      "licenses": [
+        {
+          "name": "The Apache Software License, Version 2.0",
+          "url": "http://www.apache.org/licenses/LICENSE-2.0.txt"
+        }
+      ],
+      "pom_file": "android/androidx.window__window__1.2.0.pom",
+      "pom_sha256": "280c00e2495e1d5749b1c0ab59fc728a2964ccb33f5e11880857ee2efe4ec15b",
+      "parent_poms": []
+    },
+    {
+      "coordinate": "androidx.window:window-java:1.2.0",
+      "licenses": [
+        {
+          "name": "The Apache Software License, Version 2.0",
+          "url": "http://www.apache.org/licenses/LICENSE-2.0.txt"
+        }
+      ],
+      "pom_file": "android/androidx.window__window-java__1.2.0.pom",
+      "pom_sha256": "73570afdc9db596396a92beefe4de5d22afac7eab112c4ab30737bb7f884a1fd",
+      "parent_poms": []
+    },
+    {
+      "coordinate": "androidx.window.extensions.core:core:1.0.0",
+      "licenses": [
+        {
+          "name": "The Apache Software License, Version 2.0",
+          "url": "http://www.apache.org/licenses/LICENSE-2.0.txt"
+        }
+      ],
+      "pom_file": "android/androidx.window.extensions.core__core__1.0.0.pom",
+      "pom_sha256": "ec7573c61c1f9f510f6e5bcad2683b4dcb401fee75426c0f57b41490836791c8",
+      "parent_poms": []
+    },
+    {
+      "coordinate": "com.getkeepsafe.relinker:relinker:1.4.5",
+      "licenses": [
+        {
+          "name": "The Apache Software License, Version 2.0",
+          "url": "http://www.apache.org/licenses/LICENSE-2.0.txt"
+        }
+      ],
+      "pom_file": "android/com.getkeepsafe.relinker__relinker__1.4.5.pom",
+      "pom_sha256": "099e4e007b80700c25190b81ac7b256f42b04f1e829dbd0673f0c415e9613426",
+      "parent_poms": []
+    },
+    {
+      "coordinate": "com.google.guava:listenablefuture:1.0",
+      "licenses": [
+        {
+          "name": "The Apache Software License, Version 2.0",
+          "url": "http://www.apache.org/licenses/LICENSE-2.0.txt"
+        }
+      ],
+      "pom_file": "android/com.google.guava__listenablefuture__1.0.pom",
+      "pom_sha256": "53873caf26bc1ed8a567ea6c939ab2aaa3f47a5e32d5cade95ddf5080d23238a",
+      "parent_poms": [
+        {
+          "file": "android/com.google.guava__guava-parent__26.0-android.pom",
+          "sha256": "f8698ab46ca996ce889c1afc8ca4f25eb8ac6b034dc898d4583742360016cc04"
+        }
+      ]
+    },
+    {
+      "coordinate": "io.flutter:arm64_v8a_debug:1.0.0-a804b261645ef8c13eb3d5c44a5c2fb0340c5539",
+      "licenses": [],
+      "pom_file": "android/io.flutter__arm64_v8a_debug__1.0.0-a804b261645ef8c13eb3d5c44a5c2fb0340c5539.pom",
+      "pom_sha256": "510ea1bf19203f0be6be66df82015152db958553e72b67e7581c355024a6d750",
+      "parent_poms": []
+    },
+    {
+      "coordinate": "io.flutter:armeabi_v7a_debug:1.0.0-a804b261645ef8c13eb3d5c44a5c2fb0340c5539",
+      "licenses": [],
+      "pom_file": "android/io.flutter__armeabi_v7a_debug__1.0.0-a804b261645ef8c13eb3d5c44a5c2fb0340c5539.pom",
+      "pom_sha256": "3df84cf396203c1209a0164dd64ee2b7403a73d78c4dcaa3d4cf5e407bf3ce33",
+      "parent_poms": []
+    },
+    {
+      "coordinate": "io.flutter:flutter_embedding_debug:1.0.0-a804b261645ef8c13eb3d5c44a5c2fb0340c5539",
+      "licenses": [],
+      "pom_file": "android/io.flutter__flutter_embedding_debug__1.0.0-a804b261645ef8c13eb3d5c44a5c2fb0340c5539.pom",
+      "pom_sha256": "31dfa7ca67cdbc8a222362be776cb2330b3c911f6987b87533daf9dbd40247c3",
+      "parent_poms": []
+    },
+    {
+      "coordinate": "io.flutter:x86_64_debug:1.0.0-a804b261645ef8c13eb3d5c44a5c2fb0340c5539",
+      "licenses": [],
+      "pom_file": "android/io.flutter__x86_64_debug__1.0.0-a804b261645ef8c13eb3d5c44a5c2fb0340c5539.pom",
+      "pom_sha256": "20e69c6a97a535670d9b90576c2218a7bc137073ba8a1d7e3da0d3b36f0ea716",
+      "parent_poms": []
+    },
+    {
+      "coordinate": "org.jetbrains:annotations:23.0.0",
+      "licenses": [
+        {
+          "name": "The Apache Software License, Version 2.0",
+          "url": "https://www.apache.org/licenses/LICENSE-2.0.txt"
+        }
+      ],
+      "pom_file": "android/org.jetbrains__annotations__23.0.0.pom",
+      "pom_sha256": "c9490f655132328df2cfbcfdf743f53fc3916d6c1d10437175a6ca6e3a67771c",
+      "parent_poms": []
+    },
+    {
+      "coordinate": "org.jetbrains.kotlin:kotlin-stdlib:2.4.0",
+      "licenses": [
+        {
+          "name": "Apache-2.0",
+          "url": "http://www.apache.org/licenses/LICENSE-2.0.txt"
+        }
+      ],
+      "pom_file": "android/org.jetbrains.kotlin__kotlin-stdlib__2.4.0.pom",
+      "pom_sha256": "8194ff79a9ee24a7fa3f74a6b179c04a1859de8b987a4f0983056e59451721de",
+      "parent_poms": []
+    },
+    {
+      "coordinate": "org.jetbrains.kotlin:kotlin-stdlib-common:2.4.0",
+      "licenses": [
+        {
+          "name": "Apache-2.0",
+          "url": "http://www.apache.org/licenses/LICENSE-2.0.txt"
+        }
+      ],
+      "pom_file": "android/org.jetbrains.kotlin__kotlin-stdlib-common__2.4.0.pom",
+      "pom_sha256": "fd1a658edbed7880ac3e0a0dbd20ae1a46c987e40af544e3a6b110825bbefcf5",
+      "parent_poms": []
+    },
+    {
+      "coordinate": "org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.8.20",
+      "licenses": [
+        {
+          "name": "The Apache License, Version 2.0",
+          "url": "http://www.apache.org/licenses/LICENSE-2.0.txt"
+        }
+      ],
+      "pom_file": "android/org.jetbrains.kotlin__kotlin-stdlib-jdk7__1.8.20.pom",
+      "pom_sha256": "3622d106578cddcc0a9ec20f8ce815f7f49ff542f640228d2141fcaf80616b06",
+      "parent_poms": []
+    },
+    {
+      "coordinate": "org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.8.20",
+      "licenses": [
+        {
+          "name": "The Apache License, Version 2.0",
+          "url": "http://www.apache.org/licenses/LICENSE-2.0.txt"
+        }
+      ],
+      "pom_file": "android/org.jetbrains.kotlin__kotlin-stdlib-jdk8__1.8.20.pom",
+      "pom_sha256": "3a462214a336e995687769531b1e37b0c81d8e10c9949cd5ea7ae1d7803a0232",
+      "parent_poms": []
+    },
+    {
+      "coordinate": "org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.1",
+      "licenses": [
+        {
+          "name": "The Apache Software License, Version 2.0",
+          "url": "https://www.apache.org/licenses/LICENSE-2.0.txt"
+        }
+      ],
+      "pom_file": "android/org.jetbrains.kotlinx__kotlinx-coroutines-android__1.7.1.pom",
+      "pom_sha256": "80f47d014115258758d4e1c5e4c9238c9eed36d2249d1d25858a934b29aba5df",
+      "parent_poms": []
+    },
+    {
+      "coordinate": "org.jetbrains.kotlinx:kotlinx-coroutines-bom:1.7.1",
+      "licenses": [
+        {
+          "name": "The Apache Software License, Version 2.0",
+          "url": "https://www.apache.org/licenses/LICENSE-2.0.txt"
+        }
+      ],
+      "pom_file": "android/org.jetbrains.kotlinx__kotlinx-coroutines-bom__1.7.1.pom",
+      "pom_sha256": "b925aa988c40a5c7aa0c77b21373feb18c39414926bd51c76ef44434f5bae9c2",
+      "parent_poms": []
+    },
+    {
+      "coordinate": "org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.1",
+      "licenses": [
+        {
+          "name": "The Apache Software License, Version 2.0",
+          "url": "https://www.apache.org/licenses/LICENSE-2.0.txt"
+        }
+      ],
+      "pom_file": "android/org.jetbrains.kotlinx__kotlinx-coroutines-core__1.7.1.pom",
+      "pom_sha256": "046b010fc7a0e43d2bfc73a9de7675de5541006cbce96163121746034d69d723",
+      "parent_poms": []
+    },
+    {
+      "coordinate": "org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm:1.7.1",
+      "licenses": [
+        {
+          "name": "The Apache Software License, Version 2.0",
+          "url": "https://www.apache.org/licenses/LICENSE-2.0.txt"
+        }
+      ],
+      "pom_file": "android/org.jetbrains.kotlinx__kotlinx-coroutines-core-jvm__1.7.1.pom",
+      "pom_sha256": "85c19db10dbc448a04663cdfb478243eda0a8d6b127f108f19955b16d489b35d",
+      "parent_poms": []
+    },
+    {
+      "coordinate": "org.jspecify:jspecify:1.0.0",
+      "licenses": [
+        {
+          "name": "The Apache License, Version 2.0",
+          "url": "http://www.apache.org/licenses/LICENSE-2.0.txt"
+        }
+      ],
+      "pom_file": "android/org.jspecify__jspecify__1.0.0.pom",
+      "pom_sha256": "cdab929a3b95211f43d2090c5e2d0dfe8465960e378bc32b35841dab324433a6",
+      "parent_poms": []
+    }
+  ]
+}
