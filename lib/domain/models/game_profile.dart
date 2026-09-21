@@ -7,6 +7,8 @@ enum PetCoat { ginger, grey, cream }
 
 enum PetAccessory { scarf, bow, cap }
 
+enum PetEmotion { calm, happy, excited, hungry, thoughtful, proud }
+
 /// Подтверждённый план не тратит монеты и не меняется задним числом.
 class BudgetPlan {
   const BudgetPlan({
@@ -14,14 +16,16 @@ class BudgetPlan {
     required this.needs,
     required this.wants,
     required this.savings,
+    this.gifts = 0,
   });
 
   final int availableAtConfirmation;
   final int needs;
   final int wants;
   final int savings;
+  final int gifts;
 
-  int get allocated => needs + wants + savings;
+  int get allocated => needs + wants + gifts + savings;
   int get remaining => availableAtConfirmation - allocated;
 }
 
@@ -42,6 +46,7 @@ class GameProfile {
     this.plan,
     this.selectedGoalId,
     this.goalSavings = const {},
+    this.ownedAccessories = const [],
     this.transactions = const [],
     this.taskProgress = const [],
     this.periodSummaries = const [],
@@ -52,7 +57,7 @@ class GameProfile {
   final String petName;
   final bool isTest;
   final PetCoat coat;
-  final PetAccessory accessory;
+  final PetAccessory? accessory;
   final int balance;
   final int savings;
   final int period;
@@ -63,6 +68,7 @@ class GameProfile {
   final BudgetPlan? plan;
   final String? selectedGoalId;
   final Map<String, int> goalSavings;
+  final List<PetAccessory> ownedAccessories;
   final List<GameTransaction> transactions;
   final String feedback;
   final List<TaskProgress> taskProgress;
@@ -88,8 +94,27 @@ class GameProfile {
 
   int get actualNeeds => totalFor(TransactionKind.needPurchase);
   int get actualWants => totalFor(TransactionKind.wantPurchase);
+  int get actualGifts => totalFor(TransactionKind.giftPurchase);
   int get netSaved =>
       totalFor(TransactionKind.deposit) - totalFor(TransactionKind.withdrawal);
+
+  bool ownsAccessory(PetAccessory value) =>
+      accessory == value || ownedAccessories.contains(value);
+
+  PetEmotion get emotion {
+    if (satiety <= 45) return PetEmotion.hungry;
+    if (mood <= 45) return PetEmotion.thoughtful;
+    if (transactions.isNotEmpty) {
+      return switch (transactions.last.kind) {
+        TransactionKind.deposit => PetEmotion.proud,
+        TransactionKind.needPurchase => PetEmotion.happy,
+        TransactionKind.wantPurchase ||
+        TransactionKind.giftPurchase => PetEmotion.excited,
+        _ => mood >= 85 ? PetEmotion.happy : PetEmotion.calm,
+      };
+    }
+    return growthStage >= 2 ? PetEmotion.proud : PetEmotion.calm;
+  }
 
   GameProfile withPlan(BudgetPlan value) => copyWith(plan: value);
 
@@ -98,9 +123,12 @@ class GameProfile {
     int? savings,
     int? satiety,
     int? mood,
+    PetAccessory? accessory,
+    bool removeAccessory = false,
     BudgetPlan? plan,
     String? selectedGoalId,
     Map<String, int>? goalSavings,
+    List<PetAccessory>? ownedAccessories,
     List<GameTransaction>? transactions,
     String? feedback,
     int? period,
@@ -111,7 +139,7 @@ class GameProfile {
     petName: petName,
     isTest: isTest,
     coat: coat,
-    accessory: accessory,
+    accessory: removeAccessory ? null : (accessory ?? this.accessory),
     balance: balance ?? this.balance,
     savings: savings ?? this.savings,
     period: period ?? this.period,
@@ -122,6 +150,9 @@ class GameProfile {
     plan: clearPlan ? null : (plan ?? this.plan),
     selectedGoalId: selectedGoalId ?? this.selectedGoalId,
     goalSavings: Map.unmodifiable(goalSavings ?? this.goalSavings),
+    ownedAccessories: List.unmodifiable(
+      ownedAccessories ?? this.ownedAccessories,
+    ),
     transactions: List.unmodifiable(transactions ?? this.transactions),
     feedback: feedback ?? this.feedback,
     taskProgress: List.unmodifiable(taskProgress ?? this.taskProgress),

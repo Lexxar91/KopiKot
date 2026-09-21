@@ -12,6 +12,14 @@ const Map<PetAccessory, String> accessoryLabels = {
   PetAccessory.bow: 'Бантик',
   PetAccessory.cap: 'Шапочка',
 };
+const Map<PetEmotion, String> emotionLabels = {
+  PetEmotion.calm: 'спокоен',
+  PetEmotion.happy: 'доволен',
+  PetEmotion.excited: 'в восторге',
+  PetEmotion.hungry: 'ждёт заботы',
+  PetEmotion.thoughtful: 'задумался',
+  PetEmotion.proud: 'гордится планом',
+};
 
 /// Собственная векторная иллюстрация: 3 окраса × 3 аксессуара без сетевых файлов.
 class PetPortrait extends StatelessWidget {
@@ -20,29 +28,33 @@ class PetPortrait extends StatelessWidget {
     required this.accessory,
     this.size = 180,
     this.stage = 1,
+    this.emotion = PetEmotion.calm,
     super.key,
   });
   final PetCoat coat;
-  final PetAccessory accessory;
+  final PetAccessory? accessory;
   final double size;
   final int stage;
+  final PetEmotion emotion;
 
   @override
   Widget build(BuildContext context) => Semantics(
     image: true,
-    label: '${coatLabels[coat]} кот, ${accessoryLabels[accessory]}',
+    label:
+        '${coatLabels[coat]} кот, ${accessory == null ? 'без аксессуара' : accessoryLabels[accessory]}',
     child: SizedBox.square(
       dimension: size,
-      child: CustomPaint(painter: _CatPainter(coat, accessory, stage)),
+      child: CustomPaint(painter: _CatPainter(coat, accessory, stage, emotion)),
     ),
   );
 }
 
 class _CatPainter extends CustomPainter {
-  const _CatPainter(this.coat, this.accessory, this.stage);
+  const _CatPainter(this.coat, this.accessory, this.stage, this.emotion);
   final PetCoat coat;
-  final PetAccessory accessory;
+  final PetAccessory? accessory;
   final int stage;
+  final PetEmotion emotion;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -111,24 +123,7 @@ class _CatPainter extends CustomPainter {
     );
     canvas.drawLine(const Offset(91, 48), const Offset(94, 60), ink);
     canvas.drawLine(const Offset(108, 48), const Offset(106, 60), ink);
-    canvas.drawOval(
-      const Rect.fromLTWH(68, 78, 8, 13),
-      Paint()..color = ink.color,
-    );
-    canvas.drawOval(
-      const Rect.fromLTWH(124, 78, 8, 13),
-      Paint()..color = ink.color,
-    );
-    canvas.drawOval(
-      const Rect.fromLTWH(94, 94, 13, 8),
-      Paint()..color = const Color(0xFFAD6B64),
-    );
-    final Path smile = Path()
-      ..moveTo(100, 103)
-      ..quadraticBezierTo(92, 114, 84, 106)
-      ..moveTo(100, 103)
-      ..quadraticBezierTo(108, 114, 116, 106);
-    canvas.drawPath(smile, ink);
+    _drawFace(canvas, ink);
     for (final double y in [97, 105]) {
       canvas.drawLine(Offset(43, y), Offset(61, y + 2), ink);
       canvas.drawLine(Offset(139, y + 2), Offset(158, y), ink);
@@ -137,6 +132,8 @@ class _CatPainter extends CustomPainter {
     canvas.drawOval(const Rect.fromLTWH(112, 167, 35, 18), fill);
     final Paint accent = Paint()..color = const Color(0xFF356C64);
     switch (accessory) {
+      case null:
+        break;
       case PetAccessory.scarf:
         canvas.drawRRect(
           RRect.fromRectAndRadius(
@@ -208,9 +205,79 @@ class _CatPainter extends CustomPainter {
     canvas.restore();
   }
 
+  void _drawFace(Canvas canvas, Paint ink) {
+    final Paint solidInk = Paint()..color = ink.color;
+    if (emotion == PetEmotion.proud) {
+      canvas.drawArc(
+        const Rect.fromLTWH(65, 76, 14, 12),
+        0.15,
+        2.8,
+        false,
+        ink,
+      );
+      canvas.drawArc(
+        const Rect.fromLTWH(121, 76, 14, 12),
+        0.15,
+        2.8,
+        false,
+        ink,
+      );
+    } else {
+      final double height = emotion == PetEmotion.excited ? 17 : 13;
+      canvas.drawOval(Rect.fromLTWH(68, 78, 8, height), solidInk);
+      canvas.drawOval(Rect.fromLTWH(124, 78, 8, height), solidInk);
+      if (emotion == PetEmotion.happy || emotion == PetEmotion.excited) {
+        canvas.drawCircle(
+          const Offset(71, 81),
+          1.7,
+          Paint()..color = Colors.white,
+        );
+        canvas.drawCircle(
+          const Offset(127, 81),
+          1.7,
+          Paint()..color = Colors.white,
+        );
+      }
+    }
+    if (emotion == PetEmotion.thoughtful) {
+      canvas.drawLine(const Offset(66, 72), const Offset(77, 75), ink);
+      canvas.drawLine(const Offset(123, 75), const Offset(134, 72), ink);
+    }
+    canvas.drawOval(
+      const Rect.fromLTWH(94, 94, 13, 8),
+      Paint()..color = const Color(0xFFAD6B64),
+    );
+    final Path mouth = Path()..moveTo(100, 103);
+    switch (emotion) {
+      case PetEmotion.hungry:
+        canvas.drawOval(const Rect.fromLTWH(92, 104, 16, 13), ink);
+      case PetEmotion.thoughtful:
+        mouth.quadraticBezierTo(100, 102, 88, 111);
+        canvas.drawPath(mouth, ink);
+      case PetEmotion.excited:
+        canvas.drawOval(
+          const Rect.fromLTWH(90, 103, 20, 20),
+          Paint()..color = const Color(0xFFE9858B),
+        );
+        canvas.drawOval(const Rect.fromLTWH(90, 103, 20, 20), ink);
+      case PetEmotion.calm || PetEmotion.happy || PetEmotion.proud:
+        mouth
+          ..quadraticBezierTo(92, 114, 84, 106)
+          ..moveTo(100, 103)
+          ..quadraticBezierTo(108, 114, 116, 106);
+        canvas.drawPath(mouth, ink);
+    }
+    if (emotion == PetEmotion.happy || emotion == PetEmotion.excited) {
+      final blush = Paint()..color = const Color(0x55ED7D8D);
+      canvas.drawOval(const Rect.fromLTWH(55, 94, 15, 8), blush);
+      canvas.drawOval(const Rect.fromLTWH(130, 94, 15, 8), blush);
+    }
+  }
+
   @override
   bool shouldRepaint(covariant _CatPainter oldDelegate) =>
       coat != oldDelegate.coat ||
       accessory != oldDelegate.accessory ||
-      stage != oldDelegate.stage;
+      stage != oldDelegate.stage ||
+      emotion != oldDelegate.emotion;
 }

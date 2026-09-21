@@ -10,26 +10,39 @@ abstract final class EconomyRules {
     ShopProduct product,
     String commandId,
   ) {
-    final kind = product.category == ExpenseCategory.needs
-        ? TransactionKind.needPurchase
-        : TransactionKind.wantPurchase;
+    final kind = switch (product.category) {
+      ExpenseCategory.needs => TransactionKind.needPurchase,
+      ExpenseCategory.wants => TransactionKind.wantPurchase,
+      ExpenseCategory.gifts => TransactionKind.giftPurchase,
+    };
     if (_isReplay(profile, commandId, kind, product.id, product.price)) {
       return profile;
     }
     _requirePlan(profile);
     _requirePositive(product.price);
     _requireBalance(profile, product.price);
+    if (product.accessory case final accessory?) {
+      if (profile.ownsAccessory(accessory)) {
+        throw const GameRuleException(
+          'Этот аксессуар уже есть в гардеробе. Его можно надеть бесплатно.',
+        );
+      }
+    }
     final int satiety = (profile.satiety + product.satiety).clamp(0, 100);
     final int mood = (profile.mood + product.mood).clamp(0, 100);
     final String effect =
         'Сытость: ${profile.satiety} → $satiety. '
         'Настроение: ${profile.mood} → $mood.';
-    final int spent = product.category == ExpenseCategory.needs
-        ? profile.actualNeeds
-        : profile.actualWants;
-    final int planned = product.category == ExpenseCategory.needs
-        ? profile.plan!.needs
-        : profile.plan!.wants;
+    final int spent = switch (product.category) {
+      ExpenseCategory.needs => profile.actualNeeds,
+      ExpenseCategory.wants => profile.actualWants,
+      ExpenseCategory.gifts => profile.actualGifts,
+    };
+    final int planned = switch (product.category) {
+      ExpenseCategory.needs => profile.plan!.needs,
+      ExpenseCategory.wants => profile.plan!.wants,
+      ExpenseCategory.gifts => profile.plan!.gifts,
+    };
     final String next = spent + product.price > planned
         ? 'По этой категории потрачено больше плана. Следующую покупку можно перенести.'
         : 'Сверь оставшиеся монеты с планом.';
@@ -44,10 +57,49 @@ abstract final class EconomyRules {
         balance: profile.balance - product.price,
         satiety: satiety,
         mood: mood,
-        feedback: '${product.title}: −${product.price} монет. $effect $next',
+        ownedAccessories: _inventory(profile, unlocked: product.accessory),
+        feedback:
+            '${product.title}: −${product.price} монет. $effect $next'
+            '${product.accessory == null ? '' : ' Аксессуар появился в гардеробе.'}',
       ),
     );
   }
+
+  static GameProfile equipAccessory(
+    GameProfile profile,
+    PetAccessory? accessory,
+  ) {
+    if (accessory != null && !profile.ownsAccessory(accessory)) {
+      throw const GameRuleException(
+        'Сначала найди этот аксессуар в Котомаркете.',
+      );
+    }
+    if (accessory == profile.accessory) return profile;
+    final String message = accessory == null
+        ? 'Аксессуар снят. Он сохранился в гардеробе.'
+        : '${_accessoryName(accessory)} теперь на питомце. Переодеваться можно бесплатно.';
+    return profile.copyWith(
+      accessory: accessory,
+      removeAccessory: accessory == null,
+      ownedAccessories: _inventory(profile),
+      feedback: message,
+    );
+  }
+
+  static List<PetAccessory> _inventory(
+    GameProfile profile, {
+    PetAccessory? unlocked,
+  }) => <PetAccessory>{
+    ...profile.ownedAccessories,
+    if (profile.accessory != null) profile.accessory!,
+    if (unlocked != null) unlocked,
+  }.toList(growable: false);
+
+  static String _accessoryName(PetAccessory accessory) => switch (accessory) {
+    PetAccessory.scarf => 'Шарф',
+    PetAccessory.bow => 'Бантик',
+    PetAccessory.cap => 'Шапочка',
+  };
 
   static GameProfile selectGoal(
     GameProfile profile,

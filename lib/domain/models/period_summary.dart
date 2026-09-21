@@ -5,8 +5,10 @@ class PeriodSummary {
     required this.plannedNeeds,
     required this.plannedWants,
     required this.plannedSavings,
+    this.plannedGifts = 0,
     required this.actualNeeds,
     required this.actualWants,
+    this.actualGifts = 0,
     required this.netSaved,
     required this.needsMet,
     required this.withinPlan,
@@ -17,8 +19,10 @@ class PeriodSummary {
   final int plannedNeeds;
   final int plannedWants;
   final int plannedSavings;
+  final int plannedGifts;
   final int actualNeeds;
   final int actualWants;
+  final int actualGifts;
   final int netSaved;
   final bool needsMet;
   final bool withinPlan;

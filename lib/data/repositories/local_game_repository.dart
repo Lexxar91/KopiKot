@@ -53,6 +53,7 @@ class LocalGameRepository implements GameRepository {
       ..petName = 'Финни Тест'
       ..coat = PetCoat.ginger.name
       ..accessory = PetAccessory.scarf.name
+      ..ownedAccessories = [PetAccessory.scarf.name]
       ..balance = GameRules.startingBalance
       ..incomeAmount = GameRules.startingBalance
       ..incomeSource = 'Подарок на знакомство'
@@ -62,7 +63,7 @@ class LocalGameRepository implements GameRepository {
   @override
   Future<GameProfile?> loadProfile() async {
     ProfileRecord? record = await _store.readProfile();
-    if (record != null && record.schemaVersion < 3) {
+    if (record != null && record.schemaVersion < 4) {
       record = await _store.updateProfile((current) => _migrate(current!));
     }
     return record == null ? null : _toDomain(record);
@@ -86,6 +87,7 @@ class LocalGameRepository implements GameRepository {
           ..petName = name
           ..coat = coat.name
           ..accessory = accessory.name
+          ..ownedAccessories = [accessory.name]
           ..balance = GameRules.startingBalance
           ..incomeAmount = GameRules.startingBalance
           ..incomeSource = 'Подарок на знакомство',
@@ -99,6 +101,7 @@ class LocalGameRepository implements GameRepository {
     required int needs,
     required int wants,
     required int savings,
+    int gifts = 0,
   }) async {
     final ProfileRecord record = await _store.updateProfile((current) {
       if (current == null) {
@@ -110,19 +113,21 @@ class LocalGameRepository implements GameRepository {
         needs: needs,
         wants: wants,
         savings: savings,
+        gifts: gifts,
       );
       return current
         ..budgetConfirmed = true
         ..plannedBalance = plan.availableAtConfirmation
         ..plannedNeeds = plan.needs
         ..plannedWants = plan.wants
+        ..plannedGifts = plan.gifts
         ..plannedSavings = plan.savings;
     });
     return _toDomain(record);
   }
 
   GameProfile _toDomain(ProfileRecord record) {
-    if (record.schemaVersion != 3) {
+    if (record.schemaVersion != 4) {
       throw StateError('Unsupported profile schema: ${record.schemaVersion}');
     }
     final balances = record.goalBalances ?? <GoalBalanceRecord>[];
@@ -138,7 +143,14 @@ class LocalGameRepository implements GameRepository {
       petName: record.petName,
       isTest: record.id == 2,
       coat: PetCoat.values.byName(record.coat),
-      accessory: PetAccessory.values.byName(record.accessory),
+      accessory: record.accessory.isEmpty
+          ? null
+          : PetAccessory.values.byName(record.accessory),
+      ownedAccessories: List.unmodifiable(
+        (record.ownedAccessories ?? const <String>[])
+            .map(PetAccessory.values.byName)
+            .toSet(),
+      ),
       balance: record.balance,
       savings: record.savings,
       period: record.period,
@@ -163,8 +175,10 @@ class LocalGameRepository implements GameRepository {
             plannedNeeds: entry.plannedNeeds,
             plannedWants: entry.plannedWants,
             plannedSavings: entry.plannedSavings,
+            plannedGifts: entry.plannedGifts,
             actualNeeds: entry.actualNeeds,
             actualWants: entry.actualWants,
+            actualGifts: entry.actualGifts,
             netSaved: entry.netSaved,
             needsMet: entry.needsMet,
             withinPlan: entry.withinPlan,
@@ -202,6 +216,7 @@ class LocalGameRepository implements GameRepository {
               availableAtConfirmation: record.plannedBalance,
               needs: record.plannedNeeds,
               wants: record.plannedWants,
+              gifts: record.plannedGifts,
               savings: record.plannedSavings,
             )
           : null,
@@ -217,6 +232,10 @@ class LocalGameRepository implements GameRepository {
           commandId,
         ),
       );
+
+  @override
+  Future<GameProfile> equipAccessory(PetAccessory? accessory) =>
+      _change((profile) => EconomyRules.equipAccessory(profile, accessory));
 
   @override
   Future<GameProfile> selectGoal(String goalId) => _change(
@@ -252,6 +271,7 @@ class LocalGameRepository implements GameRepository {
         ..plannedBalance = profile.plan?.availableAtConfirmation ?? 0
         ..plannedNeeds = profile.plan?.needs ?? 0
         ..plannedWants = profile.plan?.wants ?? 0
+        ..plannedGifts = profile.plan?.gifts ?? 0
         ..plannedSavings = profile.plan?.savings ?? 0
         ..taskProgress = [
           for (final entry in profile.taskProgress)
@@ -268,8 +288,10 @@ class LocalGameRepository implements GameRepository {
               ..plannedNeeds = entry.plannedNeeds
               ..plannedWants = entry.plannedWants
               ..plannedSavings = entry.plannedSavings
+              ..plannedGifts = entry.plannedGifts
               ..actualNeeds = entry.actualNeeds
               ..actualWants = entry.actualWants
+              ..actualGifts = entry.actualGifts
               ..netSaved = entry.netSaved
               ..needsMet = entry.needsMet
               ..withinPlan = entry.withinPlan
@@ -280,6 +302,10 @@ class LocalGameRepository implements GameRepository {
         ..savings = profile.savings
         ..satiety = profile.satiety
         ..mood = profile.mood
+        ..accessory = profile.accessory?.name ?? ''
+        ..ownedAccessories = [
+          for (final accessory in profile.ownedAccessories) accessory.name,
+        ]
         ..selectedGoalId = profile.selectedGoalId
         ..feedback = profile.feedback
         ..goalBalances = [
@@ -313,7 +339,13 @@ class LocalGameRepository implements GameRepository {
       record.schemaVersion = 2;
     }
     if (record.schemaVersion == 2) record.schemaVersion = 3;
-    if (record.schemaVersion != 3) {
+    if (record.schemaVersion == 3) {
+      record.ownedAccessories = record.accessory.isEmpty
+          ? <String>[]
+          : <String>[record.accessory];
+      record.schemaVersion = 4;
+    }
+    if (record.schemaVersion != 4) {
       throw StateError('Unsupported profile schema: ${record.schemaVersion}');
     }
     return record;

@@ -460,7 +460,7 @@ void main() {
       expect(profile.balance, 100);
       expect(profile.transactions.single.amount, 100);
       await repository.loadProfile();
-      expect((await store.readProfile())!.schemaVersion, 3);
+      expect((await store.readProfile())!.schemaVersion, 4);
       expect((await repository.loadProfile())!.transactions.length, 1);
     },
   );
@@ -483,6 +483,21 @@ void main() {
     expect(profile.plan!.needs, 50);
     expect(profile.plan!.wants, 20);
     expect(profile.plan!.savings, 30);
+  });
+
+  test('Купленные аксессуары и снятый вид переживают перезапуск', () async {
+    await create();
+    await repository.confirmBudget(needs: 20, wants: 50, savings: 30);
+    await repository.purchase('explorer_cap', commandId: 'buy-cap');
+    await repository.equipAccessory(PetAccessory.cap);
+    await repository.equipAccessory(null);
+    await store.close();
+    store = await LocalGameStore.open(directory: directory.path, name: 'test');
+    repository = LocalGameRepository(store, catalog);
+    final profile = (await repository.loadProfile())!;
+    expect(profile.accessory, isNull);
+    expect(profile.ownsAccessory(PetAccessory.bow), isTrue);
+    expect(profile.ownsAccessory(PetAccessory.cap), isTrue);
   });
 
   test(

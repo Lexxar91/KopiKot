@@ -24,9 +24,11 @@ abstract interface class GameRepository {
     required int needs,
     required int wants,
     required int savings,
+    int gifts = 0,
   });
 
   Future<GameProfile> purchase(String productId, {required String commandId});
+  Future<GameProfile> equipAccessory(PetAccessory? accessory);
   Future<GameProfile> selectGoal(String goalId);
   Future<GameProfile> transfer(
     String goalId,

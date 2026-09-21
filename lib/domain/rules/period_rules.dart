@@ -16,7 +16,9 @@ abstract final class PeriodRules {
     }
     final needsMet = profile.actualNeeds > 0 && profile.satiety >= 60;
     final withinPlan =
-        profile.actualNeeds <= plan.needs && profile.actualWants <= plan.wants;
+        profile.actualNeeds <= plan.needs &&
+        profile.actualWants <= plan.wants &&
+        profile.actualGifts <= plan.gifts;
     final savedRegularly =
         profile.netSaved > 0 && profile.netSaved >= plan.savings;
     final messages = [
@@ -35,8 +37,10 @@ abstract final class PeriodRules {
       plannedNeeds: plan.needs,
       plannedWants: plan.wants,
       plannedSavings: plan.savings,
+      plannedGifts: plan.gifts,
       actualNeeds: profile.actualNeeds,
       actualWants: profile.actualWants,
+      actualGifts: profile.actualGifts,
       netSaved: profile.netSaved,
       needsMet: needsMet,
       withinPlan: withinPlan,

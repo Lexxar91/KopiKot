@@ -29,8 +29,14 @@ class KopiKotApp extends ConsumerWidget {
         child: child!,
       ),
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF356C64)),
-        scaffoldBackgroundColor: const Color(0xFFFAF8F1),
+        useMaterial3: true,
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: const Color(0xFF6C5CE7),
+          primary: const Color(0xFF6252D8),
+          secondary: const Color(0xFFE76F8A),
+          surface: const Color(0xFFFFFBF7),
+        ),
+        scaffoldBackgroundColor: const Color(0xFFFFFBF7),
         pageTransitionsTheme: PageTransitionsTheme(
           builders: {
             for (final platform in TargetPlatform.values)
@@ -38,23 +44,63 @@ class KopiKotApp extends ConsumerWidget {
           },
         ),
         textTheme: const TextTheme(
-          bodyMedium: TextStyle(fontSize: 16),
-          bodyLarge: TextStyle(fontSize: 16),
-          labelLarge: TextStyle(fontSize: 16),
+          headlineSmall: TextStyle(fontSize: 23, fontWeight: FontWeight.w800),
+          titleLarge: TextStyle(fontSize: 21, fontWeight: FontWeight.w800),
+          titleMedium: TextStyle(fontSize: 17, fontWeight: FontWeight.w700),
+          bodyMedium: TextStyle(fontSize: 15.5, height: 1.35),
+          bodyLarge: TextStyle(fontSize: 16, height: 1.4),
+          labelLarge: TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
         ),
-        inputDecorationTheme: const InputDecorationTheme(
-          border: OutlineInputBorder(),
+        appBarTheme: const AppBarTheme(
+          centerTitle: false,
+          backgroundColor: Color(0xFFFFFBF7),
+          surfaceTintColor: Colors.transparent,
+          titleTextStyle: TextStyle(
+            color: Color(0xFF272236),
+            fontSize: 22,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+        cardTheme: CardThemeData(
+          elevation: 0,
+          margin: EdgeInsets.zero,
+          color: Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(22),
+          ),
+        ),
+        inputDecorationTheme: InputDecorationTheme(
+          filled: true,
+          fillColor: Colors.white,
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(18),
+            borderSide: BorderSide.none,
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(18),
+            borderSide: const BorderSide(color: Color(0xFFE5DFEC)),
+          ),
           helperMaxLines: 3,
           errorMaxLines: 3,
         ),
         filledButtonTheme: FilledButtonThemeData(
-          style: FilledButton.styleFrom(minimumSize: const Size(48, 52)),
+          style: FilledButton.styleFrom(
+            minimumSize: const Size(48, 54),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+          ),
         ),
         textButtonTheme: TextButtonThemeData(
           style: TextButton.styleFrom(minimumSize: const Size(48, 48)),
         ),
         outlinedButtonTheme: OutlinedButtonThemeData(
-          style: OutlinedButton.styleFrom(minimumSize: const Size(48, 48)),
+          style: OutlinedButton.styleFrom(
+            minimumSize: const Size(48, 50),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+          ),
         ),
       ),
       home: const _ProfileGate(),

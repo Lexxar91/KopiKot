@@ -111,14 +111,26 @@ class GameController extends AsyncNotifier<GameProfile?> {
         ),
       );
 
-  Future<void> confirmBudget(int needs, int wants, int savings) => _perform(
-    (repository) =>
-        repository.confirmBudget(needs: needs, wants: wants, savings: savings),
+  Future<void> confirmBudget(
+    int needs,
+    int wants,
+    int savings, {
+    int gifts = 0,
+  }) => _perform(
+    (repository) => repository.confirmBudget(
+      needs: needs,
+      wants: wants,
+      gifts: gifts,
+      savings: savings,
+    ),
   );
 
   Future<void> purchase(String productId, String commandId) => _perform(
     (repository) => repository.purchase(productId, commandId: commandId),
   );
+
+  Future<void> equipAccessory(PetAccessory? accessory) =>
+      _perform((repository) => repository.equipAccessory(accessory));
 
   Future<void> selectGoal(String goalId) =>
       _perform((repository) => repository.selectGoal(goalId));

@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/services.dart';
 
 import '../../domain/models/game_catalog.dart';
+import '../../domain/models/game_profile.dart';
 import '../../domain/models/learning_task.dart';
 
 Future<GameCatalog> loadGameCatalog() async => parseGameCatalog(
@@ -51,6 +52,11 @@ GameCatalog parseGameCatalog(String source, {String taskSource = '[]'}) {
       satiety: number(item, 'satiety', 0, 100),
       mood: number(item, 'mood', 0, 100),
       description: text(item, 'description'),
+      accessory: switch (item['accessory']) {
+        final String value => PetAccessory.values.byName(value),
+        null => null,
+        _ => throw const FormatException('Invalid accessory'),
+      },
     );
   }).toList();
   final goals = (data['goals'] as List<dynamic>).map((dynamic raw) {

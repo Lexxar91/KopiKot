@@ -23,6 +23,7 @@ import 'package:kopikot/presentation/screens/savings_screen.dart';
 import 'package:kopikot/presentation/screens/history_screen.dart';
 import 'package:kopikot/presentation/screens/progress_screen.dart';
 import 'package:kopikot/presentation/screens/adult_screen.dart';
+import 'package:kopikot/presentation/screens/wardrobe_screen.dart';
 import 'package:kopikot/presentation/widgets/accessible_motion.dart';
 
 import 'game_rules_test.dart' show initialProfile;
@@ -113,6 +114,9 @@ class _MemoryRepository implements GameRepository {
     commandId,
   );
   @override
+  Future<GameProfile> equipAccessory(PetAccessory? accessory) async =>
+      profile = EconomyRules.equipAccessory(profile!, accessory);
+  @override
   Future<GameProfile> selectGoal(String goalId) async =>
       profile = EconomyRules.selectGoal(profile!, catalog.goal(goalId));
   @override
@@ -158,11 +162,13 @@ class _MemoryRepository implements GameRepository {
     required int needs,
     required int wants,
     required int savings,
+    int gifts = 0,
   }) async => profile = profile!.withPlan(
     GameRules.confirmBudget(
       profile!,
       needs: needs,
       wants: wants,
+      gifts: gifts,
       savings: savings,
     ),
   );
@@ -376,6 +382,7 @@ void main() {
             const ShopScreen(),
             const SavingsScreen(),
             const HistoryScreen(),
+            const WardrobeScreen(),
             const ProgressScreen(),
             const AdultScreen(),
             const TasksScreen(),
@@ -541,7 +548,11 @@ void main() {
     expect(find.text('Не хватает: 10 монет'), findsOneWidget);
     await tester.enterText(find.byType(TextField).at(2), '20');
     await tester.pump();
-    await tester.ensureVisible(find.text('Подтвердить план'));
+    await tester.scrollUntilVisible(
+      find.text('Подтвердить план'),
+      -150,
+      scrollable: find.byType(Scrollable).first,
+    );
     await tester.tap(find.text('Подтвердить план'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Изменить'));
@@ -698,14 +709,14 @@ void main() {
       await launch(tester, repository);
       await tester.scrollUntilVisible(
         find.text('Покупки'),
-        200,
+        -200,
         scrollable: find.byType(Scrollable).first,
       );
       await tester.tap(find.text('Покупки'));
       await tester.pumpAndSettle();
       await tester.scrollUntilVisible(
         find.text('Выбрать за 25'),
-        200,
+        -200,
         scrollable: find.byType(Scrollable).first,
       );
       await tester.tap(find.text('Выбрать за 25'));
@@ -723,7 +734,7 @@ void main() {
       await tester.pumpAndSettle();
       await tester.scrollUntilVisible(
         find.text('На мечту'),
-        200,
+        -200,
         scrollable: find.byType(Scrollable).first,
       );
       await tester.tap(find.text('На мечту'));
@@ -806,14 +817,14 @@ void main() {
       await launch(tester, repository);
       await tester.scrollUntilVisible(
         find.text('Покупки'),
-        200,
+        -200,
         scrollable: find.byType(Scrollable).first,
       );
       await tester.tap(find.text('Покупки'));
       await tester.pumpAndSettle();
       await tester.scrollUntilVisible(
         find.text('Выбрать за 25'),
-        200,
+        -200,
         scrollable: find.byType(Scrollable).first,
       );
       await tester.tap(find.text('Выбрать за 25'));
@@ -916,5 +927,38 @@ void main() {
       }
     }
     expect(fingerprints.length, 27);
+  });
+
+  testWidgets('Шесть эмоций питомца визуально различимы', (tester) async {
+    final key = GlobalKey();
+    final Set<int> fingerprints = {};
+    for (final emotion in PetEmotion.values) {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: Center(
+              child: RepaintBoundary(
+                key: key,
+                child: PetPortrait(
+                  coat: PetCoat.grey,
+                  accessory: PetAccessory.scarf,
+                  emotion: emotion,
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      final boundary =
+          key.currentContext!.findRenderObject()! as RenderRepaintBoundary;
+      await tester.runAsync(() async {
+        final ui.Image image = await boundary.toImage();
+        final bytes = (await image.toByteData(format: ui.ImageByteFormat.png))!;
+        fingerprints.add(Object.hashAll(bytes.buffer.asUint8List()));
+        image.dispose();
+      });
+    }
+    expect(fingerprints.length, PetEmotion.values.length);
   });
 }

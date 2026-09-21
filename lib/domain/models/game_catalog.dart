@@ -1,7 +1,8 @@
 import 'learning_task.dart';
+import 'game_profile.dart';
 
-/// Категории соответствуют двум направлениям расходов в плане бюджета.
-enum ExpenseCategory { needs, wants }
+/// Категории расходов совпадают с направлениями подтверждённого плана.
+enum ExpenseCategory { needs, wants, gifts }
 
 class ShopProduct {
   const ShopProduct({
@@ -12,6 +13,7 @@ class ShopProduct {
     required this.satiety,
     required this.mood,
     required this.description,
+    this.accessory,
   });
   final String id;
   final String title;
@@ -20,6 +22,7 @@ class ShopProduct {
   final int satiety;
   final int mood;
   final String description;
+  final PetAccessory? accessory;
 }
 
 class GoalDefinition {

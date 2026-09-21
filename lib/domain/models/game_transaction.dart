@@ -1,4 +1,11 @@
-enum TransactionKind { income, needPurchase, wantPurchase, deposit, withdrawal }
+enum TransactionKind {
+  income,
+  needPurchase,
+  wantPurchase,
+  giftPurchase,
+  deposit,
+  withdrawal,
+}
 
 /// Неизменяемое событие: источник, суммы и результат сохраняются вместе с балансом.
 class GameTransaction {

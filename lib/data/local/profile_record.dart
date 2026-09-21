@@ -6,10 +6,11 @@ part 'profile_record.g.dart';
 @collection
 class ProfileRecord {
   Id id = 1;
-  int schemaVersion = 3;
+  int schemaVersion = 4;
   late String petName;
   late String coat;
   late String accessory;
+  List<String>? ownedAccessories;
   int balance = 0;
   int savings = 0;
   int period = 1;
@@ -22,6 +23,7 @@ class ProfileRecord {
   int plannedNeeds = 0;
   int plannedWants = 0;
   int plannedSavings = 0;
+  int plannedGifts = 0;
   String? selectedGoalId;
   String? feedback;
   List<GoalBalanceRecord>? goalBalances;
@@ -66,8 +68,10 @@ class PeriodSummaryRecord {
   int plannedNeeds = 0;
   int plannedWants = 0;
   int plannedSavings = 0;
+  int plannedGifts = 0;
   int actualNeeds = 0;
   int actualWants = 0;
+  int actualGifts = 0;
   int netSaved = 0;
   bool needsMet = false;
   bool withinPlan = false;

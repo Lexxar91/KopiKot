@@ -26,9 +26,9 @@ void main() {
     );
   });
 
-  test('Каталог содержит минимум восемь покупок двух типов и три цели', () {
+  test('Каталог содержит покупки трёх типов и три цели', () {
     expect(catalog.products.length, greaterThanOrEqualTo(8));
-    expect(catalog.products.map((item) => item.category).toSet().length, 2);
+    expect(catalog.products.map((item) => item.category).toSet().length, 3);
     expect(catalog.goals.length, greaterThanOrEqualTo(3));
     expect(
       catalog.products.fold<int>(0, (sum, product) => sum + product.price),
@@ -104,6 +104,53 @@ void main() {
       expect(next.feedback, contains('больше плана'));
     },
   );
+
+  test('Подарок учитывается отдельно в плане и факте', () {
+    profile = initialProfile.withPlan(
+      GameRules.confirmBudget(
+        initialProfile,
+        needs: 30,
+        wants: 20,
+        gifts: 20,
+        savings: 30,
+      ),
+    );
+    final next = EconomyRules.purchase(
+      profile,
+      catalog.product('owl_seedlings'),
+      'gift-1',
+    );
+    expect(next.actualGifts, 20);
+    expect(next.transactions.single.kind, TransactionKind.giftPurchase);
+    expect(next.plan!.gifts, 20);
+  });
+
+  test('Купленный аксессуар можно надеть, снять и надеть снова', () {
+    final bought = EconomyRules.purchase(
+      profile,
+      catalog.product('berry_bow'),
+      'bow-1',
+    );
+    expect(bought.ownsAccessory(PetAccessory.scarf), isTrue);
+    expect(bought.ownsAccessory(PetAccessory.bow), isTrue);
+    final equipped = EconomyRules.equipAccessory(bought, PetAccessory.bow);
+    expect(equipped.accessory, PetAccessory.bow);
+    final removed = EconomyRules.equipAccessory(equipped, null);
+    expect(removed.accessory, isNull);
+    expect(removed.ownsAccessory(PetAccessory.scarf), isTrue);
+    expect(
+      EconomyRules.equipAccessory(removed, PetAccessory.scarf).accessory,
+      PetAccessory.scarf,
+    );
+    expect(
+      () => EconomyRules.purchase(
+        bought,
+        catalog.product('star_scarf'),
+        'scarf-2',
+      ),
+      throwsA(isA<GameRuleException>()),
+    );
+  });
 
   test(
     'Повтор покупки с тем же ID не списывает деньги и не улучшает питомца',

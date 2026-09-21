@@ -29,18 +29,19 @@ abstract final class GameRules {
     required int needs,
     required int wants,
     required int savings,
+    int gifts = 0,
   }) {
     if (profile.plan != null) {
       throw const GameRuleException(
         'План уже подтверждён. Новый составим в следующем периоде.',
       );
     }
-    if (needs < 0 || wants < 0 || savings < 0) {
+    if (needs < 0 || wants < 0 || gifts < 0 || savings < 0) {
       throw const GameRuleException(
         'В каждой части плана должно быть 0 или больше монет.',
       );
     }
-    if (needs + wants + savings > profile.balance) {
+    if (needs + wants + gifts + savings > profile.balance) {
       throw const GameRuleException(
         'Монет не хватает на такой план. Уменьши одну из сумм.',
       );
@@ -50,6 +51,7 @@ abstract final class GameRules {
       needs: needs,
       wants: wants,
       savings: savings,
+      gifts: gifts,
     );
   }
 }

@@ -21,6 +21,7 @@ class BudgetScreen extends ConsumerStatefulWidget {
 class _BudgetScreenState extends ConsumerState<BudgetScreen> {
   final _needs = TextEditingController(text: '0');
   final _wants = TextEditingController(text: '0');
+  final _gifts = TextEditingController(text: '0');
   final _savings = TextEditingController(text: '0');
   bool _saving = false;
   String? _error;
@@ -29,6 +30,7 @@ class _BudgetScreenState extends ConsumerState<BudgetScreen> {
   void dispose() {
     _needs.dispose();
     _wants.dispose();
+    _gifts.dispose();
     _savings.dispose();
     super.dispose();
   }
@@ -39,12 +41,14 @@ class _BudgetScreenState extends ConsumerState<BudgetScreen> {
   Future<void> _confirm(GameProfile profile) async {
     final int needs = _value(_needs);
     final int wants = _value(_wants);
+    final int gifts = _value(_gifts);
     final int savings = _value(_savings);
     try {
       GameRules.confirmBudget(
         profile,
         needs: needs,
         wants: wants,
+        gifts: gifts,
         savings: savings,
       );
     } on GameRuleException catch (error) {
@@ -57,7 +61,7 @@ class _BudgetScreenState extends ConsumerState<BudgetScreen> {
         scrollable: true,
         title: const Text('Сохранить этот план?'),
         content: Text(
-          'Нужно: $needs\nХочется: $wants\nНа мечту: $savings\n\nМонеты пока не тратятся. После подтверждения изменить план этого периода нельзя.',
+          'Нужно: $needs\nРадость: $wants\nПодарки: $gifts\nНа мечту: $savings\n\nМонеты пока не тратятся. После подтверждения изменить план этого периода нельзя.',
         ),
         actions: [
           TextButton(
@@ -79,7 +83,7 @@ class _BudgetScreenState extends ConsumerState<BudgetScreen> {
     try {
       await ref
           .read(gameControllerProvider.notifier)
-          .confirmBudget(needs, wants, savings);
+          .confirmBudget(needs, wants, savings, gifts: gifts);
     } on GameRuleException catch (error) {
       if (mounted) setState(() => _error = error.message);
     } catch (_) {
@@ -128,102 +132,119 @@ class _BudgetScreenState extends ConsumerState<BudgetScreen> {
     }
     final BudgetPlan? plan = profile.plan;
     final int remaining =
-        profile.balance - _value(_needs) - _value(_wants) - _value(_savings);
+        profile.balance -
+        _value(_needs) -
+        _value(_wants) -
+        _value(_gifts) -
+        _value(_savings);
     return Scaffold(
       appBar: AppBar(title: const Text('Мой бюджет')),
       body: SafeArea(
-        child: ListView(
+        child: SingleChildScrollView(
           padding: const EdgeInsets.all(20),
-          children: [
-            Text(
-              'Период ${profile.period}',
-              style: Theme.of(context).textTheme.titleLarge,
-            ),
-            const SizedBox(height: 12),
-            if (plan == null) ...[
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
               Text(
-                'Распредели ${profile.balance} монет. Можно оставить часть на потом.',
-              ),
-              const SizedBox(height: 24),
-              _amount('Нужно', 'Еда и уход для питомца', _needs),
-              _amount('Хочется', 'Игрушки и украшения — по желанию', _wants),
-              _amount('На мечту', 'Монеты, которые хочешь отложить', _savings),
-              Semantics(
-                liveRegion: true,
-                child: Text(
-                  remaining >= 0
-                      ? 'Осталось распределить: $remaining'
-                      : 'Не хватает: ${-remaining} монет',
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
-              ),
-              const SizedBox(height: 16),
-              const Text(
-                'Планирование не списывает монеты. Перевод в накопления — отдельное действие.',
-              ),
-              const SizedBox(height: 20),
-              FilledButton(
-                onPressed: _saving || remaining < 0
-                    ? null
-                    : () => _confirm(profile),
-                child: Text(_saving ? 'Сохраняем…' : 'Подтвердить план'),
-              ),
-            ] else ...[
-              const Text('План подтверждён. Сравни его с тратами.'),
-              const SizedBox(height: 16),
-              _PlanLine(
-                label: 'Нужно',
-                amount: plan.needs,
-                actual: profile.actualNeeds,
-              ),
-              _PlanLine(
-                label: 'Хочется',
-                amount: plan.wants,
-                actual: profile.actualWants,
-              ),
-              _PlanLine(
-                label: 'На мечту',
-                amount: plan.savings,
-                actual: profile.netSaved,
-              ),
-              _PlanLine(label: 'Не распределено', amount: plan.remaining),
-              const SizedBox(height: 20),
-              Text(
-                'Переведено на цели: ${profile.totalFor(TransactionKind.deposit)}. '
-                'Снято с целей: ${profile.totalFor(TransactionKind.withdrawal)}.',
+                'Период ${profile.period}',
+                style: Theme.of(context).textTheme.titleLarge,
               ),
               const SizedBox(height: 12),
-              const Text(
-                'Факт «На мечту» — переводы минус снятия за период. '
-                'Если он отрицательный, ты взял из накоплений больше, чем отложил. '
-                'Не потратить на желаемое — допустимый выбор.',
-              ),
-              const SizedBox(height: 20),
-              FilledButton(
-                onPressed: () => showAccessibleDialog<bool>(
-                  context: context,
-                  barrierDismissible: false,
-                  builder: (_) => GameActionDialog(
-                    title: 'Завершить период ${profile.period}?',
-                    description:
-                        '${PeriodRules.summarize(profile).explanation}\n\n'
-                        'Итоги сохранятся. В новом периоде получишь 100 монет и составишь новый план. '
-                        'Сытость снизится не больше чем на 20: питомец ждёт следующий обед. Рост и накопления сохранятся.',
-                    confirmLabel: 'Следующий период',
-                    action: (_) => ref
-                        .read(gameControllerProvider.notifier)
-                        .finishPeriod(profile.period),
+              if (plan == null) ...[
+                Text(
+                  'Распредели ${profile.balance} монет. Можно оставить часть на потом.',
+                ),
+                const SizedBox(height: 24),
+                _amount('Нужно', 'Еда и уход для питомца', _needs),
+                _amount('Хочется', 'Игрушки и украшения — по желанию', _wants),
+                _amount(
+                  'На мечту',
+                  'Монеты, которые хочешь отложить',
+                  _savings,
+                ),
+                _amount('Подарки', 'Добрые сюрпризы друзьям питомца', _gifts),
+                Semantics(
+                  liveRegion: true,
+                  child: Text(
+                    remaining >= 0
+                        ? 'Осталось распределить: $remaining'
+                        : 'Не хватает: ${-remaining} монет',
+                    style: Theme.of(context).textTheme.titleMedium,
                   ),
                 ),
-                child: const Text('Подвести итоги'),
-              ),
+                const SizedBox(height: 16),
+                const Text(
+                  'Планирование не списывает монеты. Перевод в накопления — отдельное действие.',
+                ),
+                const SizedBox(height: 20),
+                FilledButton(
+                  onPressed: _saving || remaining < 0
+                      ? null
+                      : () => _confirm(profile),
+                  child: Text(_saving ? 'Сохраняем…' : 'Подтвердить план'),
+                ),
+              ] else ...[
+                const Text('План подтверждён. Сравни его с тратами.'),
+                const SizedBox(height: 16),
+                _PlanLine(
+                  label: 'Нужно',
+                  amount: plan.needs,
+                  actual: profile.actualNeeds,
+                ),
+                _PlanLine(
+                  label: 'Хочется',
+                  amount: plan.wants,
+                  actual: profile.actualWants,
+                ),
+                _PlanLine(
+                  label: 'Подарки',
+                  amount: plan.gifts,
+                  actual: profile.actualGifts,
+                ),
+                _PlanLine(
+                  label: 'На мечту',
+                  amount: plan.savings,
+                  actual: profile.netSaved,
+                ),
+                _PlanLine(label: 'Не распределено', amount: plan.remaining),
+                const SizedBox(height: 20),
+                Text(
+                  'Переведено на цели: ${profile.totalFor(TransactionKind.deposit)}. '
+                  'Снято с целей: ${profile.totalFor(TransactionKind.withdrawal)}.',
+                ),
+                const SizedBox(height: 12),
+                const Text(
+                  'Факт «На мечту» — переводы минус снятия за период. '
+                  'Если он отрицательный, ты взял из накоплений больше, чем отложил. '
+                  'Не потратить на желаемое — допустимый выбор.',
+                ),
+                const SizedBox(height: 20),
+                FilledButton(
+                  onPressed: () => showAccessibleDialog<bool>(
+                    context: context,
+                    barrierDismissible: false,
+                    builder: (_) => GameActionDialog(
+                      title: 'Завершить период ${profile.period}?',
+                      description:
+                          '${PeriodRules.summarize(profile).explanation}\n\n'
+                          'Итоги сохранятся. В новом периоде получишь 100 монет и составишь новый план. '
+                          'Сытость снизится не больше чем на 20: питомец ждёт следующий обед. Рост и накопления сохранятся.',
+                      confirmLabel: 'Следующий период',
+                      action: (_) => ref
+                          .read(gameControllerProvider.notifier)
+                          .finishPeriod(profile.period),
+                    ),
+                  ),
+                  child: const Text('Подвести итоги'),
+                ),
+              ],
+              if (_error != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: 12),
+                  child: Semantics(liveRegion: true, child: Text(_error!)),
+                ),
             ],
-            if (_error != null)
-              Padding(
-                padding: const EdgeInsets.only(top: 12),
-                child: Semantics(liveRegion: true, child: Text(_error!)),
-              ),
-          ],
+          ),
         ),
       ),
     );
