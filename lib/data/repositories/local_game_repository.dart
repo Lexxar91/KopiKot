@@ -5,6 +5,8 @@ import '../../domain/models/learning_task.dart';
 import '../../domain/models/period_summary.dart';
 import '../../domain/rules/learning_rules.dart';
 import '../../domain/rules/period_rules.dart';
+import '../../domain/rules/activity_rules.dart';
+import '../../domain/rules/sapling_rules.dart';
 import '../../domain/repositories/game_repository.dart';
 import '../../domain/rules/game_rules.dart';
 import '../../domain/rules/economy_rules.dart';
@@ -63,7 +65,7 @@ class LocalGameRepository implements GameRepository {
   @override
   Future<GameProfile?> loadProfile() async {
     ProfileRecord? record = await _store.readProfile();
-    if (record != null && record.schemaVersion < 4) {
+    if (record != null && record.schemaVersion < 5) {
       record = await _store.updateProfile((current) => _migrate(current!));
     }
     return record == null ? null : _toDomain(record);
@@ -127,7 +129,7 @@ class LocalGameRepository implements GameRepository {
   }
 
   GameProfile _toDomain(ProfileRecord record) {
-    if (record.schemaVersion != 4) {
+    if (record.schemaVersion != 5) {
       throw StateError('Unsupported profile schema: ${record.schemaVersion}');
     }
     final balances = record.goalBalances ?? <GoalBalanceRecord>[];
@@ -156,6 +158,10 @@ class LocalGameRepository implements GameRepository {
       period: record.period,
       satiety: record.satiety,
       mood: record.mood,
+      energy: record.energy,
+      streak: record.streak,
+      walkPeriod: record.walkPeriod,
+      lastRewardAt: record.lastRewardAt,
       incomeSource: record.incomeSource,
       incomeAmount: record.incomeAmount,
       taskProgress: List.unmodifiable(
@@ -192,6 +198,15 @@ class LocalGameRepository implements GameRepository {
         for (final goal in record.goalBalances ?? <GoalBalanceRecord>[])
           goal.goalId: goal.amount,
       }),
+      saplings: List.unmodifiable(
+        (record.saplings ?? <SaplingRecord>[]).map(
+          (entry) => SaplingState(
+            id: entry.saplingId,
+            definitionId: entry.definitionId,
+            plantedPeriod: entry.plantedPeriod,
+          ),
+        ),
+      ),
       transactions: List.unmodifiable(
         (record.transactions ?? <TransactionRecord>[]).map(
           (entry) => GameTransaction(
@@ -236,6 +251,34 @@ class LocalGameRepository implements GameRepository {
   @override
   Future<GameProfile> equipAccessory(PetAccessory? accessory) =>
       _change((profile) => EconomyRules.equipAccessory(profile, accessory));
+
+  @override
+  Future<GameProfile> walk() =>
+      _change(ActivityRules.walk);
+
+  @override
+  Future<GameProfile> plantSapling(String definitionId, String commandId) =>
+      _change(
+        (profile) => SaplingRules.plant(
+          profile,
+          catalog.sapling(definitionId),
+          commandId,
+        ),
+      );
+
+  @override
+  Future<GameProfile> harvestSapling(String saplingId, String commandId) =>
+      _change((profile) {
+        final SaplingState state = profile.saplings.firstWhere(
+          (sapling) => sapling.id == saplingId,
+        );
+        return SaplingRules.harvest(
+          profile,
+          state,
+          catalog.sapling(state.definitionId),
+          commandId,
+        );
+      });
 
   @override
   Future<GameProfile> selectGoal(String goalId) => _change(
@@ -302,6 +345,10 @@ class LocalGameRepository implements GameRepository {
         ..savings = profile.savings
         ..satiety = profile.satiety
         ..mood = profile.mood
+        ..energy = profile.energy
+        ..streak = profile.streak
+        ..walkPeriod = profile.walkPeriod
+        ..lastRewardAt = profile.lastRewardAt
         ..accessory = profile.accessory?.name ?? ''
         ..ownedAccessories = [
           for (final accessory in profile.ownedAccessories) accessory.name,
@@ -313,6 +360,13 @@ class LocalGameRepository implements GameRepository {
             GoalBalanceRecord()
               ..goalId = entry.key
               ..amount = entry.value,
+        ]
+        ..saplings = [
+          for (final sapling in profile.saplings)
+            SaplingRecord()
+              ..saplingId = sapling.id
+              ..definitionId = sapling.definitionId
+              ..plantedPeriod = sapling.plantedPeriod,
         ]
         ..transactions = [
           for (final entry in profile.transactions)
@@ -345,7 +399,16 @@ class LocalGameRepository implements GameRepository {
           : <String>[record.accessory];
       record.schemaVersion = 4;
     }
-    if (record.schemaVersion != 4) {
+    if (record.schemaVersion == 4) {
+      // Схема 5 добавляет энергию, серию, прогулку и саженцы: значения по умолчанию.
+      record
+        ..energy = 70
+        ..streak = 1
+        ..walkPeriod = 0
+        ..saplings = <SaplingRecord>[];
+      record.schemaVersion = 5;
+    }
+    if (record.schemaVersion != 5) {
       throw StateError('Unsupported profile schema: ${record.schemaVersion}');
     }
     return record;

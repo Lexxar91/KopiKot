@@ -42,6 +42,10 @@ GameCatalog parseGameCatalog(String source, {String taskSource = '[]'}) {
     return value;
   }
 
+  /// Опциональное число: отсутствующее поле означает ноль.
+  int optional(Map<String, dynamic> item, String key, int min, int max) =>
+      item[key] == null ? 0 : number(item, key, min, max);
+
   final products = (data['products'] as List<dynamic>).map((dynamic raw) {
     final item = raw as Map<String, dynamic>;
     return ShopProduct(
@@ -51,6 +55,7 @@ GameCatalog parseGameCatalog(String source, {String taskSource = '[]'}) {
       price: number(item, 'price', 1, 10000),
       satiety: number(item, 'satiety', 0, 100),
       mood: number(item, 'mood', 0, 100),
+      energy: optional(item, 'energy', 0, 100),
       description: text(item, 'description'),
       accessory: switch (item['accessory']) {
         final String value => PetAccessory.values.byName(value),
@@ -68,7 +73,22 @@ GameCatalog parseGameCatalog(String source, {String taskSource = '[]'}) {
       description: text(item, 'description'),
     );
   }).toList();
-  if (products.isEmpty || goals.isEmpty) {
+  final saplings = (data['saplings'] as List<dynamic>).map((dynamic raw) {
+    final item = raw as Map<String, dynamic>;
+    final sapling = SaplingDefinition(
+      id: id(item),
+      title: text(item, 'title'),
+      price: number(item, 'price', 1, 10000),
+      term: number(item, 'term', 1, 100),
+      reward: number(item, 'reward', 1, 10000),
+      description: text(item, 'description'),
+    );
+    if (sapling.reward <= sapling.price) {
+      throw FormatException('Sapling reward must exceed price: ${sapling.id}');
+    }
+    return sapling;
+  }).toList();
+  if (products.isEmpty || goals.isEmpty || saplings.isEmpty) {
     throw const FormatException('Empty catalog');
   }
   final tasks = (jsonDecode(taskSource) as List<dynamic>).map((dynamic raw) {
@@ -117,6 +137,7 @@ GameCatalog parseGameCatalog(String source, {String taskSource = '[]'}) {
     version: 1,
     products: products,
     goals: goals,
+    saplings: saplings,
     tasks: tasks,
   );
 }

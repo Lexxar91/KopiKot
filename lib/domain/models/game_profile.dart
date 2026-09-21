@@ -9,6 +9,18 @@ enum PetAccessory { scarf, bow, cap }
 
 enum PetEmotion { calm, happy, excited, hungry, thoughtful, proud }
 
+/// Посаженный саженец растёт по игровым периодам и потом приносит монеты.
+class SaplingState {
+  const SaplingState({
+    required this.id,
+    required this.definitionId,
+    required this.plantedPeriod,
+  });
+  final String id;
+  final String definitionId;
+  final int plantedPeriod;
+}
+
 /// Подтверждённый план не тратит монеты и не меняется задним числом.
 class BudgetPlan {
   const BudgetPlan({
@@ -42,6 +54,9 @@ class GameProfile {
     required this.mood,
     required this.incomeSource,
     required this.incomeAmount,
+    this.energy = 70,
+    this.streak = 1,
+    this.walkPeriod = 0,
     this.isTest = false,
     this.plan,
     this.selectedGoalId,
@@ -50,6 +65,8 @@ class GameProfile {
     this.transactions = const [],
     this.taskProgress = const [],
     this.periodSummaries = const [],
+    this.saplings = const [],
+    this.lastRewardAt,
     this.feedback =
         'Питомец рад знакомству. Давай подумаем, на что хватит монет.',
   });
@@ -63,6 +80,18 @@ class GameProfile {
   final int period;
   final int satiety;
   final int mood;
+
+  /// Бодрость питомца: полезная еда и бесплатные прогулки её поднимают.
+  final int energy;
+
+  /// Уровень серии ежедневных подарков: от 1 до 7, при пропуске мягко падает.
+  final int streak;
+
+  /// Период последней бесплатной прогулки: не чаще одного раза за период.
+  final int walkPeriod;
+
+  /// Момент последнего начисления серии; до первого периода равен null.
+  final DateTime? lastRewardAt;
   final String incomeSource;
   final int incomeAmount;
   final BudgetPlan? plan;
@@ -73,6 +102,7 @@ class GameProfile {
   final String feedback;
   final List<TaskProgress> taskProgress;
   final List<PeriodSummary> periodSummaries;
+  final List<SaplingState> saplings;
 
   int get growthPeriods =>
       periodSummaries.where((summary) => summary.supportsGrowth).length;
@@ -123,6 +153,10 @@ class GameProfile {
     int? savings,
     int? satiety,
     int? mood,
+    int? energy,
+    int? streak,
+    int? walkPeriod,
+    DateTime? lastRewardAt,
     PetAccessory? accessory,
     bool removeAccessory = false,
     BudgetPlan? plan,
@@ -135,6 +169,7 @@ class GameProfile {
     bool clearPlan = false,
     List<TaskProgress>? taskProgress,
     List<PeriodSummary>? periodSummaries,
+    List<SaplingState>? saplings,
   }) => GameProfile(
     petName: petName,
     isTest: isTest,
@@ -145,6 +180,10 @@ class GameProfile {
     period: period ?? this.period,
     satiety: satiety ?? this.satiety,
     mood: mood ?? this.mood,
+    energy: energy ?? this.energy,
+    streak: streak ?? this.streak,
+    walkPeriod: walkPeriod ?? this.walkPeriod,
+    lastRewardAt: lastRewardAt ?? this.lastRewardAt,
     incomeSource: incomeSource,
     incomeAmount: incomeAmount,
     plan: clearPlan ? null : (plan ?? this.plan),
@@ -157,5 +196,6 @@ class GameProfile {
     feedback: feedback ?? this.feedback,
     taskProgress: List.unmodifiable(taskProgress ?? this.taskProgress),
     periodSummaries: List.unmodifiable(periodSummaries ?? this.periodSummaries),
+    saplings: List.unmodifiable(saplings ?? this.saplings),
   );
 }

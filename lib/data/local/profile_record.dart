@@ -6,7 +6,7 @@ part 'profile_record.g.dart';
 @collection
 class ProfileRecord {
   Id id = 1;
-  int schemaVersion = 4;
+  int schemaVersion = 5;
   late String petName;
   late String coat;
   late String accessory;
@@ -16,6 +16,10 @@ class ProfileRecord {
   int period = 1;
   int satiety = 70;
   int mood = 70;
+  int energy = 70;
+  int streak = 1;
+  DateTime? lastRewardAt;
+  int walkPeriod = 0;
   late String incomeSource;
   int incomeAmount = 0;
   bool budgetConfirmed = false;
@@ -30,6 +34,7 @@ class ProfileRecord {
   List<TransactionRecord>? transactions;
   List<TaskProgressRecord>? taskProgress;
   List<PeriodSummaryRecord>? periodSummaries;
+  List<SaplingRecord>? saplings;
 }
 
 /// Остатки разделены по целям; смена выбранной цели не переносит её монеты.
@@ -60,6 +65,14 @@ class TaskProgressRecord {
   int attempts = 0;
   bool completed = false;
   late String feedback;
+}
+
+/// Растущий саженец живёт внутри профиля и фиксируется той же транзакцией.
+@embedded
+class SaplingRecord {
+  late String saplingId;
+  late String definitionId;
+  int plantedPeriod = 1;
 }
 
 @embedded

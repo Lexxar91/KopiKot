@@ -1,13 +1,15 @@
 {
   "version": 1,
   "products": [
-    {"id":"porridge","title":"Каша с тыквой","category":"needs","price":25,"satiety":20,"mood":0,"description":"Сытный обед: сытость +20."},
-    {"id":"water","title":"Свежая вода","category":"needs","price":10,"satiety":5,"mood":0,"description":"Вода к обеду: сытость +5."},
+    {"id":"porridge","title":"Каша с тыквой","category":"needs","price":25,"satiety":20,"mood":0,"energy":10,"description":"Сытный обед: сытость +20, энергия +10."},
+    {"id":"water","title":"Свежая вода","category":"needs","price":10,"satiety":5,"mood":0,"energy":2,"description":"Вода к обеду: сытость +5, энергия +2."},
     {"id":"shampoo","title":"Пенный уход","category":"needs","price":20,"satiety":0,"mood":10,"description":"Чистая шёрстка: настроение +10."},
-    {"id":"soup","title":"Овощной суп","category":"needs","price":35,"satiety":30,"mood":5,"description":"Тёплый обед: сытость +30, настроение +5."},
+    {"id":"soup","title":"Овощной суп","category":"needs","price":35,"satiety":30,"mood":5,"energy":5,"description":"Тёплый обед: сытость +30, настроение +5, энергия +5."},
+    {"id":"vet_checkup","title":"Плановый осмотр у ветеринара","category":"needs","price":25,"satiety":5,"mood":10,"description":"Добрый врач осмотрит питомца и даст совет: настроение +10. Небольшая регулярная трата — забота заранее."},
     {"id":"ball","title":"Полосатый мяч","category":"wants","price":30,"satiety":0,"mood":15,"description":"Весёлая игра: настроение +15. Покупку можно отложить."},
     {"id":"kite","title":"Воздушный змей","category":"wants","price":55,"satiety":0,"mood":20,"description":"Игра на прогулке: настроение +20. Покупку можно отложить."},
     {"id":"ribbon","title":"Праздничная лента","category":"wants","price":15,"satiety":0,"mood":5,"description":"Маленькое украшение: настроение +5. Покупку можно отложить."},
+    {"id":"berry_treat","title":"Ягодное лакомство","category":"wants","price":20,"satiety":5,"mood":12,"description":"Любимое лакомство: настроение +12. Иногда лакомство — часть радости."},
     {"id":"puzzle","title":"Большая головоломка","category":"wants","price":80,"satiety":0,"mood":25,"description":"Новая игра: настроение +25. Покупку можно отложить."},
     {"id":"star_scarf","title":"Звёздный шарф","category":"wants","price":35,"satiety":0,"mood":8,"accessory":"scarf","description":"Тёплый шарф для прогулок. После покупки останется в гардеробе."},
     {"id":"berry_bow","title":"Ягодный бантик","category":"wants","price":25,"satiety":0,"mood":8,"accessory":"bow","description":"Яркий бантик для праздника. Его можно надевать и снимать."},
@@ -19,5 +21,10 @@
     {"id":"tent","title":"Уютная палатка","price":120,"description":"Свой уголок для игр и отдыха."},
     {"id":"telescope","title":"Телескоп","price":180,"description":"Наблюдать звёзды вместе с питомцем."},
     {"id":"garden","title":"Маленький сад","price":240,"description":"Место для цветов и прогулок."}
+  ],
+  "saplings": [
+    {"id":"sapling_5","title":"Саженец на 5 дней","price":20,"term":5,"reward":30,"description":"Маленький урожай за короткое ожидание."},
+    {"id":"sapling_10","title":"Саженец на 10 дней","price":20,"term":10,"reward":50,"description":"Средний урожай: ждать дольше — получить больше."},
+    {"id":"sapling_15","title":"Саженец на 15 дней","price":20,"term":15,"reward":80,"description":"Большой урожай для терпеливых друзей."}
   ]
 }

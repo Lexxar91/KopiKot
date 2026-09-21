@@ -312,7 +312,8 @@ void main() {
       expect(profile.plan, isNull);
     }
     expect((await repository.loadProfile())!.growthStage, 3);
-    expect((await repository.loadProfile())!.balance, 375);
+    // 500 базового дохода и подарки серии 2+3+5+7+10 за пять периодов.
+    expect((await repository.loadProfile())!.balance, 402);
   });
 
   setUp(() async {
@@ -324,6 +325,46 @@ void main() {
   tearDown(() async {
     await store.close();
     await directory.delete(recursive: true);
+  });
+
+  test(
+    'Саженцы, серия, прогулка и энергия переживают перезапуск',
+    () async {
+      await create();
+      await repository.confirmBudget(needs: 20, wants: 0, savings: 0);
+      await repository.plantSapling('sapling_10', 'seed');
+      await repository.walk();
+      await repository.finishPeriod(1);
+      await store.close();
+      store = await LocalGameStore.open(directory: directory.path, name: 'test');
+      repository = LocalGameRepository(store, catalog);
+      final profile = (await repository.loadProfile())!;
+      expect(profile.saplings.single.definitionId, 'sapling_10');
+      expect(profile.saplings.single.plantedPeriod, 1);
+      expect(profile.streak, 2);
+      expect(profile.lastRewardAt, isNotNull);
+      expect(profile.walkPeriod, 1);
+      expect(profile.energy, 70);
+      expect(profile.balance, 182);
+      // Повторная прогулка в новом периоде доступна и бодрит.
+      final walked = await repository.walk();
+      expect(walked.energy, 85);
+      expect(walked.walkPeriod, 2);
+    },
+  );
+
+  test('Миграция схемы 4 сохраняет прогресс и добавляет новые поля', () async {
+    await create();
+    await repository.confirmBudget(needs: 25, wants: 0, savings: 20);
+    await repository.purchase('porridge', commandId: 'old-buy');
+    await store.updateProfile((current) => current!..schemaVersion = 4);
+    final profile = (await repository.loadProfile())!;
+    expect(profile.balance, 75);
+    expect(profile.energy, 70);
+    expect(profile.streak, 1);
+    expect(profile.walkPeriod, 0);
+    expect(profile.saplings, isEmpty);
+    expect((await store.readProfile())!.schemaVersion, 5);
   });
 
   test(
@@ -347,7 +388,8 @@ void main() {
       );
       repository = LocalGameRepository(store, catalog);
       var profile = (await repository.loadProfile())!;
-      expect(profile.balance, 165);
+      // 100 + 10 задание − 25 каша − 20 накопление + 100 доход + 2 серия.
+      expect(profile.balance, 167);
       expect(profile.period, 2);
       expect(profile.plan, isNull);
       expect(profile.completedTask('budget_lunch'), isTrue);
@@ -359,7 +401,7 @@ void main() {
       );
       await repository.finishPeriod(1);
       profile = (await repository.loadProfile())!;
-      expect(profile.balance, 165);
+      expect(profile.balance, 167);
       expect(profile.periodSummaries.length, 1);
     },
   );
@@ -460,7 +502,7 @@ void main() {
       expect(profile.balance, 100);
       expect(profile.transactions.single.amount, 100);
       await repository.loadProfile();
-      expect((await store.readProfile())!.schemaVersion, 4);
+      expect((await store.readProfile())!.schemaVersion, 5);
       expect((await repository.loadProfile())!.transactions.length, 1);
     },
   );

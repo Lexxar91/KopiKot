@@ -15,12 +15,12 @@ abstract final class EconomyRules {
       ExpenseCategory.wants => TransactionKind.wantPurchase,
       ExpenseCategory.gifts => TransactionKind.giftPurchase,
     };
-    if (_isReplay(profile, commandId, kind, product.id, product.price)) {
+    if (GameRules.isReplay(profile, commandId, kind, product.id, product.price)) {
       return profile;
     }
-    _requirePlan(profile);
-    _requirePositive(product.price);
-    _requireBalance(profile, product.price);
+    GameRules.requirePlan(profile);
+    GameRules.requirePositive(product.price);
+    GameRules.requireBalance(profile, product.price);
     if (product.accessory case final accessory?) {
       if (profile.ownsAccessory(accessory)) {
         throw const GameRuleException(
@@ -30,9 +30,11 @@ abstract final class EconomyRules {
     }
     final int satiety = (profile.satiety + product.satiety).clamp(0, 100);
     final int mood = (profile.mood + product.mood).clamp(0, 100);
+    final int energy = (profile.energy + product.energy).clamp(0, 100);
     final String effect =
         'Сытость: ${profile.satiety} → $satiety. '
-        'Настроение: ${profile.mood} → $mood.';
+        'Настроение: ${profile.mood} → $mood. '
+        'Энергия: ${profile.energy} → $energy.';
     final int spent = switch (product.category) {
       ExpenseCategory.needs => profile.actualNeeds,
       ExpenseCategory.wants => profile.actualWants,
@@ -57,6 +59,7 @@ abstract final class EconomyRules {
         balance: profile.balance - product.price,
         satiety: satiety,
         mood: mood,
+        energy: energy,
         ownedAccessories: _inventory(profile, unlocked: product.accessory),
         feedback:
             '${product.title}: −${product.price} монет. $effect $next'
@@ -92,7 +95,7 @@ abstract final class EconomyRules {
   }) => <PetAccessory>{
     ...profile.ownedAccessories,
     if (profile.accessory != null) profile.accessory!,
-    if (unlocked != null) unlocked,
+    ?unlocked,
   }.toList(growable: false);
 
   static String _accessoryName(PetAccessory accessory) => switch (accessory) {
@@ -121,9 +124,11 @@ abstract final class EconomyRules {
     final kind = withdraw
         ? TransactionKind.withdrawal
         : TransactionKind.deposit;
-    if (_isReplay(profile, commandId, kind, goal.id, amount)) return profile;
-    _requirePlan(profile);
-    _requirePositive(amount);
+    if (GameRules.isReplay(profile, commandId, kind, goal.id, amount)) {
+      return profile;
+    }
+    GameRules.requirePlan(profile);
+    GameRules.requirePositive(amount);
     if (profile.selectedGoalId != goal.id) {
       throw const GameRuleException(
         'Цель изменилась. Открой её заново перед переводом.',
@@ -136,7 +141,7 @@ abstract final class EconomyRules {
       );
     }
     if (!withdraw) {
-      _requireBalance(profile, amount);
+      GameRules.requireBalance(profile, amount);
       if (saved + amount > goal.price) {
         throw GameRuleException(
           'До этой цели осталось ${goal.price - saved} монет. Уменьши перевод.',
@@ -166,55 +171,6 @@ abstract final class EconomyRules {
         feedback: feedback,
       ),
     );
-  }
-
-  static void _requirePlan(GameProfile profile) {
-    if (profile.plan == null) {
-      throw const GameRuleException(
-        'Сначала составь и подтверди бюджет этого периода.',
-      );
-    }
-  }
-
-  static void _requirePositive(int amount) {
-    if (amount <= 0) {
-      throw const GameRuleException('Укажи хотя бы одну монету.');
-    }
-  }
-
-  static void _requireBalance(GameProfile profile, int amount) {
-    if (amount > profile.balance) {
-      throw GameRuleException(
-        'Не хватает ${amount - profile.balance} монет. '
-        'Выбери покупку дешевле, перенеси её или верни часть накоплений с подтверждением.',
-      );
-    }
-  }
-
-  static bool _isReplay(
-    GameProfile profile,
-    String id,
-    TransactionKind kind,
-    String reference,
-    int amount,
-  ) {
-    if (id.trim().isEmpty || id.length > 128) {
-      throw const GameRuleException(
-        'Не удалось распознать действие. Повтори его.',
-      );
-    }
-    for (final entry in profile.transactions) {
-      if (entry.id != id) continue;
-      if (entry.kind != kind ||
-          entry.referenceId != reference ||
-          entry.amount != amount) {
-        throw const GameRuleException(
-          'Это действие уже сохранено с другими параметрами. Открой раздел заново.',
-        );
-      }
-      return true;
-    }
-    return false;
   }
 
   static GameProfile _record(

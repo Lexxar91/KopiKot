@@ -10,6 +10,8 @@ import 'package:kopikot/data/content/catalog_loader.dart';
 import 'package:kopikot/domain/rules/economy_rules.dart';
 import 'package:kopikot/domain/rules/learning_rules.dart';
 import 'package:kopikot/domain/rules/period_rules.dart';
+import 'package:kopikot/domain/rules/activity_rules.dart';
+import 'package:kopikot/domain/rules/sapling_rules.dart';
 import 'package:kopikot/domain/models/learning_task.dart';
 import 'package:kopikot/domain/repositories/game_repository.dart';
 import 'package:kopikot/domain/rules/game_rules.dart';
@@ -20,6 +22,7 @@ import 'package:kopikot/presentation/screens/tasks_screen.dart';
 import 'package:kopikot/presentation/screens/budget_screen.dart';
 import 'package:kopikot/presentation/screens/shop_screen.dart';
 import 'package:kopikot/presentation/screens/savings_screen.dart';
+import 'package:kopikot/presentation/screens/garden_screen.dart';
 import 'package:kopikot/presentation/screens/history_screen.dart';
 import 'package:kopikot/presentation/screens/progress_screen.dart';
 import 'package:kopikot/presentation/screens/adult_screen.dart';
@@ -116,6 +119,27 @@ class _MemoryRepository implements GameRepository {
   @override
   Future<GameProfile> equipAccessory(PetAccessory? accessory) async =>
       profile = EconomyRules.equipAccessory(profile!, accessory);
+  @override
+  Future<GameProfile> walk() async => profile = ActivityRules.walk(profile!);
+  @override
+  Future<GameProfile> plantSapling(String definitionId, String commandId) async =>
+      profile = SaplingRules.plant(
+        profile!,
+        catalog.sapling(definitionId),
+        commandId,
+      );
+  @override
+  Future<GameProfile> harvestSapling(String saplingId, String commandId) async {
+    final state = profile!.saplings.firstWhere(
+      (sapling) => sapling.id == saplingId,
+    );
+    return profile = SaplingRules.harvest(
+      profile!,
+      state,
+      catalog.sapling(state.definitionId),
+      commandId,
+    );
+  }
   @override
   Future<GameProfile> selectGoal(String goalId) async =>
       profile = EconomyRules.selectGoal(profile!, catalog.goal(goalId));
@@ -381,6 +405,7 @@ void main() {
             const BudgetScreen(),
             const ShopScreen(),
             const SavingsScreen(),
+            const GardenScreen(),
             const HistoryScreen(),
             const WardrobeScreen(),
             const ProgressScreen(),
@@ -688,7 +713,8 @@ void main() {
       await tester.tap(find.text('Следующий период'));
       await tester.pumpAndSettle();
       expect(repository.profile!.period, 2);
-      expect(repository.profile!.balance, 210);
+      // 110 + доход 100 и подарок за день 1 серии 2.
+      expect(repository.profile!.balance, 212);
       expect(repository.profile!.plan, isNull);
       expect(tester.takeException(), isNull);
     },
@@ -715,16 +741,16 @@ void main() {
       await tester.tap(find.text('Покупки'));
       await tester.pumpAndSettle();
       await tester.scrollUntilVisible(
-        find.text('Выбрать за 25'),
+        find.text('Выбрать за 25').first,
         -200,
         scrollable: find.byType(Scrollable).first,
       );
-      await tester.tap(find.text('Выбрать за 25'));
+      await tester.tap(find.text('Выбрать за 25').first);
       await tester.pumpAndSettle();
       await tester.tap(find.text('Отмена'));
       await tester.pumpAndSettle();
       expect(repository.profile!.balance, 100);
-      await tester.tap(find.text('Выбрать за 25'));
+      await tester.tap(find.text('Выбрать за 25').first);
       await tester.pumpAndSettle();
       await tester.tap(find.text('Купить'));
       await tester.pumpAndSettle();
@@ -791,6 +817,9 @@ void main() {
         -150,
         scrollable: find.byType(Scrollable).first,
       );
+      // Кнопка могла построиться в кэше за пределами видимой части списка.
+      await tester.ensureVisible(find.text('Посмотреть бюджет'));
+      await tester.pumpAndSettle();
       await tester.tap(find.text('Посмотреть бюджет'));
       await tester.pumpAndSettle();
       expect(find.text('Нужно — план: 50 · факт: 25'), findsOneWidget);
@@ -823,11 +852,11 @@ void main() {
       await tester.tap(find.text('Покупки'));
       await tester.pumpAndSettle();
       await tester.scrollUntilVisible(
-        find.text('Выбрать за 25'),
+        find.text('Выбрать за 25').first,
         -200,
         scrollable: find.byType(Scrollable).first,
       );
-      await tester.tap(find.text('Выбрать за 25'));
+      await tester.tap(find.text('Выбрать за 25').first);
       await tester.pumpAndSettle();
       await tester.tap(find.text('Купить'));
       await tester.pumpAndSettle();

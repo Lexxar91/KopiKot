@@ -1,4 +1,5 @@
 import '../models/game_profile.dart';
+import '../models/game_transaction.dart';
 
 /// Ожидаемый отказ игрового действия с объяснением для игрока.
 class GameRuleException implements Exception {
@@ -13,6 +14,9 @@ class GameRuleException implements Exception {
 abstract final class GameRules {
   static const int startingBalance = 100;
 
+  /// Линейка ежедневных подарков; серия растёт до 7-го уровня и держится.
+  static const List<int> dailyRewardLadder = [2, 3, 5, 7, 10, 14, 20];
+
   static String validatePetName(String name) {
     final String result = name.trim();
     if (result.isEmpty || result.runes.length > 20) {
@@ -22,6 +26,57 @@ abstract final class GameRules {
       throw const GameRuleException('Напиши имя питомца в одну строку.');
     }
     return result;
+  }
+
+  /// Повтор команды с теми же параметрами безопасен; с другими — ошибка.
+  static bool isReplay(
+    GameProfile profile,
+    String id,
+    TransactionKind kind,
+    String reference,
+    int amount,
+  ) {
+    if (id.trim().isEmpty || id.length > 128) {
+      throw const GameRuleException(
+        'Не удалось распознать действие. Повтори его.',
+      );
+    }
+    for (final entry in profile.transactions) {
+      if (entry.id != id) continue;
+      if (entry.kind != kind ||
+          entry.referenceId != reference ||
+          entry.amount != amount) {
+        throw const GameRuleException(
+          'Это действие уже сохранено с другими параметрами. Открой раздел заново.',
+        );
+      }
+      return true;
+    }
+    return false;
+  }
+
+  /// Траты и переводы возможны только после подтверждённого плана периода.
+  static void requirePlan(GameProfile profile) {
+    if (profile.plan == null) {
+      throw const GameRuleException(
+        'Сначала составь и подтверди бюджет этого периода.',
+      );
+    }
+  }
+
+  static void requirePositive(int amount) {
+    if (amount <= 0) {
+      throw const GameRuleException('Укажи хотя бы одну монету.');
+    }
+  }
+
+  static void requireBalance(GameProfile profile, int amount) {
+    if (amount > profile.balance) {
+      throw GameRuleException(
+        'Не хватает ${amount - profile.balance} монет. '
+        'Выбери покупку дешевле, перенеси её или верни часть накоплений с подтверждением.',
+      );
+    }
   }
 
   static BudgetPlan confirmBudget(

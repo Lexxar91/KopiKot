@@ -3,6 +3,7 @@ enum TransactionKind {
   needPurchase,
   wantPurchase,
   giftPurchase,
+  saplingPurchase,
   deposit,
   withdrawal,
 }

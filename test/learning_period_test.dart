@@ -172,7 +172,8 @@ void main() {
       }
       expect(profile.periodSummaries.length, 5);
       expect(profile.savings, 100);
-      expect(profile.balance, 375);
+      // Базовый доход 500 и подарки серии за пять периодов: 2+3+5+7+10.
+      expect(profile.balance, 402);
       profile = profile.withPlan(
         GameRules.confirmBudget(profile, needs: 0, wants: 0, savings: 0),
       );
@@ -185,7 +186,7 @@ void main() {
 
   test('Контрольные суммы полной демонстрации из docs/demo_scenario.md', () {
     var profile = EconomyRules.selectGoal(initialProfile, catalog.goal('tent'));
-    const balances = [135, 190, 245, 300, 355];
+    const balances = [137, 195, 255, 317, 382];
     for (var period = 1; period <= 5; period++) {
       profile = profile.withPlan(
         GameRules.confirmBudget(
@@ -280,5 +281,91 @@ void main() {
       withdraw: true,
     );
     expect(PeriodRules.summarize(profile).supportsGrowth, isFalse);
+  });
+
+  test('Подарки серии растут до седьмого дня и держатся на максимуме', () {
+    var profile = EconomyRules.selectGoal(
+      initialProfile,
+      catalog.goal('garden'),
+    );
+    const bonuses = [2, 3, 5, 7, 10, 14, 20];
+    for (var period = 1; period <= 8; period++) {
+      profile = profile.withPlan(
+        GameRules.confirmBudget(profile, needs: 25, wants: 0, savings: 20),
+      );
+      profile = EconomyRules.purchase(
+        profile,
+        catalog.product('porridge'),
+        'buy-$period',
+      );
+      profile = EconomyRules.transfer(
+        profile,
+        catalog.goal('garden'),
+        20,
+        commandId: 'save-$period',
+        withdraw: false,
+      );
+      profile = PeriodRules.finish(profile, period);
+      final bonus = profile.transactions
+          .where((entry) => entry.id == 'streak-bonus-${period + 1}')
+          .single;
+      expect(bonus.amount, bonuses[(period - 1).clamp(0, 6)]);
+      expect(bonus.label, contains('серии'));
+    }
+    expect(profile.streak, 7);
+    // 100 стартовых + 800 дохода + 81 подарок − 200 еды − 160 накоплений.
+    expect(profile.balance, 621);
+    expect(profile.savings, 160);
+  });
+
+  test('Пропуск дней уменьшает серию на один уровень, не обнуляя её', () {
+    final DateTime start = DateTime(2026, 9, 1, 10);
+    var profile = initialProfile
+        .copyWith(streak: 7, lastRewardAt: start)
+        .withPlan(
+          GameRules.confirmBudget(initialProfile, needs: 0, wants: 0, savings: 0),
+        );
+    profile = PeriodRules.finish(
+      profile,
+      1,
+      now: start.add(const Duration(days: 4)),
+    );
+    // 7 → 6 после пропуска, начислен подарок шестого дня, серия снова растёт.
+    final bonus = profile.transactions
+        .where((entry) => entry.id == 'streak-bonus-2')
+        .single;
+    expect(bonus.amount, 14);
+    expect(bonus.label, 'Подарок за день 6 серии');
+    expect(profile.streak, 7);
+    expect(profile.feedback, contains('уменьшилась на один уровень'));
+
+    // Серия первого уровня не обнуляется: приветствие остаётся тёплым.
+    profile = initialProfile
+        .copyWith(streak: 1, lastRewardAt: start)
+        .withPlan(
+          GameRules.confirmBudget(initialProfile, needs: 0, wants: 0, savings: 0),
+        );
+    profile = PeriodRules.finish(
+      profile,
+      1,
+      now: start.add(const Duration(days: 4)),
+    );
+    expect(profile.streak, 2);
+    expect(profile.feedback, contains('Рад тебя видеть'));
+    expect(profile.transactions.last.amount, 2);
+  });
+
+  test('Завершение периода снижает энергию, прогулка и еда её возвращают', () {
+    var profile = initialProfile.withPlan(
+      GameRules.confirmBudget(initialProfile, needs: 0, wants: 0, savings: 0),
+    );
+    profile = PeriodRules.finish(profile, 1);
+    expect(profile.energy, 55);
+    expect(profile.feedback, contains('бесплатная прогулка'));
+    profile = profile.withPlan(
+      GameRules.confirmBudget(profile, needs: 0, wants: 0, savings: 0),
+    );
+    profile = EconomyRules.purchase(profile, catalog.product('porridge'), 'eat');
+    expect(profile.energy, 65);
   });
 }

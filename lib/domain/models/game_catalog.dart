@@ -13,6 +13,7 @@ class ShopProduct {
     required this.satiety,
     required this.mood,
     required this.description,
+    this.energy = 0,
     this.accessory,
   });
   final String id;
@@ -21,8 +22,33 @@ class ShopProduct {
   final int price;
   final int satiety;
   final int mood;
+
+  /// Прибавка бодрости: полезная еда бодрит, лакомство — только радует.
+  final int energy;
   final String description;
   final PetAccessory? accessory;
+}
+
+/// Обычный саженец котодерева: цена одна, но срок и награда растут вместе.
+class SaplingDefinition {
+  const SaplingDefinition({
+    required this.id,
+    required this.title,
+    required this.price,
+    required this.term,
+    required this.reward,
+    required this.description,
+  });
+  final String id;
+  final String title;
+  final int price;
+  final int term;
+  final int reward;
+  final String description;
+
+  /// Досрочный сбор возвращает вложение без потерь и часть бонуса.
+  int earlyReward(int elapsedPeriods) =>
+      price + ((reward - price) * elapsedPeriods.clamp(0, term) ~/ term);
 }
 
 class GoalDefinition {
@@ -44,17 +70,22 @@ class GameCatalog {
     required this.version,
     required List<ShopProduct> products,
     required List<GoalDefinition> goals,
+    required List<SaplingDefinition> saplings,
     List<LearningTask> tasks = const [],
   }) : products = List.unmodifiable(products),
        goals = List.unmodifiable(goals),
+       saplings = List.unmodifiable(saplings),
        tasks = List.unmodifiable(tasks);
   final int version;
   final List<ShopProduct> products;
   final List<GoalDefinition> goals;
+  final List<SaplingDefinition> saplings;
   final List<LearningTask> tasks;
   LearningTask task(String id) => tasks.firstWhere((task) => task.id == id);
 
   ShopProduct product(String id) =>
       products.firstWhere((product) => product.id == id);
   GoalDefinition goal(String id) => goals.firstWhere((goal) => goal.id == id);
+  SaplingDefinition sapling(String id) =>
+      saplings.firstWhere((sapling) => sapling.id == id);
 }

@@ -132,6 +132,16 @@ class GameController extends AsyncNotifier<GameProfile?> {
   Future<void> equipAccessory(PetAccessory? accessory) =>
       _perform((repository) => repository.equipAccessory(accessory));
 
+  Future<void> walk() => _perform((repository) => repository.walk());
+
+  Future<void> plantSapling(String definitionId, String commandId) => _perform(
+    (repository) => repository.plantSapling(definitionId, commandId),
+  );
+
+  Future<void> harvestSapling(String saplingId, String commandId) => _perform(
+    (repository) => repository.harvestSapling(saplingId, commandId),
+  );
+
   Future<void> selectGoal(String goalId) =>
       _perform((repository) => repository.selectGoal(goalId));
 

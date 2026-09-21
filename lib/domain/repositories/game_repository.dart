@@ -29,6 +29,14 @@ abstract interface class GameRepository {
 
   Future<GameProfile> purchase(String productId, {required String commandId});
   Future<GameProfile> equipAccessory(PetAccessory? accessory);
+
+  /// Бесплатная прогулка: раз в игровой период, без монет и плана.
+  Future<GameProfile> walk();
+
+  /// Посадка и сбор саженца котодерева-копилки.
+  Future<GameProfile> plantSapling(String definitionId, String commandId);
+  Future<GameProfile> harvestSapling(String saplingId, String commandId);
+
   Future<GameProfile> selectGoal(String goalId);
   Future<GameProfile> transfer(
     String goalId,

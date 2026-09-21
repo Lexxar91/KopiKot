@@ -3,10 +3,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../domain/models/game_profile.dart';
 import '../../domain/models/game_transaction.dart';
+import '../../domain/rules/game_rules.dart';
 import '../providers/game_controller.dart';
 import '../widgets/adult_access_button.dart';
 import '../widgets/pet_portrait.dart';
 import 'budget_screen.dart';
+import 'garden_screen.dart';
 import 'help_screen.dart';
 import 'history_screen.dart';
 import 'progress_screen.dart';
@@ -31,6 +33,16 @@ class HomeScreen extends ConsumerWidget {
         : catalog.goal(profile.selectedGoalId!);
     final bool boughtSomething =
         profile.actualNeeds + profile.actualWants + profile.actualGifts > 0;
+    // Мягкое напоминание: без блокировок, осмотр всегда доступен в магазине.
+    final vetVisits = profile.transactions
+        .where((entry) => entry.referenceId == 'vet_checkup')
+        .toList();
+    final int? lastVetPeriod = vetVisits.isEmpty
+        ? null
+        : vetVisits.last.period;
+    final bool needsVetVisit = lastVetPeriod == null
+        ? profile.period >= 3
+        : profile.period - lastVetPeriod >= 3;
     return Scaffold(
       appBar: AppBar(
         title: Text(profile.petName),
@@ -116,6 +128,13 @@ class HomeScreen extends ConsumerWidget {
                   _ActionsGrid(
                     children: [
                       _ActionCard(
+                        title: 'Котодерево',
+                        subtitle: 'Посади саженец-копилку',
+                        icon: Icons.park_rounded,
+                        color: const Color(0xFFE3F4D7),
+                        onTap: () => _open(context, const GardenScreen()),
+                      ),
+                      _ActionCard(
                         title: 'Гардероб',
                         subtitle: 'Надеть или снять вещь',
                         icon: Icons.checkroom_rounded,
@@ -145,6 +164,15 @@ class HomeScreen extends ConsumerWidget {
                       const SizedBox(width: 10),
                       Expanded(
                         child: _StatusCard(
+                          icon: Icons.bolt_rounded,
+                          label: 'Энергия',
+                          value: profile.energy,
+                          color: const Color(0xFF5AC8FA),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: _StatusCard(
                           icon: Icons.sentiment_very_satisfied_rounded,
                           label: 'Радость',
                           value: profile.mood,
@@ -153,6 +181,47 @@ class HomeScreen extends ConsumerWidget {
                       ),
                     ],
                   ),
+                  const SizedBox(height: 10),
+                  SizedBox(
+                    width: double.infinity,
+                    child: FilledButton.tonalIcon(
+                      onPressed: () => ref
+                          .read(gameControllerProvider.notifier)
+                          .walk(),
+                      icon: const Icon(Icons.directions_walk_rounded),
+                      label: const Text('Прогулка (бесплатно)'),
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  if (needsVetVisit)
+                    Card(
+                      color: const Color(0xFFFFF3E0),
+                      child: Padding(
+                        padding: const EdgeInsets.all(14),
+                        child: Row(
+                          children: [
+                            const Icon(
+                              Icons.medical_services_outlined,
+                              color: Color(0xFFB26A00),
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Text(
+                                'Котику пригодится совет ветеринара. '
+                                'Давай запланируем визит?',
+                              ),
+                            ),
+                            IconButton(
+                              tooltip: 'К Котомаркету',
+                              icon: const Icon(Icons.chevron_right_rounded),
+                              onPressed: () => _open(context, const ShopScreen()),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  const SizedBox(height: 14),
+                  _DailyRewardCard(streak: profile.streak),
                   const SizedBox(height: 14),
                   _GoalCard(
                     title: goal?.title,
@@ -323,16 +392,22 @@ class _StatusCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Card(
     child: Padding(
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.all(12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
               Icon(icon, color: color),
-              const SizedBox(width: 7),
-              Expanded(child: Text(label)),
-              Text('$value'),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              Text('$value', maxLines: 1, overflow: TextOverflow.ellipsis),
             ],
           ),
           const SizedBox(height: 9),
@@ -346,6 +421,82 @@ class _StatusCard extends StatelessWidget {
       ),
     ),
   );
+}
+
+/// Линейка серии видна заранее: регулярность помогает, а пропуск не обнуляет.
+class _DailyRewardCard extends StatelessWidget {
+  const _DailyRewardCard({required this.streak});
+  final int streak;
+
+  @override
+  Widget build(BuildContext context) {
+    final ladder = GameRules.dailyRewardLadder;
+    final int next = ladder[streak - 1];
+    return Card(
+      color: const Color(0xFFFFF8E1),
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(
+                  Icons.card_giftcard_rounded,
+                  color: Color(0xFFB26A00),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    'Ежедневный подарок',
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Серия: день $streak из 7. В следующем периоде: +$next монет. '
+              'Пропуск уменьшает серию лишь на один уровень.',
+            ),
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                for (var day = 1; day <= ladder.length; day++) ...[
+                  if (day > 1) const SizedBox(width: 4),
+                  Expanded(
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(vertical: 6),
+                      decoration: BoxDecoration(
+                        color: day <= streak
+                            ? const Color(0xFFFFD54F)
+                            : const Color(0xFFF1EDE2),
+                        borderRadius: BorderRadius.circular(10),
+                        border: day == streak
+                            ? Border.all(
+                                color: const Color(0xFFB26A00),
+                                width: 2,
+                              )
+                            : null,
+                      ),
+                      child: Center(
+                        child: Text(
+                          '${ladder[day - 1]}',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: Theme.of(context).textTheme.labelLarge,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
 class _GoalCard extends StatelessWidget {
