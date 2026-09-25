@@ -9,6 +9,7 @@ import 'package:kopikot/data/repositories/local_game_repository.dart';
 import 'package:kopikot/domain/models/game_profile.dart';
 import 'package:kopikot/domain/models/learning_task.dart';
 import 'package:kopikot/domain/rules/game_rules.dart';
+import 'package:kopikot/domain/rules/mini_game_rules.dart';
 import 'support/native_isar.dart';
 
 void main() {
@@ -40,7 +41,7 @@ void main() {
       repository.submitTask('saving_start', const TaskAnswer(savings: 10)),
     ]);
     final profile = (await repository.loadProfile())!;
-    expect(profile.balance, 110);
+    expect(profile.balance, 112);
     expect(profile.taskProgress.single.attempts, 1);
     expect(profile.transactions.length, 2);
   });
@@ -146,7 +147,7 @@ void main() {
       repository = LocalGameRepository(store, catalog);
       final restored = (await repository.loadProfile())!;
       expect(restored.isTest, isTrue);
-      expect(restored.balance, 110);
+      expect(restored.balance, 112);
       expect(restored.completedTask('saving_start'), isTrue);
       final regular = (await repository.switchProfile(testProfile: false))!;
       expect(regular.isTest, isFalse);
@@ -154,7 +155,7 @@ void main() {
       expect(regular.balance, 75);
       expect(regular.transactions.last.id, 'regular-food');
       expect(regular.taskProgress, isEmpty);
-      expect((await repository.switchProfile(testProfile: true))!.balance, 110);
+      expect((await repository.switchProfile(testProfile: true))!.balance, 112);
     },
   );
 
@@ -206,7 +207,7 @@ void main() {
       repository = LocalGameRepository(store, catalog);
       expect((await repository.loadProfile())!.balance, 100);
       final regular = (await repository.switchProfile(testProfile: false))!;
-      expect(regular.balance, 110);
+      expect(regular.balance, 112);
       expect(regular.completedTask('saving_start'), isTrue);
       expect(regular.plan, isNotNull);
       expect(regular.period, 1);
@@ -312,8 +313,8 @@ void main() {
       expect(profile.plan, isNull);
     }
     expect((await repository.loadProfile())!.growthStage, 3);
-    // 500 базового дохода и подарки серии 2+3+5+7+10 за пять периодов.
-    expect((await repository.loadProfile())!.balance, 402);
+    // Пять периодов дают только базовый доход; награда — отдельное действие.
+    expect((await repository.loadProfile())!.balance, 375);
   });
 
   setUp(() async {
@@ -328,30 +329,73 @@ void main() {
   });
 
   test(
-    'Саженцы, серия, прогулка и энергия переживают перезапуск',
+    'Награда мини-игры сохраняется и одна команда не платит дважды',
     () async {
       await create();
-      await repository.confirmBudget(needs: 20, wants: 0, savings: 0);
-      await repository.plantSapling('sapling_10', 'seed');
-      await repository.walk();
-      await repository.finishPeriod(1);
+      final first = await repository.claimMiniGame(
+        MiniGameKind.accountant,
+        'accountant-round-1',
+      );
+      expect(first.balance, 112);
+      await repository.claimMiniGame(
+        MiniGameKind.accountant,
+        'accountant-round-1',
+      );
+
       await store.close();
-      store = await LocalGameStore.open(directory: directory.path, name: 'test');
+      store = await LocalGameStore.open(
+        directory: directory.path,
+        name: 'test',
+      );
       repository = LocalGameRepository(store, catalog);
-      final profile = (await repository.loadProfile())!;
-      expect(profile.saplings.single.definitionId, 'sapling_10');
-      expect(profile.saplings.single.plantedPeriod, 1);
-      expect(profile.streak, 2);
-      expect(profile.lastRewardAt, isNotNull);
-      expect(profile.walkPeriod, 1);
-      expect(profile.energy, 70);
-      expect(profile.balance, 182);
-      // Повторная прогулка в новом периоде доступна и бодрит.
-      final walked = await repository.walk();
-      expect(walked.energy, 85);
-      expect(walked.walkPeriod, 2);
+      final restored = (await repository.loadProfile())!;
+      expect(restored.balance, 112);
+      expect(
+        restored.transactions.where(
+          (entry) => entry.referenceId == MiniGameKind.accountant.name,
+        ),
+        hasLength(1),
+      );
+
+      final next = await repository.claimMiniGame(
+        MiniGameKind.accountant,
+        'accountant-round-2',
+      );
+      expect(next.balance, 124);
     },
   );
+
+  test('Саженцы, серия, прогулка и энергия переживают перезапуск', () async {
+    await create();
+    await repository.confirmBudget(needs: 20, wants: 0, savings: 0);
+    await repository.plantSapling('sapling_10', 'seed');
+    await repository.walk();
+    await repository.claimDailyReward();
+    await repository.finishPeriod(1);
+    await store.close();
+    store = await LocalGameStore.open(directory: directory.path, name: 'test');
+    repository = LocalGameRepository(store, catalog);
+    final profile = (await repository.loadProfile())!;
+    expect(profile.saplings.single.definitionId, 'sapling_10');
+    expect(profile.saplings.single.plantedPeriod, 1);
+    expect(profile.streak, 2);
+    expect(profile.lastRewardAt, isNotNull);
+    expect(profile.walkPeriod, 1);
+    expect(profile.energy, 70);
+    expect(profile.balance, 185);
+    final claimedAgain = await repository.claimDailyReward();
+    expect(claimedAgain.balance, 185);
+    expect(
+      claimedAgain.transactions.where(
+        (entry) => entry.label.startsWith('Ежедневная награда:'),
+      ),
+      hasLength(1),
+    );
+    // Повторная прогулка в новом периоде доступна и бодрит.
+    final walked = await repository.walk();
+    expect(walked.energy, 85);
+    expect(walked.walkPeriod, 2);
+  });
 
   test('Миграция схемы 4 сохраняет прогресс и добавляет новые поля', () async {
     await create();
@@ -375,7 +419,7 @@ void main() {
       await repository.submitTask('budget_lunch', const TaskAnswer());
       await repository.submitTask(
         'budget_lunch',
-        const TaskAnswer(needs: 30, savings: 10),
+        const TaskAnswer(needs: 30, wants: 20, savings: 10),
       );
       await repository.selectGoal('tent');
       await repository.purchase('porridge', commandId: 'food');
@@ -388,8 +432,8 @@ void main() {
       );
       repository = LocalGameRepository(store, catalog);
       var profile = (await repository.loadProfile())!;
-      // 100 + 10 задание − 25 каша − 20 накопление + 100 доход + 2 серия.
-      expect(profile.balance, 167);
+      // Награда за вход отдельна от дохода следующего периода.
+      expect(profile.balance, 163);
       expect(profile.period, 2);
       expect(profile.plan, isNull);
       expect(profile.completedTask('budget_lunch'), isTrue);
@@ -397,11 +441,11 @@ void main() {
       expect(profile.periodSummaries.single.supportsGrowth, isTrue);
       await repository.submitTask(
         'budget_lunch',
-        const TaskAnswer(needs: 30, savings: 10),
+        const TaskAnswer(needs: 30, wants: 20, savings: 10),
       );
       await repository.finishPeriod(1);
       profile = (await repository.loadProfile())!;
-      expect(profile.balance, 167);
+      expect(profile.balance, 163);
       expect(profile.periodSummaries.length, 1);
     },
   );
@@ -540,6 +584,31 @@ void main() {
     expect(profile.accessory, isNull);
     expect(profile.ownsAccessory(PetAccessory.bow), isTrue);
     expect(profile.ownsAccessory(PetAccessory.cap), isTrue);
+  });
+
+  test('Новые аксессуары остаются в гардеробе после перезапуска', () async {
+    await create();
+    await repository.confirmBudget(needs: 35, wants: 65, savings: 0);
+    await repository.purchase('sport_headband', commandId: 'buy-headband');
+    await repository.purchase('blue_wristbands', commandId: 'buy-wristbands');
+    await repository.equipAccessory(PetAccessory.headband);
+    await store.close();
+    store = await LocalGameStore.open(directory: directory.path, name: 'test');
+    repository = LocalGameRepository(store, catalog);
+
+    var profile = (await repository.loadProfile())!;
+    expect(profile.accessory, PetAccessory.headband);
+    expect(profile.ownsAccessory(PetAccessory.headband), isTrue);
+    expect(profile.ownsAccessory(PetAccessory.wristbands), isTrue);
+    expect(profile.balance, 35);
+
+    await repository.equipAccessory(PetAccessory.wristbands);
+    await repository.equipAccessory(null);
+    profile = (await repository.loadProfile())!;
+    expect(profile.accessory, isNull);
+    expect(profile.ownsAccessory(PetAccessory.headband), isTrue);
+    expect(profile.ownsAccessory(PetAccessory.wristbands), isTrue);
+    expect(profile.balance, 35);
   });
 
   test(

@@ -14,9 +14,6 @@ class GameRuleException implements Exception {
 abstract final class GameRules {
   static const int startingBalance = 100;
 
-  /// Линейка ежедневных подарков; серия растёт до 7-го уровня и держится.
-  static const List<int> dailyRewardLadder = [2, 3, 5, 7, 10, 14, 20];
-
   static String validatePetName(String name) {
     final String result = name.trim();
     if (result.isEmpty || result.runes.length > 20) {

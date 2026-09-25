@@ -6,11 +6,14 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kopikot/domain/models/game_profile.dart';
+import 'package:kopikot/domain/models/game_transaction.dart';
 import 'package:kopikot/data/content/catalog_loader.dart';
 import 'package:kopikot/domain/rules/economy_rules.dart';
 import 'package:kopikot/domain/rules/learning_rules.dart';
 import 'package:kopikot/domain/rules/period_rules.dart';
 import 'package:kopikot/domain/rules/activity_rules.dart';
+import 'package:kopikot/domain/rules/daily_reward_rules.dart';
+import 'package:kopikot/domain/rules/mini_game_rules.dart';
 import 'package:kopikot/domain/rules/sapling_rules.dart';
 import 'package:kopikot/domain/models/learning_task.dart';
 import 'package:kopikot/domain/repositories/game_repository.dart';
@@ -19,6 +22,8 @@ import 'package:kopikot/main.dart';
 import 'package:kopikot/presentation/providers/game_controller.dart';
 import 'package:kopikot/presentation/widgets/pet_portrait.dart';
 import 'package:kopikot/presentation/screens/tasks_screen.dart';
+import 'package:kopikot/presentation/screens/accountant_screen.dart';
+import 'package:kopikot/presentation/screens/market_game_screen.dart';
 import 'package:kopikot/presentation/screens/budget_screen.dart';
 import 'package:kopikot/presentation/screens/shop_screen.dart';
 import 'package:kopikot/presentation/screens/savings_screen.dart';
@@ -104,6 +109,14 @@ class _MemoryRepository implements GameRepository {
         answer,
       );
   @override
+  Future<GameProfile> claimMiniGame(
+    MiniGameKind kind,
+    String commandId,
+  ) async => profile = MiniGameRules.claim(profile!, kind, commandId);
+  @override
+  Future<GameProfile> claimDailyReward() async =>
+      profile = DailyRewardRules.claim(profile!);
+  @override
   Future<GameProfile> finishPeriod(int expectedPeriod) async =>
       profile = PeriodRules.finish(profile!, expectedPeriod);
 
@@ -122,12 +135,14 @@ class _MemoryRepository implements GameRepository {
   @override
   Future<GameProfile> walk() async => profile = ActivityRules.walk(profile!);
   @override
-  Future<GameProfile> plantSapling(String definitionId, String commandId) async =>
-      profile = SaplingRules.plant(
-        profile!,
-        catalog.sapling(definitionId),
-        commandId,
-      );
+  Future<GameProfile> plantSapling(
+    String definitionId,
+    String commandId,
+  ) async => profile = SaplingRules.plant(
+    profile!,
+    catalog.sapling(definitionId),
+    commandId,
+  );
   @override
   Future<GameProfile> harvestSapling(String saplingId, String commandId) async {
     final state = profile!.saplings.firstWhere(
@@ -140,6 +155,7 @@ class _MemoryRepository implements GameRepository {
       commandId,
     );
   }
+
   @override
   Future<GameProfile> selectGoal(String goalId) async =>
       profile = EconomyRules.selectGoal(profile!, catalog.goal(goalId));
@@ -203,6 +219,7 @@ void main() {
     WidgetTester tester,
     _MemoryRepository repository, {
     double scale = 1,
+    GlobalKey? captureKey,
   }) async {
     tester.view.physicalSize = const Size(360, 800);
     tester.view.devicePixelRatio = 1;
@@ -215,7 +232,9 @@ void main() {
         overrides: [
           gameRepositoryProvider.overrideWith((ref) async => repository),
         ],
-        child: const KopiKotApp(),
+        child: captureKey == null
+            ? const KopiKotApp()
+            : RepaintBoundary(key: captureKey, child: const KopiKotApp()),
       ),
     );
     // В приложении репозиторий ожидает каталог при запуске. Тестовый репозиторий
@@ -227,9 +246,66 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  Future<void> openAdult(WidgetTester tester) async {
-    await tester.tap(find.byTooltip('Для взрослого'));
+  test('Награда: один раз в день, пропуск снижает серию на один шаг', () {
+    final start = DateTime(2026, 9, 1, 10);
+    final first = DailyRewardRules.claim(initialProfile, now: start);
+    expect(first.balance, 105);
+    expect(first.streak, 2);
+    expect(first.transactions.last.amount, 5);
+    expect(DailyRewardRules.canClaim(first, now: start), isFalse);
+    expect(DailyRewardRules.claim(first, now: start), same(first));
+
+    final second = DailyRewardRules.claim(
+      first,
+      now: start.add(const Duration(days: 1)),
+    );
+    expect(second.balance, 115);
+    expect(second.streak, 3);
+    expect(second.transactions.last.amount, 10);
+
+    final afterMiss = DailyRewardRules.claim(
+      second,
+      now: start.add(const Duration(days: 3)),
+    );
+    expect(afterMiss.balance, 125);
+    expect(afterMiss.streak, 3);
+    expect(afterMiss.transactions.last.amount, 10);
+    expect(afterMiss.feedback, contains('уменьшилась всего на один шаг'));
+  });
+
+  test('Демо: награда доступна в новом периоде без ожидания даты', () {
+    final now = DateTime(2026, 9, 1, 10);
+    final first = DailyRewardRules.claim(_MemoryRepository()._demo(), now: now);
+    expect(first.balance, 105);
+    expect(DailyRewardRules.canClaim(first, now: now), isFalse);
+    final second = DailyRewardRules.claim(first.copyWith(period: 2), now: now);
+    expect(second.balance, 115);
+    expect(second.streak, 3);
+    expect(second.transactions.last.amount, 10);
+  });
+
+  Future<void> advanceOnboarding(WidgetTester tester) async {
+    await tester.ensureVisible(find.text('Дальше'));
     await tester.pumpAndSettle();
+    await tester.tap(find.text('Дальше'));
+    await tester.pumpAndSettle();
+  }
+
+  Future<void> openAdultGate(WidgetTester tester) async {
+    if (find.byTooltip('Для взрослого').evaluate().isNotEmpty) {
+      await tester.tap(find.byTooltip('Для взрослого'));
+    } else {
+      if (find.text('Для взрослых').evaluate().isEmpty) {
+        await tester.tap(find.text('Ещё'));
+        await tester.pumpAndSettle();
+      }
+      await tester.tap(find.text('Для взрослых'));
+    }
+    await tester.pumpAndSettle();
+  }
+
+  Future<void> openAdult(WidgetTester tester) async {
+    await openAdultGate(tester);
     final question = tester
         .widget<Text>(find.byKey(const Key('adult-challenge')))
         .data!;
@@ -260,8 +336,7 @@ void main() {
   ) async {
     final repository = _MemoryRepository();
     await launch(tester, repository, scale: 2);
-    await tester.tap(find.byTooltip('Для взрослого'));
-    await tester.pumpAndSettle();
+    await openAdultGate(tester);
     expect(find.text('Сбросить тестовый профиль'), findsNothing);
     await tester.enterText(find.byKey(const Key('adult-answer')), '0');
     await tester.tap(find.text('Открыть раздел'));
@@ -289,7 +364,7 @@ void main() {
     await tester.tap(find.text('Подтвердить'));
     await tester.pumpAndSettle();
     expect(repository.profile, isNull);
-    expect(find.text('Давай дружить!'), findsOneWidget);
+    expect(find.text('Привет! Это КопиКот'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 
@@ -316,12 +391,12 @@ void main() {
       await adultAction(tester, 'Открыть тестовый профиль');
       await tester.tap(find.text('Подтвердить'));
       await tester.pumpAndSettle();
-      expect(repository.profile!.balance, 110);
+      expect(repository.profile!.balance, 112);
       await openAdult(tester);
       await adultAction(tester, 'Сбросить тестовый профиль');
       await tester.tap(find.text('Отмена'));
       await tester.pumpAndSettle();
-      expect(repository.profile!.balance, 110);
+      expect(repository.profile!.balance, 112);
       await adultAction(tester, 'Сбросить тестовый профиль');
       repository.failProfileAction = true;
       await tester.tap(
@@ -332,7 +407,7 @@ void main() {
         find.text('Не удалось сохранить действие. Попробуй ещё раз.'),
         findsOneWidget,
       );
-      expect(repository.profile!.balance, 110);
+      expect(repository.profile!.balance, 112);
       expect(repository.profiles[false]!.balance, 74);
       repository.failProfileAction = false;
       await tester.tap(
@@ -341,13 +416,13 @@ void main() {
       await tester.pumpAndSettle();
       expect(repository.profile!.balance, 100);
       expect(repository.profile!.taskProgress, isEmpty);
-      expect(find.text('Финни Тест'), findsOneWidget);
+      expect(find.textContaining('Я Финни Тест'), findsOneWidget);
       await openAdult(tester);
       await adultAction(tester, 'Вернуться в обычный профиль');
       await tester.tap(find.text('Подтвердить'));
       await tester.pumpAndSettle();
       expect(repository.profile!.balance, 74);
-      expect(find.text('Финни'), findsOneWidget);
+      expect(find.textContaining('Я Финни'), findsOneWidget);
       expect(tester.takeException(), isNull);
     },
   );
@@ -377,7 +452,7 @@ void main() {
       await tester.pumpAndSettle();
       expect(repository.profile, isNull);
       expect(repository.profiles[true]!.balance, 87);
-      expect(find.text('Давай дружить!'), findsOneWidget);
+      expect(find.text('Привет! Это КопиКот'), findsOneWidget);
       expect(tester.takeException(), isNull);
     },
   );
@@ -397,6 +472,14 @@ void main() {
             ),
           );
         await launch(tester, repository, scale: scale);
+        final logoContext = tester.element(find.byType(Scaffold).first);
+        await tester.runAsync(() async {
+          await precacheImage(
+            const AssetImage('assets/images/logo_wood.png'),
+            logoContext,
+          );
+        });
+        await tester.pumpAndSettle();
         final semantics = tester.ensureSemantics();
         try {
           await expectLater(tester, meetsGuideline(androidTapTargetGuideline));
@@ -490,8 +573,7 @@ void main() {
       expect(MediaQuery.disableAnimationsOf(tester.element(setting)), isTrue);
       Navigator.of(tester.element(setting)).pop();
       await tester.pumpAndSettle();
-      await tester.tap(find.byTooltip('Для взрослого'));
-      await tester.pumpAndSettle();
+      await openAdultGate(tester);
       final gateContext = tester.element(
         find.byKey(const Key('adult-challenge')),
       );
@@ -526,11 +608,12 @@ void main() {
       await launch(tester, repository);
       expect(repository.reduceMotion, isFalse);
       expect(
-        MediaQuery.disableAnimationsOf(tester.element(find.text('Финни'))),
+        MediaQuery.disableAnimationsOf(
+          tester.element(find.textContaining('Я Финни')),
+        ),
         isTrue,
       );
-      await tester.tap(find.byTooltip('Для взрослого'));
-      await tester.pumpAndSettle();
+      await openAdultGate(tester);
       expect(
         ModalRoute.of(
           tester.element(find.byKey(const Key('adult-challenge'))),
@@ -545,26 +628,19 @@ void main() {
   ) async {
     final repository = _MemoryRepository();
     await launch(tester, repository);
+    await advanceOnboarding(tester);
+    await tester.tap(find.text('Дымок'));
+    await advanceOnboarding(tester);
     await tester.enterText(find.byType(TextFormField), 'Луна');
-    await tester.tap(find.text('Серый'));
-    await tester.ensureVisible(find.text('Бантик'));
-    await tester.tap(find.text('Бантик'));
-    await tester.scrollUntilVisible(
-      find.text('Начать дружбу'),
-      150,
-      scrollable: find.byType(Scrollable).first,
-    );
-    await tester.tap(find.text('Начать дружбу'));
+    await tester.ensureVisible(find.text('Начать игру'));
+    await tester.tap(find.text('Начать игру'));
     await tester.pumpAndSettle();
-    expect(find.text('Луна'), findsOneWidget);
+    expect(find.textContaining('Я Луна'), findsOneWidget);
     expect(repository.profile!.coat, PetCoat.grey);
-    expect(repository.profile!.accessory, PetAccessory.bow);
-    await tester.scrollUntilVisible(
-      find.text('Составить бюджет'),
-      150,
-      scrollable: find.byType(Scrollable).first,
-    );
-    await tester.tap(find.text('Составить бюджет'));
+    expect(repository.profile!.accessory, PetAccessory.scarf);
+    await tester.tap(find.text('Планы'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Бюджет'));
     await tester.pumpAndSettle();
     await tester.enterText(find.byType(TextField).at(0), '60');
     await tester.enterText(find.byType(TextField).at(1), '20');
@@ -574,16 +650,16 @@ void main() {
     await tester.enterText(find.byType(TextField).at(2), '20');
     await tester.pump();
     await tester.scrollUntilVisible(
-      find.text('Подтвердить план'),
+      find.text('Сохранить план'),
       -150,
       scrollable: find.byType(Scrollable).first,
     );
-    await tester.tap(find.text('Подтвердить план'));
+    await tester.tap(find.text('Сохранить план'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Изменить'));
     await tester.pumpAndSettle();
     expect(repository.profile!.plan, isNull);
-    await tester.tap(find.text('Подтвердить план'));
+    await tester.tap(find.text('Сохранить план'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Подтвердить'));
     await tester.pumpAndSettle();
@@ -596,7 +672,23 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  for (final taskId in ['basket_food', 'saving_start']) {
+  testWidgets('Окрас «Темныш» выбирается и сохраняется', (tester) async {
+    final repository = _MemoryRepository();
+    await launch(tester, repository);
+    await advanceOnboarding(tester);
+    await tester.ensureVisible(find.text('Темныш'));
+    await tester.tap(find.text('Темныш'));
+    await advanceOnboarding(tester);
+    await tester.enterText(find.byType(TextFormField), 'Мур');
+    await tester.ensureVisible(find.text('Начать игру'));
+    await tester.tap(find.text('Начать игру'));
+    await tester.pumpAndSettle();
+    expect((await repository.loadProfile())!.coat, PetCoat.dark);
+    expect(find.bySemanticsLabel('Темныш кот, Платок'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  for (final taskId in ['saving_start']) {
     testWidgets('$taskId: ответ через форму сохраняет награду', (tester) async {
       final repository = _MemoryRepository()
         ..profile = initialProfile.withPlan(
@@ -621,24 +713,373 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
-      if (taskId == 'basket_food') {
-        await tester.tap(find.text('Каша с тыквой'));
-        await tester.tap(find.text('Свежая вода'));
-      } else {
-        await tester.enterText(find.byType(TextField), '10');
-      }
+      await tester.enterText(find.byType(TextField), '35');
+      await tester.pumpAndSettle();
+      expect(find.text('Осталось распределить: 0'), findsOneWidget);
+      expect(
+        find.text('Это больше бюджета: осталось только 0 коткоинов.'),
+        findsOneWidget,
+      );
+      await tester.enterText(find.byType(TextField), '10');
       await tester.scrollUntilVisible(
-        find.text('Проверить решение'),
+        find.text('Проверить план'),
         150,
         scrollable: find.byType(Scrollable).first,
       );
-      await tester.tap(find.text('Проверить решение'));
+      await tester.tap(find.text('Проверить план'));
+      await tester.pumpAndSettle();
+      expect(repository.profile!.balance, 100);
+      await tester.tap(find.text('Забрать награду · 12'));
       await tester.pumpAndSettle();
       expect(repository.profile!.completedTask(taskId), isTrue);
-      expect(repository.profile!.balance, 110);
+      expect(repository.profile!.balance, 112);
       expect(tester.takeException(), isNull);
     });
   }
+
+  testWidgets('Повторение пройденного задания не начисляет награду снова', (
+    tester,
+  ) async {
+    final repository = _MemoryRepository();
+    final task = repository.catalog.task('saving_start');
+    repository.profile = LearningRules.submit(
+      initialProfile.withPlan(
+        GameRules.confirmBudget(
+          initialProfile,
+          needs: 50,
+          wants: 20,
+          savings: 30,
+        ),
+      ),
+      repository.catalog,
+      task,
+      const TaskAnswer(savings: 10),
+    ).copyWith(clearPlan: true);
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          gameRepositoryProvider.overrideWith((ref) async => repository),
+        ],
+        child: MaterialApp(
+          home: TaskScreen(task: task, catalog: repository.catalog),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField), '10');
+    await tester.ensureVisible(find.text('Проверить план'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Проверить план'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('Умное решение!'), findsOneWidget);
+    expect(repository.profile!.balance, 112);
+    expect(repository.profile!.taskProgress.single.attempts, 1);
+    expect(find.textContaining('Забрать награду'), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('Выбор покупки: ошибку можно исправить без потери монет', (
+    tester,
+  ) async {
+    final repository = _MemoryRepository()
+      ..profile = initialProfile.withPlan(
+        GameRules.confirmBudget(
+          initialProfile,
+          needs: 50,
+          wants: 20,
+          savings: 30,
+        ),
+      );
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          gameRepositoryProvider.overrideWith((ref) async => repository),
+        ],
+        child: MaterialApp(
+          home: TaskScreen(
+            task: repository.catalog.task('basket_food'),
+            catalog: repository.catalog,
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('Сначала мышку'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Сначала мышку'));
+    await tester.ensureVisible(find.text('Проверить план'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Проверить план'));
+    await tester.pumpAndSettle();
+    expect(repository.profile!.balance, 100);
+    await tester.scrollUntilVisible(
+      find.text('Вернуть мышку и купить корм'),
+      150,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Вернуть мышку и купить корм'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('Всё исправлено!'), findsOneWidget);
+    await tester.ensureVisible(find.text('Проверить план'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Проверить план'));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('Забрать награду · 8'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Забрать награду · 8'));
+    await tester.pumpAndSettle();
+    expect(repository.profile!.balance, 108);
+    expect(repository.profile!.completedTask('basket_food'), isTrue);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('Экран покупки 360×640 без переполнения', (tester) async {
+    await tester.runAsync(() async {
+      await ui.loadFontFromList(
+        await File('assets/fonts/Nunito-Variable.ttf').readAsBytes(),
+        fontFamily: 'Nunito',
+      );
+    });
+    await tester.pumpWidget(
+      const MaterialApp(home: Scaffold(body: SizedBox.shrink())),
+    );
+    final imageContext = tester.element(find.byType(Scaffold));
+    await tester.runAsync(() async {
+      for (final path in [
+        'assets/images/quest_market_background.png',
+        'assets/images/logo_wood.png',
+        'assets/images/cat_coin.png',
+        'assets/images/orange_kitten.png',
+        'assets/images/quest_cat_food.png',
+        'assets/images/quest_toy_mouse.png',
+      ]) {
+        await precacheImage(AssetImage(path), imageContext);
+      }
+    });
+    final key = GlobalKey();
+    final repository = _MemoryRepository()
+      ..profile = initialProfile.withPlan(
+        GameRules.confirmBudget(
+          initialProfile,
+          needs: 50,
+          wants: 20,
+          savings: 30,
+        ),
+      );
+    tester.view.physicalSize = const Size(360, 640);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          gameRepositoryProvider.overrideWith((ref) async => repository),
+        ],
+        child: MaterialApp(
+          theme: ThemeData(fontFamily: 'Nunito'),
+          home: RepaintBoundary(
+            key: key,
+            child: TaskScreen(
+              task: repository.catalog.task('basket_food'),
+              catalog: repository.catalog,
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('На покупки: 30'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+    final boundary =
+        key.currentContext!.findRenderObject()! as RenderRepaintBoundary;
+    await tester.runAsync(() async {
+      final image = await boundary.toImage(pixelRatio: 2);
+      final bytes = (await image.toByteData(format: ui.ImageByteFormat.png))!;
+      await File(
+        '/tmp/kopikot_purchase_preview.png',
+      ).writeAsBytes(bytes.buffer.asUint8List());
+      image.dispose();
+    });
+  });
+
+  for (final taskId in const [
+    'budget_lunch',
+    'budget_reserve',
+    'basket_care',
+    'saving_start',
+    'saving_finish',
+  ]) {
+    testWidgets('$taskId: экран задания помещается на 360×640', (tester) async {
+      await tester.runAsync(() async {
+        await ui.loadFontFromList(
+          await File('assets/fonts/Nunito-Variable.ttf').readAsBytes(),
+          fontFamily: 'Nunito',
+        );
+      });
+      final repository = _MemoryRepository()
+        ..profile = initialProfile.withPlan(
+          GameRules.confirmBudget(
+            initialProfile,
+            needs: 50,
+            wants: 20,
+            savings: 30,
+          ),
+        );
+      tester.view.physicalSize = const Size(360, 640);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            gameRepositoryProvider.overrideWith((ref) async => repository),
+          ],
+          child: MaterialApp(
+            theme: ThemeData(fontFamily: 'Nunito'),
+            home: TaskScreen(
+              task: repository.catalog.task(taskId),
+              catalog: repository.catalog,
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+      await tester.drag(find.byType(Scrollable).first, const Offset(0, -500));
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+    });
+  }
+
+  for (final scenario in const [
+    (
+      id: 'basket_care',
+      wrong: 'Да, хватит на всё',
+      fix: 'Выбрать корм и лекарство',
+    ),
+    (
+      id: 'saving_finish',
+      wrong: 'Уголёк — ждать большую награду',
+      fix: 'Начать откладывать понемногу',
+    ),
+  ]) {
+    testWidgets('${scenario.id}: неверный выбор можно исправить', (
+      tester,
+    ) async {
+      final repository = _MemoryRepository()
+        ..profile = initialProfile.withPlan(
+          GameRules.confirmBudget(
+            initialProfile,
+            needs: 50,
+            wants: 20,
+            savings: 30,
+          ),
+        );
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            gameRepositoryProvider.overrideWith((ref) async => repository),
+          ],
+          child: MaterialApp(
+            home: TaskScreen(
+              task: repository.catalog.task(scenario.id),
+              catalog: repository.catalog,
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.scrollUntilVisible(
+        find.text(scenario.wrong),
+        130,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(scenario.wrong));
+      await tester.scrollUntilVisible(
+        find.text('Проверить план'),
+        130,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Проверить план'));
+      await tester.pumpAndSettle();
+      expect(repository.profile!.balance, 100);
+      await tester.scrollUntilVisible(
+        find.text(scenario.fix),
+        130,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(scenario.fix));
+      await tester.pumpAndSettle();
+      expect(find.textContaining('Всё исправлено!'), findsOneWidget);
+      await tester.ensureVisible(find.text('Проверить план'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Проверить план'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Забрать награду · 8'));
+      await tester.pumpAndSettle();
+      expect(repository.profile!.balance, 108);
+      expect(repository.profile!.completedTask(scenario.id), isTrue);
+      expect(tester.takeException(), isNull);
+    });
+  }
+
+  testWidgets('План на день: выбор дел и отдельное получение награды', (
+    tester,
+  ) async {
+    final repository = _MemoryRepository()
+      ..profile = initialProfile.withPlan(
+        GameRules.confirmBudget(
+          initialProfile,
+          needs: 50,
+          wants: 20,
+          savings: 30,
+        ),
+      );
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          gameRepositoryProvider.overrideWith((ref) async => repository),
+        ],
+        child: MaterialApp(
+          home: TaskScreen(
+            task: repository.catalog.task('budget_reserve'),
+            catalog: repository.catalog,
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Покормить Барсика'));
+    await tester.tap(find.text('Осмотр у ветеринара'));
+    await tester.ensureVisible(find.text('Купить бантик'));
+    await tester.tap(find.text('Купить бантик'));
+    await tester.pumpAndSettle();
+    expect(
+      find.text('Это больше бюджета: осталось только 10 коткоинов.'),
+      findsOneWidget,
+    );
+    expect(find.text('Сумма плана 35 / 45'), findsOneWidget);
+    await tester.ensureVisible(find.text('Поиграть с мышкой'));
+    await tester.tap(find.text('Поиграть с мышкой'));
+    await tester.pumpAndSettle();
+    expect(find.text('Сумма плана 45 / 45'), findsOneWidget);
+    expect(find.textContaining('Это больше бюджета:'), findsNothing);
+    await tester.tap(find.text('Поиграть с мышкой'));
+    await tester.ensureVisible(find.text('Проверить план'));
+    await tester.tap(find.text('Проверить план'));
+    await tester.pumpAndSettle();
+    expect(repository.profile!.balance, 100);
+    await tester.ensureVisible(find.text('Забрать награду · 12'));
+    await tester.tap(find.text('Забрать награду · 12'));
+    await tester.pumpAndSettle();
+    expect(repository.profile!.balance, 112);
+    expect(repository.profile!.completedTask('budget_reserve'), isTrue);
+    expect(tester.takeException(), isNull);
+  });
 
   testWidgets(
     'Учебный бюджет даёт награду, завершение периода открывает новый план',
@@ -653,56 +1094,63 @@ void main() {
           ),
         );
       await launch(tester, repository);
-      await tester.scrollUntilVisible(
-        find.text('Задания'),
-        200,
-        scrollable: find.byType(Scrollable).first,
-      );
+      await tester.tap(find.text('Учимся'));
+      await tester.pumpAndSettle();
       await tester.tap(find.text('Задания'));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Обед и мечта'));
+      await tester.tap(find.text('Недельный бюджет'));
       await tester.pumpAndSettle();
       await tester.scrollUntilVisible(
-        find.text('Проверить решение'),
-        150,
+        find.widgetWithText(TextField, 'Нужное'),
+        -150,
         scrollable: find.byType(Scrollable).first,
       );
-      await tester.tap(find.text('Проверить решение'));
+      await tester.enterText(find.widgetWithText(TextField, 'Нужное'), '20');
+      await tester.enterText(find.widgetWithText(TextField, 'Радость'), '30');
+      await tester.enterText(find.widgetWithText(TextField, 'Копилка'), '10');
+      await tester.enterText(find.widgetWithText(TextField, 'Радость'), '35');
+      await tester.pumpAndSettle();
+      expect(find.text('Осталось распределить: 0'), findsOneWidget);
+      expect(
+        find.text('Это больше бюджета: осталось только 0 коткоинов.'),
+        findsOneWidget,
+      );
+      await tester.enterText(find.widgetWithText(TextField, 'Радость'), '30');
+      await tester.ensureVisible(find.text('Проверить план'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Проверить план'));
       await tester.pumpAndSettle();
       expect(repository.profile!.balance, 100);
       expect(repository.profile!.taskProgress.single.completed, isFalse);
       await tester.scrollUntilVisible(
-        find.widgetWithText(TextField, 'Нужно'),
+        find.widgetWithText(TextField, 'Нужное'),
         -150,
         scrollable: find.byType(Scrollable).first,
       );
-      await tester.enterText(find.widgetWithText(TextField, 'Нужно'), '30');
-      await tester.enterText(find.widgetWithText(TextField, 'На мечту'), '10');
+      await tester.enterText(find.widgetWithText(TextField, 'Нужное'), '30');
+      await tester.enterText(find.widgetWithText(TextField, 'Радость'), '20');
       await tester.scrollUntilVisible(
-        find.text('Проверить решение'),
+        find.text('Проверить план'),
         150,
         scrollable: find.byType(Scrollable).first,
       );
-      await tester.tap(find.text('Проверить решение'));
+      await tester.tap(find.text('Проверить план'));
       await tester.pumpAndSettle();
-      expect(repository.profile!.balance, 110);
-      expect(find.text('Задание выполнено'), findsOneWidget);
+      expect(repository.profile!.balance, 100);
+      await tester.tap(find.text('Забрать награду · 8'));
+      await tester.pumpAndSettle();
+      expect(repository.profile!.balance, 108);
+      expect(find.text('Проверить план'), findsOneWidget);
       await tester.pageBack();
       await tester.pumpAndSettle();
-      await tester.pageBack();
+      await tester.tap(find.byTooltip('Назад'));
       await tester.pumpAndSettle();
-      await tester.scrollUntilVisible(
-        find.text('Посмотреть бюджет'),
-        -200,
-        scrollable: find.byType(Scrollable).first,
-      );
-      await tester.tap(find.text('Посмотреть бюджет'));
+      await tester.tap(find.text('Планы'));
       await tester.pumpAndSettle();
-      await tester.scrollUntilVisible(
-        find.text('Подвести итоги'),
-        200,
-        scrollable: find.byType(Scrollable).first,
-      );
+      await tester.tap(find.text('Бюджет'));
+      await tester.pumpAndSettle();
+      await tester.ensureVisible(find.text('Подвести итоги'));
+      await tester.pumpAndSettle();
       await tester.tap(find.text('Подвести итоги'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Отмена'));
@@ -713,8 +1161,8 @@ void main() {
       await tester.tap(find.text('Следующий период'));
       await tester.pumpAndSettle();
       expect(repository.profile!.period, 2);
-      // 110 + доход 100 и подарок за день 1 серии 2.
-      expect(repository.profile!.balance, 212);
+      // Награда за вход получается отдельно; завершение периода даёт доход 100.
+      expect(repository.profile!.balance, 208);
       expect(repository.profile!.plan, isNull);
       expect(tester.takeException(), isNull);
     },
@@ -733,12 +1181,7 @@ void main() {
           ),
         );
       await launch(tester, repository);
-      await tester.scrollUntilVisible(
-        find.text('Покупки'),
-        -200,
-        scrollable: find.byType(Scrollable).first,
-      );
-      await tester.tap(find.text('Покупки'));
+      await tester.tap(find.text('Магазин'));
       await tester.pumpAndSettle();
       await tester.scrollUntilVisible(
         find.text('Выбрать за 25').first,
@@ -758,12 +1201,9 @@ void main() {
       expect(repository.profile!.satiety, 90);
       await tester.pageBack();
       await tester.pumpAndSettle();
-      await tester.scrollUntilVisible(
-        find.text('На мечту'),
-        -200,
-        scrollable: find.byType(Scrollable).first,
-      );
-      await tester.tap(find.text('На мечту'));
+      await tester.tap(find.text('Планы'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Накопления'));
       await tester.pumpAndSettle();
       await tester.scrollUntilVisible(
         find.text('Выбрать цель').first,
@@ -800,6 +1240,10 @@ void main() {
         find.textContaining('На цели останется 20 из 120'),
         findsOneWidget,
       );
+      expect(
+        find.textContaining('игровых периодов до цели: 3 → 4'),
+        findsOneWidget,
+      );
       await tester.tap(find.text('Отмена'));
       await tester.pumpAndSettle();
       expect(repository.profile!.savings, 30);
@@ -812,15 +1256,7 @@ void main() {
       expect(repository.profile!.netSaved, 20);
       await tester.pageBack();
       await tester.pumpAndSettle();
-      await tester.scrollUntilVisible(
-        find.text('Посмотреть бюджет'),
-        -150,
-        scrollable: find.byType(Scrollable).first,
-      );
-      // Кнопка могла построиться в кэше за пределами видимой части списка.
-      await tester.ensureVisible(find.text('Посмотреть бюджет'));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Посмотреть бюджет'));
+      await tester.tap(find.text('Бюджет'));
       await tester.pumpAndSettle();
       expect(find.text('Нужно — план: 50 · факт: 25'), findsOneWidget);
       expect(find.text('Хочется — план: 20 · факт: 0'), findsOneWidget);
@@ -844,12 +1280,7 @@ void main() {
             )
             .copyWith(balance: 20);
       await launch(tester, repository);
-      await tester.scrollUntilVisible(
-        find.text('Покупки'),
-        -200,
-        scrollable: find.byType(Scrollable).first,
-      );
-      await tester.tap(find.text('Покупки'));
+      await tester.tap(find.text('Магазин'));
       await tester.pumpAndSettle();
       await tester.scrollUntilVisible(
         find.text('Выбрать за 25').first,
@@ -874,13 +1305,11 @@ void main() {
     (tester) async {
       final repository = _MemoryRepository()..failCreate = true;
       await launch(tester, repository);
+      await advanceOnboarding(tester);
+      await advanceOnboarding(tester);
       await tester.enterText(find.byType(TextFormField), 'Финни');
-      await tester.scrollUntilVisible(
-        find.text('Начать дружбу'),
-        150,
-        scrollable: find.byType(Scrollable).first,
-      );
-      await tester.tap(find.text('Начать дружбу'));
+      await tester.ensureVisible(find.text('Начать игру'));
+      await tester.tap(find.text('Начать игру'));
       await tester.pumpAndSettle();
       expect(
         find.text('Не удалось сохранить питомца. Попробуй ещё раз.'),
@@ -897,18 +1326,754 @@ void main() {
     (tester) async {
       final repository = _MemoryRepository()..profile = initialProfile;
       await launch(tester, repository, scale: 2);
-      expect(find.text('Финни'), findsOneWidget);
-      expect(find.text('Баланс: 100'), findsOneWidget);
-      await tester.tap(find.byTooltip('Как играть'));
+      expect(find.textContaining('Я Финни'), findsOneWidget);
+      expect(find.text('100'), findsOneWidget);
+      await tester.tap(find.text('Ещё'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Как играть'));
       await tester.pumpAndSettle();
       expect(find.text('Твой маленький друг'), findsOneWidget);
       expect(tester.takeException(), isNull);
     },
   );
 
-  testWidgets('Девять вариантов питомца различимы на каждой из трёх стадий', (
+  Future<void> cacheCatImages(WidgetTester tester, List<String> paths) async {
+    await tester.pumpWidget(
+      const MaterialApp(home: Scaffold(body: SizedBox.shrink())),
+    );
+    final context = tester.element(find.byType(Scaffold));
+    await tester.runAsync(() async {
+      for (final path in paths) {
+        await precacheImage(AssetImage(path), context);
+      }
+    });
+    await tester.pump();
+  }
+
+  testWidgets('Список заданий 360×640 показывает значки, темы и карточки', (
     tester,
   ) async {
+    await tester.runAsync(() async {
+      await ui.loadFontFromList(
+        await File('assets/fonts/Nunito-Variable.ttf').readAsBytes(),
+        fontFamily: 'Nunito',
+      );
+    });
+    await cacheCatImages(tester, const [
+      'assets/images/fairytale_background.png',
+      'assets/images/orange_kitten.png',
+      'assets/images/logo_wood.png',
+      'assets/images/cat_coin.png',
+      'assets/images/quest_budget.png',
+      'assets/images/quest_purchases.png',
+      'assets/images/quest_savings.png',
+      'assets/images/quest_badge_plan.png',
+      'assets/images/quest_badge_purchases.png',
+      'assets/images/quest_badge_savings.png',
+      'assets/images/quest_hero_ginger.png',
+    ]);
+    final key = GlobalKey();
+    final repository = _MemoryRepository()..profile = initialProfile;
+    await launch(tester, repository, captureKey: key);
+    tester.view.physicalSize = const Size(360, 640);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Учимся'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Задания'));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.textContaining('Мур! Потренируем финансовый ум?'),
+      findsOneWidget,
+    );
+    expect(find.text('Значки за темы'), findsOneWidget);
+    expect(
+      find.image(const AssetImage('assets/images/quest_badge_plan.png')),
+      findsWidgets,
+    );
+    expect(find.text('Распределяй коткоины с умом'), findsOneWidget);
+    expect(find.text('Сначала нужное, потом радость'), findsOneWidget);
+    expect(find.text('Копи понемногу и регулярно'), findsOneWidget);
+    expect(find.text('Планирование бюджета'), findsWidgets);
+    expect(find.text('Платежи и покупки'), findsWidgets);
+    expect(find.text('Формирование сбережений'), findsWidgets);
+    expect(tester.getTopLeft(find.text('Недельный бюджет')).dy, lessThan(570));
+    expect(tester.takeException(), isNull);
+
+    final boundary =
+        key.currentContext!.findRenderObject()! as RenderRepaintBoundary;
+    await tester.runAsync(() async {
+      final image = await boundary.toImage(pixelRatio: 2);
+      final bytes = (await image.toByteData(format: ui.ImageByteFormat.png))!;
+      await File(
+        '/tmp/kopikot_tasks_preview.png',
+      ).writeAsBytes(bytes.buffer.asUint8List());
+      image.dispose();
+    });
+
+    await tester.tap(find.byTooltip('Фильтр по темам'));
+    await tester.pumpAndSettle();
+    expect(find.text('Все темы'), findsOneWidget);
+    await tester.tap(find.text('Платежи и покупки').last);
+    await tester.pumpAndSettle();
+    expect(find.text('Недельный бюджет'), findsNothing);
+    expect(find.text('Что купить сначала'), findsOneWidget);
+    await tester.tap(find.byTooltip('Фильтр по темам'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Все темы'));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('Недельный бюджет'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Недельный бюджет'));
+    await tester.pumpAndSettle();
+    expect(find.text('Недельный бюджет'), findsOneWidget);
+    expect(
+      find.textContaining('В начале недели Барсик получил 60 коткоинов'),
+      findsOneWidget,
+    );
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('Три шага знакомства на экране 360×640', (tester) async {
+    await tester.runAsync(() async {
+      await ui.loadFontFromList(
+        await File('assets/fonts/Nunito-Variable.ttf').readAsBytes(),
+        fontFamily: 'Nunito',
+      );
+    });
+    await cacheCatImages(tester, const [
+      'assets/images/fairytale_background.png',
+      'assets/images/orange_kitten.png',
+      'assets/images/cream_kitten.png',
+      'assets/images/grey_kitten.png',
+      'assets/images/dark_kitten.png',
+      'assets/images/white_kitten.png',
+      'assets/images/action_feed.png',
+      'assets/images/action_play.png',
+    ]);
+    final key = GlobalKey();
+    await launch(tester, _MemoryRepository(), captureKey: key);
+    tester.view.physicalSize = const Size(360, 640);
+    await tester.pumpAndSettle();
+
+    Future<void> capture(String stage) async {
+      final boundary =
+          key.currentContext!.findRenderObject()! as RenderRepaintBoundary;
+      await tester.runAsync(() async {
+        final image = await boundary.toImage(pixelRatio: 2);
+        final bytes = (await image.toByteData(format: ui.ImageByteFormat.png))!;
+        await File(
+          '/tmp/kopikot_onboarding_$stage.png',
+        ).writeAsBytes(bytes.buffer.asUint8List());
+        image.dispose();
+      });
+    }
+
+    expect(find.text('Привет! Это КопиКот'), findsOneWidget);
+    expect(find.text('Сначала нужное'), findsOneWidget);
+    expect(find.text('Потом радость'), findsOneWidget);
+    expect(find.text('И немного в копилку'), findsOneWidget);
+    await capture('intro');
+    await advanceOnboarding(tester);
+    expect(find.text('Выбери котика'), findsOneWidget);
+    expect(find.text('Темныш'), findsOneWidget);
+    await capture('coat');
+    await tester.tap(find.text('Темныш'));
+    await advanceOnboarding(tester);
+    expect(find.text('Как назвать котика?'), findsOneWidget);
+    expect(find.textContaining('Я Рут'), findsOneWidget);
+    await capture('name');
+    await tester.enterText(find.byType(TextFormField), 'Луна');
+    await tester.pump();
+    expect(find.textContaining('Я Луна'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('Бюджет 360×640: три категории и ограничение суммы', (
+    tester,
+  ) async {
+    await tester.runAsync(() async {
+      await ui.loadFontFromList(
+        await File('assets/fonts/Nunito-Variable.ttf').readAsBytes(),
+        fontFamily: 'Nunito',
+      );
+    });
+    await cacheCatImages(tester, const [
+      'assets/images/fairytale_background.png',
+      'assets/images/orange_kitten.png',
+      'assets/images/action_feed.png',
+      'assets/images/action_play.png',
+      'assets/images/cat_coin.png',
+      'assets/images/logo_wood.png',
+      'assets/images/budget_needs.png',
+      'assets/images/budget_joy.png',
+      'assets/images/budget_savings.png',
+      'assets/images/budget_hero_ginger.png',
+    ]);
+    final key = GlobalKey();
+    final repository = _MemoryRepository()..profile = initialProfile;
+    await launch(tester, repository, captureKey: key);
+    tester.view.physicalSize = const Size(360, 640);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Планы'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Бюджет'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('На эту неделю:'), findsOneWidget);
+    expect(find.text('Нужное'), findsOneWidget);
+    expect(find.text('Радость'), findsOneWidget);
+    expect(find.text('Копилка'), findsOneWidget);
+    expect(
+      tester.widget<TextField>(find.byType(TextField).at(0)).controller!.text,
+      '50',
+    );
+    expect(
+      tester.widget<TextField>(find.byType(TextField).at(1)).controller!.text,
+      '25',
+    );
+    expect(
+      tester.widget<TextField>(find.byType(TextField).at(2)).controller!.text,
+      '25',
+    );
+    expect(
+      tester.widget<Text>(find.byKey(const Key('budget-remaining'))).data,
+      '0',
+    );
+    final saveButton = find.ancestor(
+      of: find.text('Сохранить план'),
+      matching: find.byType(FilledButton),
+    );
+    expect(tester.getRect(saveButton).bottom, lessThanOrEqualTo(640));
+    expect(tester.takeException(), isNull);
+    final boundary =
+        key.currentContext!.findRenderObject()! as RenderRepaintBoundary;
+    await tester.runAsync(() async {
+      final image = await boundary.toImage(pixelRatio: 2);
+      final bytes = (await image.toByteData(format: ui.ImageByteFormat.png))!;
+      await File(
+        '/tmp/kopikot_budget_preview.png',
+      ).writeAsBytes(bytes.buffer.asUint8List());
+      image.dispose();
+    });
+
+    await tester.tap(find.byTooltip('Уменьшить: Радость'));
+    await tester.pumpAndSettle();
+    expect(
+      tester.widget<Text>(find.byKey(const Key('budget-remaining'))).data,
+      '5',
+    );
+    await tester.tap(find.byTooltip('Увеличить: Нужное'));
+    await tester.pumpAndSettle();
+    expect(
+      tester.widget<Text>(find.byKey(const Key('budget-remaining'))).data,
+      '0',
+    );
+    expect(
+      tester
+          .widget<IconButton>(
+            find.ancestor(
+              of: find.byTooltip('Увеличить: Копилка'),
+              matching: find.byType(IconButton),
+            ),
+          )
+          .onPressed,
+      isNull,
+    );
+    expect(repository.profile!.plan, isNull);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('Итог дня 360×640 показывает суммы и возвращает к котику', (
+    tester,
+  ) async {
+    await tester.runAsync(() async {
+      await ui.loadFontFromList(
+        await File('assets/fonts/Nunito-Variable.ttf').readAsBytes(),
+        fontFamily: 'Nunito',
+      );
+    });
+    await cacheCatImages(tester, const [
+      'assets/images/fairytale_background.png',
+      'assets/images/orange_kitten.png',
+      'assets/images/action_feed.png',
+      'assets/images/action_care.png',
+      'assets/images/budget_savings.png',
+      'assets/images/cat_coin.png',
+      'assets/images/daily_reward_hero_ginger.png',
+    ]);
+    final key = GlobalKey();
+    GameTransaction entry(
+      String id,
+      TransactionKind kind,
+      int amount, {
+      String? referenceId,
+    }) => GameTransaction(
+      id: id,
+      period: 1,
+      kind: kind,
+      amount: amount,
+      label: id,
+      referenceId: referenceId,
+      balanceAfter: 15,
+      savingsAfter: 20,
+      satietyAfter: 70,
+      moodAfter: 70,
+    );
+    final repository = _MemoryRepository()
+      ..profile = GameProfile(
+        petName: 'Рут',
+        coat: PetCoat.ginger,
+        accessory: PetAccessory.scarf,
+        balance: 15,
+        savings: 20,
+        period: 1,
+        satiety: 70,
+        mood: 70,
+        incomeSource: 'Подарок',
+        incomeAmount: 60,
+        transactions: [
+          entry('initial-income', TransactionKind.income, 60),
+          entry(
+            'food',
+            TransactionKind.needPurchase,
+            15,
+            referenceId: 'porridge',
+          ),
+          entry(
+            'care',
+            TransactionKind.needPurchase,
+            10,
+            referenceId: 'shampoo',
+          ),
+          entry('dream', TransactionKind.deposit, 20),
+        ],
+      );
+    await launch(tester, repository, captureKey: key);
+    tester.view.physicalSize = const Size(360, 640);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Ещё'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Итог дня'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Твои коткоины сегодня'), findsOneWidget);
+    expect(find.text('Заработано'), findsOneWidget);
+    expect(find.text('Потрачено'), findsOneWidget);
+    expect(find.text('Отложено'), findsOneWidget);
+    expect(find.text('Осталось'), findsOneWidget);
+    expect(find.text('На что потрачено и отложено'), findsOneWidget);
+    expect(find.text('Всего заработано: 60'), findsOneWidget);
+    expect(
+      find.text('Сегодня у нас получилось и позаботиться, и накопить!'),
+      findsOneWidget,
+    );
+    expect(find.text('60'), findsOneWidget);
+    expect(find.text('25'), findsNWidgets(2));
+    expect(tester.takeException(), isNull);
+    final boundary =
+        key.currentContext!.findRenderObject()! as RenderRepaintBoundary;
+    await tester.runAsync(() async {
+      final image = await boundary.toImage(pixelRatio: 2);
+      final bytes = (await image.toByteData(format: ui.ImageByteFormat.png))!;
+      await File(
+        '/tmp/kopikot_daily_summary_preview.png',
+      ).writeAsBytes(bytes.buffer.asUint8List());
+      image.dispose();
+    });
+
+    final feedbackText = find.text('На нужное хватило, и цель стала ближе');
+    await tester.ensureVisible(feedbackText);
+    await tester.pumpAndSettle();
+    expect(
+      tester.getBottomLeft(feedbackText).dy,
+      lessThan(tester.getTopLeft(find.byType(FilledButton).last).dy),
+    );
+    expect(tester.getBottomLeft(find.text('Продолжить')).dy, lessThan(640));
+    await tester.tap(find.text('Продолжить'));
+    await tester.pumpAndSettle();
+    expect(find.text('Как я себя чувствую'), findsOneWidget);
+  });
+
+  testWidgets(
+    'Ежедневная награда начисляется один раз и видна после возврата',
+    (tester) async {
+      await tester.runAsync(() async {
+        await ui.loadFontFromList(
+          await File('assets/fonts/Nunito-Variable.ttf').readAsBytes(),
+          fontFamily: 'Nunito',
+        );
+      });
+      await cacheCatImages(tester, const [
+        'assets/images/fairytale_background.png',
+        'assets/images/orange_kitten.png',
+        'assets/images/logo_wood.png',
+        'assets/images/cat_coin.png',
+        'assets/images/daily_reward_chest.png',
+        'assets/images/daily_reward_hero_ginger.png',
+      ]);
+      final key = GlobalKey();
+      final repository = _MemoryRepository()..profile = initialProfile;
+      await launch(tester, repository, captureKey: key);
+      tester.view.physicalSize = const Size(360, 640);
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Награда'));
+      await tester.pumpAndSettle();
+      expect(find.text('Ежедневная награда'), findsOneWidget);
+      expect(find.text('Серия: 1 день'), findsOneWidget);
+      for (var day = 1; day <= 7; day++) {
+        expect(find.text('День $day'), findsOneWidget);
+      }
+      expect(find.byIcon(Icons.check_circle_rounded), findsNothing);
+      final boundary =
+          key.currentContext!.findRenderObject()! as RenderRepaintBoundary;
+      await tester.runAsync(() async {
+        final image = await boundary.toImage(pixelRatio: 2);
+        final bytes = (await image.toByteData(format: ui.ImageByteFormat.png))!;
+        await File(
+          '/tmp/kopikot_daily_reward_preview.png',
+        ).writeAsBytes(bytes.buffer.asUint8List());
+        image.dispose();
+      });
+      await tester.scrollUntilVisible(
+        find.text('Забрать 5'),
+        220,
+        scrollable: find.byType(Scrollable).last,
+      );
+      await tester.tap(find.text('Забрать 5'));
+      await tester.pumpAndSettle();
+      expect(repository.profile!.balance, 105);
+      expect(find.text('Награда получена'), findsOneWidget);
+      expect(find.byIcon(Icons.check_circle_rounded), findsOneWidget);
+      expect(
+        repository.profile!.transactions.where(
+          (entry) => entry.id.startsWith('daily-reward-'),
+        ),
+        hasLength(1),
+      );
+
+      await tester.tap(find.byTooltip('Назад'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Награда'));
+      await tester.pumpAndSettle();
+      await tester.scrollUntilVisible(
+        find.text('Награда получена'),
+        220,
+        scrollable: find.byType(Scrollable).last,
+      );
+      expect(repository.profile!.balance, 105);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets('Итог дня доступен с увеличенным текстом', (tester) async {
+    final repository = _MemoryRepository()..profile = initialProfile;
+    await launch(tester, repository, scale: 2);
+    tester.view.physicalSize = const Size(360, 640);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Ещё'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Итог дня'));
+    await tester.pumpAndSettle();
+    expect(find.text('Твои коткоины сегодня'), findsOneWidget);
+    expect(find.text('Продолжить'), findsOneWidget);
+    expect(tester.getBottomLeft(find.text('Продолжить')).dy, lessThan(640));
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('Главный экран 360×640 показывает игровые действия без ошибок', (
+    tester,
+  ) async {
+    await tester.runAsync(() async {
+      await ui.loadFontFromList(
+        await File('assets/fonts/Nunito-Variable.ttf').readAsBytes(),
+        fontFamily: 'Nunito',
+      );
+    });
+    await cacheCatImages(tester, const [
+      'assets/images/orange_kitten.png',
+      'assets/images/fairytale_background.png',
+      'assets/images/action_feed.png',
+      'assets/images/action_play.png',
+      'assets/images/action_walk.png',
+      'assets/images/action_care.png',
+      'assets/images/home_coin_tree.png',
+      'assets/images/home_goal_sapling.png',
+      'assets/images/cat_coin.png',
+      'assets/images/logo_wood.png',
+    ]);
+    final key = GlobalKey();
+    final repository = _MemoryRepository()..profile = initialProfile;
+    await launch(tester, repository, captureKey: key);
+    tester.view.physicalSize = const Size(360, 640);
+    await tester.pumpAndSettle();
+    expect(find.text('КопиКот'), findsOneWidget);
+    expect(find.text('Как я себя чувствую'), findsOneWidget);
+    expect(find.text('Кормить'), findsOneWidget);
+    expect(find.text('Играть'), findsOneWidget);
+    expect(find.text('Гулять'), findsOneWidget);
+    expect(find.text('Уход'), findsOneWidget);
+    final goal = tester.getRect(find.byKey(const Key('home-goal-panel')));
+    final bottomBar = tester.getRect(find.byKey(const Key('home-bottom-bar')));
+    expect(goal.bottom, lessThanOrEqualTo(bottomBar.top));
+    expect(tester.takeException(), isNull);
+    final boundary =
+        key.currentContext!.findRenderObject()! as RenderRepaintBoundary;
+    await tester.runAsync(() async {
+      final image = await boundary.toImage(pixelRatio: 2);
+      final bytes = (await image.toByteData(format: ui.ImageByteFormat.png))!;
+      await File(
+        '/tmp/kopikot_home_preview.png',
+      ).writeAsBytes(bytes.buffer.asUint8List());
+      image.dispose();
+    });
+    await tester.tap(find.byKey(const Key('home-goal-panel')));
+    await tester.pumpAndSettle();
+    expect(find.text('На мечту'), findsOneWidget);
+    await tester.pageBack();
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Котодерево'));
+    await tester.pumpAndSettle();
+    expect(find.text('Котодерево'), findsOneWidget);
+    expect(find.text('Посадить новый'), findsOneWidget);
+  });
+
+  testWidgets('Ветеринар 360×640 открыт из виджета и проводит осмотр', (
+    tester,
+  ) async {
+    await tester.runAsync(() async {
+      await ui.loadFontFromList(
+        await File('assets/fonts/Nunito-Variable.ttf').readAsBytes(),
+        fontFamily: 'Nunito',
+      );
+    });
+    await cacheCatImages(tester, const [
+      'assets/images/orange_kitten.png',
+      'assets/images/fairytale_background.png',
+      'assets/images/vet_rabbit.png',
+      'assets/images/cat_coin.png',
+      'assets/images/logo_wood.png',
+      'assets/images/action_care.png',
+      'assets/images/budget_savings.png',
+    ]);
+    final key = GlobalKey();
+    final repository = _MemoryRepository()
+      ..profile = initialProfile.copyWith(
+        plan: const BudgetPlan(
+          availableAtConfirmation: 100,
+          needs: 50,
+          wants: 20,
+          savings: 30,
+        ),
+      );
+    await launch(tester, repository, captureKey: key);
+    tester.view.physicalSize = const Size(360, 640);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Котик'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Ветеринар'));
+    await tester.pumpAndSettle();
+    expect(find.text('Плановый осмотр'), findsOneWidget);
+    expect(find.text('Стоимость'), findsOneWidget);
+    expect(find.text('Резерв помощи'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+    final boundary =
+        key.currentContext!.findRenderObject()! as RenderRepaintBoundary;
+    await tester.runAsync(() async {
+      final image = await boundary.toImage(pixelRatio: 2);
+      final bytes = (await image.toByteData(format: ui.ImageByteFormat.png))!;
+      await File(
+        '/tmp/kopikot_vet_preview.png',
+      ).writeAsBytes(bytes.buffer.asUint8List());
+      image.dispose();
+    });
+
+    await tester.scrollUntilVisible(
+      find.text('Запланировать осмотр'),
+      180,
+      scrollable: find.byType(Scrollable).last,
+    );
+    await tester.tap(find.text('Запланировать осмотр'));
+    await tester.pumpAndSettle();
+    expect(find.text('Запланировать осмотр?'), findsOneWidget);
+    await tester.tap(find.text('Запланировать'));
+    await tester.pumpAndSettle();
+    expect(repository.profile!.balance, 75);
+    expect(repository.profile!.mood, 80);
+    expect(repository.profile!.transactions.last.referenceId, 'vet_checkup');
+  });
+
+  testWidgets('Котодерево 360×640 показывает обе награды саженца', (
+    tester,
+  ) async {
+    await tester.runAsync(() async {
+      await ui.loadFontFromList(
+        await File('assets/fonts/Nunito-Variable.ttf').readAsBytes(),
+        fontFamily: 'Nunito',
+      );
+    });
+    await cacheCatImages(tester, const [
+      'assets/images/orange_kitten.png',
+      'assets/images/fairytale_background.png',
+      'assets/images/home_coin_tree.png',
+      'assets/images/garden_coin_sapling.png',
+      'assets/images/cat_coin.png',
+      'assets/images/logo_wood.png',
+    ]);
+    final key = GlobalKey();
+    final repository = _MemoryRepository()
+      ..profile = initialProfile.copyWith(
+        balance: 80,
+        saplings: [
+          const SaplingState(
+            id: 'seed-1',
+            definitionId: 'sapling_5',
+            plantedPeriod: 1,
+          ),
+        ],
+      );
+    await launch(tester, repository, captureKey: key);
+    tester.view.physicalSize = const Size(360, 640);
+    final navigator = tester.state<NavigatorState>(find.byType(Navigator));
+    navigator.push(
+      MaterialPageRoute<void>(builder: (_) => const GardenScreen()),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('Моё деревце'), findsOneWidget);
+    expect(find.text('До урожая: 5 дней'), findsOneWidget);
+    expect(find.text('Собрать сейчас'), findsOneWidget);
+    expect(find.text('Подождать 5 дней'), findsOneWidget);
+    expect(find.text('20'), findsOneWidget);
+    expect(find.text('30'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+    final boundary =
+        key.currentContext!.findRenderObject()! as RenderRepaintBoundary;
+    await tester.runAsync(() async {
+      final image = await boundary.toImage(pixelRatio: 2);
+      final bytes = (await image.toByteData(format: ui.ImageByteFormat.png))!;
+      await File(
+        '/tmp/kopikot_garden_preview.png',
+      ).writeAsBytes(bytes.buffer.asUint8List());
+      image.dispose();
+    });
+
+    await tester.scrollUntilVisible(
+      find.text('Собрать сейчас'),
+      180,
+      scrollable: find.byType(Scrollable).last,
+    );
+    await tester.tap(find.text('Собрать сейчас'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('Собрать сейчас: +20 монет.'), findsOneWidget);
+  });
+
+  testWidgets('Гардероб 360×640 показывает образ и бесплатно меняет вещь', (
+    tester,
+  ) async {
+    await tester.runAsync(() async {
+      await ui.loadFontFromList(
+        await File('assets/fonts/Nunito-Variable.ttf').readAsBytes(),
+        fontFamily: 'Nunito',
+      );
+    });
+    await cacheCatImages(tester, const [
+      'assets/images/orange_kitten.png',
+      'assets/images/fairytale_background.png',
+      'assets/images/cat_coin.png',
+      'assets/images/logo_wood.png',
+      'assets/images/wardrobe_scarf.png',
+      'assets/images/wardrobe_bow.png',
+      'assets/images/wardrobe_headband.png',
+      'assets/images/wardrobe_wristbands.png',
+    ]);
+    final key = GlobalKey();
+    final repository = _MemoryRepository()
+      ..profile = initialProfile.copyWith(
+        ownedAccessories: [
+          PetAccessory.bow,
+          PetAccessory.headband,
+          PetAccessory.wristbands,
+        ],
+      );
+    await launch(tester, repository, captureKey: key);
+    tester.view.physicalSize = const Size(360, 640);
+    final navigator = tester.state<NavigatorState>(find.byType(Navigator));
+    navigator.push(
+      MaterialPageRoute<void>(builder: (_) => const WardrobeScreen()),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('Гардероб'), findsOneWidget);
+    expect(find.text('Выбирай мой образ! 🐾'), findsOneWidget);
+    expect(find.text('Мои аксессуары'), findsOneWidget);
+    expect(
+      find.image(const AssetImage('assets/images/wardrobe_scarf.png')),
+      findsOneWidget,
+    );
+    expect(
+      find.image(const AssetImage('assets/images/wardrobe_bow.png')),
+      findsOneWidget,
+    );
+    expect(tester.takeException(), isNull);
+    final boundary =
+        key.currentContext!.findRenderObject()! as RenderRepaintBoundary;
+    await tester.runAsync(() async {
+      final image = await boundary.toImage(pixelRatio: 2);
+      final bytes = (await image.toByteData(format: ui.ImageByteFormat.png))!;
+      await File(
+        '/tmp/kopikot_wardrobe_preview.png',
+      ).writeAsBytes(bytes.buffer.asUint8List());
+      image.dispose();
+    });
+
+    await tester.scrollUntilVisible(
+      find.text('Напульсники'),
+      180,
+      scrollable: find.byType(Scrollable).last,
+    );
+    expect(find.text('Повязка'), findsOneWidget);
+    expect(
+      find.image(const AssetImage('assets/images/wardrobe_headband.png')),
+      findsOneWidget,
+    );
+    expect(
+      find.image(const AssetImage('assets/images/wardrobe_wristbands.png')),
+      findsOneWidget,
+    );
+
+    await tester.scrollUntilVisible(
+      find.text('Бантик'),
+      180,
+      scrollable: find.byType(Scrollable).last,
+    );
+    await tester.tap(
+      find.descendant(
+        of: find.byKey(const Key('wardrobe-bow')),
+        matching: find.text('Надеть'),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(repository.profile!.accessory, PetAccessory.bow);
+    await tester.scrollUntilVisible(
+      find.text('Снять — бесплатно'),
+      180,
+      scrollable: find.byType(Scrollable).last,
+    );
+    await tester.tap(find.text('Снять — бесплатно'));
+    await tester.pumpAndSettle();
+    expect(repository.profile!.accessory, isNull);
+  });
+
+  testWidgets('Пять окрасов и аксессуары различимы на трёх стадиях', (
+    tester,
+  ) async {
+    await cacheCatImages(tester, const [
+      'assets/images/orange_kitten.png',
+      'assets/images/grey_kitten.png',
+      'assets/images/cream_kitten.png',
+      'assets/images/dark_kitten.png',
+      'assets/images/white_kitten.png',
+    ]);
     final key = GlobalKey();
     final Set<int> fingerprints = {};
     for (final coat in PetCoat.values) {
@@ -947,7 +2112,7 @@ void main() {
             fingerprints.add(Object.hashAll(bytes.buffer.asUint8List()));
             if (coat == PetCoat.ginger && accessory == PetAccessory.scarf) {
               await File(
-                '/tmp/finny_pet_stage_$stage.png',
+                '/tmp/kopikot_pet_stage_$stage.png',
               ).writeAsBytes(bytes.buffer.asUint8List());
             }
             image.dispose();
@@ -955,10 +2120,11 @@ void main() {
         }
       }
     }
-    expect(fingerprints.length, 27);
+    expect(fingerprints.length, 75);
   });
 
   testWidgets('Шесть эмоций питомца визуально различимы', (tester) async {
+    await cacheCatImages(tester, const ['assets/images/grey_kitten.png']);
     final key = GlobalKey();
     final Set<int> fingerprints = {};
     for (final emotion in PetEmotion.values) {
@@ -989,5 +2155,170 @@ void main() {
       });
     }
     expect(fingerprints.length, PetEmotion.values.length);
+  });
+
+  testWidgets('Бухгалтер: ошибка безопасна, два ответа дают одну награду', (
+    tester,
+  ) async {
+    await tester.runAsync(() async {
+      await ui.loadFontFromList(
+        await File('assets/fonts/Nunito-Variable.ttf').readAsBytes(),
+        fontFamily: 'Nunito',
+      );
+    });
+    await cacheCatImages(tester, const [
+      'assets/images/orange_kitten.png',
+      'assets/images/fairytale_background.png',
+      'assets/images/quest_cat_food.png',
+      'assets/images/budget_joy.png',
+      'assets/images/cat_coin.png',
+      'assets/images/logo_wood.png',
+    ]);
+    final key = GlobalKey();
+    final repository = _MemoryRepository()..profile = initialProfile;
+    await launch(tester, repository, captureKey: key);
+    tester.view.physicalSize = const Size(360, 640);
+    final navigator = tester.state<NavigatorState>(find.byType(Navigator));
+    navigator.push(
+      MaterialPageRoute<void>(builder: (_) => const AccountantScreen()),
+    );
+    await tester.pumpAndSettle();
+    expect(find.textContaining('Корм стоит 15 коткоинов'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+
+    final boundary =
+        key.currentContext!.findRenderObject()! as RenderRepaintBoundary;
+    await tester.runAsync(() async {
+      final image = await boundary.toImage(pixelRatio: 2);
+      final bytes = (await image.toByteData(format: ui.ImageByteFormat.png))!;
+      await File(
+        '/tmp/kopikot_accountant_preview.png',
+      ).writeAsBytes(bytes.buffer.asUint8List());
+      image.dispose();
+    });
+
+    Future<void> tapVisible(Finder finder) async {
+      await tester.ensureVisible(finder);
+      await tester.pumpAndSettle();
+      await tester.tap(finder);
+      await tester.pumpAndSettle();
+    }
+
+    await tapVisible(find.byKey(const Key('accountant-answer-25')));
+    expect(repository.profile!.balance, 100);
+    expect(find.textContaining('Заработанное не теряется'), findsOneWidget);
+
+    await tapVisible(find.byKey(const Key('accountant-answer-35')));
+    await tapVisible(find.byKey(const Key('accountant-primary')));
+    expect(find.textContaining('Игрушка стоит 20 коткоинов'), findsOneWidget);
+
+    await tapVisible(find.byKey(const Key('accountant-answer-30')));
+    await tapVisible(find.byKey(const Key('accountant-primary')));
+    expect(repository.profile!.balance, 112);
+    expect(repository.profile!.transactions.last.referenceId, 'accountant');
+    expect(find.text('+12 коткоинов'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('Котомаркет: выбор исправляется до награды без списания', (
+    tester,
+  ) async {
+    await tester.runAsync(() async {
+      await ui.loadFontFromList(
+        await File('assets/fonts/Nunito-Variable.ttf').readAsBytes(),
+        fontFamily: 'Nunito',
+      );
+    });
+    await cacheCatImages(tester, const [
+      'assets/images/orange_kitten.png',
+      'assets/images/quest_market_background.png',
+      'assets/images/quest_cat_food.png',
+      'assets/images/market_shampoo.png',
+      'assets/images/quest_toy_mouse.png',
+      'assets/images/market_basket.png',
+      'assets/images/cat_coin.png',
+      'assets/images/logo_wood.png',
+    ]);
+    final key = GlobalKey();
+    final repository = _MemoryRepository()..profile = initialProfile;
+    await launch(tester, repository, captureKey: key);
+    tester.view.physicalSize = const Size(360, 640);
+    final navigator = tester.state<NavigatorState>(find.byType(Navigator));
+    navigator.push(
+      MaterialPageRoute<void>(builder: (_) => const MarketGameScreen()),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('Котомаркет'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+
+    final boundary =
+        key.currentContext!.findRenderObject()! as RenderRepaintBoundary;
+    await tester.runAsync(() async {
+      final image = await boundary.toImage(pixelRatio: 2);
+      final bytes = (await image.toByteData(format: ui.ImageByteFormat.png))!;
+      await File(
+        '/tmp/kopikot_market_game_preview.png',
+      ).writeAsBytes(bytes.buffer.asUint8List());
+      image.dispose();
+    });
+
+    Future<void> tapVisible(Finder finder) async {
+      await tester.ensureVisible(finder);
+      await tester.pumpAndSettle();
+      await tester.tap(finder);
+      await tester.pumpAndSettle();
+    }
+
+    await tapVisible(find.byKey(const Key('market-item-toy')));
+    await tapVisible(find.byKey(const Key('market-item-food')));
+    await tapVisible(find.byKey(const Key('market-item-shampoo')));
+    await tapVisible(find.byKey(const Key('market-primary')));
+    expect(repository.profile!.balance, 100);
+    expect(find.textContaining('Начни с нужного'), findsOneWidget);
+
+    await tapVisible(find.byKey(const Key('market-item-toy')));
+    await tapVisible(find.byKey(const Key('market-primary')));
+    expect(repository.profile!.balance, 112);
+    expect(repository.profile!.transactions.last.referenceId, 'kotomarket');
+    expect(find.textContaining('Потрачено 25, осталось 35'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('Котомаркет принимает перетаскивание товара в корзину', (
+    tester,
+  ) async {
+    await cacheCatImages(tester, const [
+      'assets/images/orange_kitten.png',
+      'assets/images/quest_market_background.png',
+      'assets/images/quest_cat_food.png',
+      'assets/images/market_shampoo.png',
+      'assets/images/quest_toy_mouse.png',
+      'assets/images/market_basket.png',
+      'assets/images/cat_coin.png',
+      'assets/images/logo_wood.png',
+    ]);
+    final repository = _MemoryRepository()..profile = initialProfile;
+    await launch(tester, repository);
+    tester.view.physicalSize = const Size(390, 850);
+    final navigator = tester.state<NavigatorState>(find.byType(Navigator));
+    navigator.push(
+      MaterialPageRoute<void>(builder: (_) => const MarketGameScreen()),
+    );
+    await tester.pumpAndSettle();
+
+    final gesture = await tester.startGesture(
+      tester.getCenter(find.byKey(const Key('market-item-food'))),
+    );
+    await tester.pump(const Duration(milliseconds: 600));
+    await gesture.moveTo(
+      tester.getCenter(find.byKey(const Key('market-basket'))),
+    );
+    await tester.pump();
+    await gesture.up();
+    await tester.pumpAndSettle();
+
+    expect(find.byIcon(Icons.check_circle_rounded), findsOneWidget);
+    expect(repository.profile!.balance, 100);
+    expect(tester.takeException(), isNull);
   });
 }

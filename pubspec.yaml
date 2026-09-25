@@ -23,7 +23,50 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  fonts:
+    - family: Nunito
+      fonts:
+        - asset: assets/fonts/Nunito-Variable.ttf
   assets:
     - assets/content/help.json
     - assets/content/catalog.json
     - assets/content/tasks.json
+    - assets/images/fairytale_background.png
+    - assets/images/orange_kitten.png
+    - assets/images/cream_kitten.png
+    - assets/images/grey_kitten.png
+    - assets/images/dark_kitten.png
+    - assets/images/white_kitten.png
+    - assets/images/action_feed.png
+    - assets/images/action_play.png
+    - assets/images/action_walk.png
+    - assets/images/action_care.png
+    - assets/images/budget_needs.png
+    - assets/images/budget_joy.png
+    - assets/images/budget_savings.png
+    - assets/images/budget_hero_ginger.png
+    - assets/images/cat_coin.png
+    - assets/images/logo_wood.png
+    - assets/images/daily_reward_chest.png
+    - assets/images/daily_reward_hero_ginger.png
+    - assets/images/home_coin_tree.png
+    - assets/images/home_goal_sapling.png
+    - assets/images/garden_coin_sapling.png
+    - assets/images/wardrobe_scarf.png
+    - assets/images/wardrobe_bow.png
+    - assets/images/wardrobe_headband.png
+    - assets/images/wardrobe_wristbands.png
+    - assets/images/vet_rabbit.png
+    - assets/images/vet_clinic_background.png
+    - assets/images/quest_market_background.png
+    - assets/images/quest_budget.png
+    - assets/images/quest_purchases.png
+    - assets/images/quest_savings.png
+    - assets/images/quest_badge_plan.png
+    - assets/images/quest_badge_purchases.png
+    - assets/images/quest_badge_savings.png
+    - assets/images/quest_hero_ginger.png
+    - assets/images/quest_cat_food.png
+    - assets/images/quest_toy_mouse.png
+    - assets/images/market_shampoo.png
+    - assets/images/market_basket.png

@@ -1,5 +1,6 @@
 import '../models/game_profile.dart';
 import '../models/learning_task.dart';
+import '../rules/mini_game_rules.dart';
 
 /// UI обращается к этому контракту; способ хранения можно заменить.
 abstract interface class GameRepository {
@@ -45,5 +46,7 @@ abstract interface class GameRepository {
     required bool withdraw,
   });
   Future<GameProfile> submitTask(String taskId, TaskAnswer answer);
+  Future<GameProfile> claimMiniGame(MiniGameKind kind, String commandId);
+  Future<GameProfile> claimDailyReward();
   Future<GameProfile> finishPeriod(int expectedPeriod);
 }

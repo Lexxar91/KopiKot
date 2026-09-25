@@ -3,9 +3,9 @@ import 'learning_task.dart';
 import 'period_summary.dart';
 
 /// Внешность хранится как стабильные значения, независимо от способа отрисовки.
-enum PetCoat { ginger, grey, cream }
+enum PetCoat { ginger, grey, cream, dark, white }
 
-enum PetAccessory { scarf, bow, cap }
+enum PetAccessory { scarf, bow, cap, headband, wristbands }
 
 enum PetEmotion { calm, happy, excited, hungry, thoughtful, proud }
 

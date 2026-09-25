@@ -14,20 +14,21 @@ class AdultAccessButton extends StatelessWidget {
   Widget build(BuildContext context) => IconButton(
     tooltip: 'Для взрослого',
     icon: const Icon(Icons.lock_outline),
-    onPressed: !enabled
-        ? null
-        : () async {
-            final unlocked = await showAccessibleDialog<bool>(
-              context: context,
-              builder: (_) => const _AdultGate(),
-            );
-            if (unlocked == true && context.mounted) {
-              await Navigator.of(context).push(
-                MaterialPageRoute<void>(builder: (_) => const AdultScreen()),
-              );
-            }
-          },
+    onPressed: enabled ? () => openAdultSection(context) : null,
   );
+}
+
+/// Одинаковый барьер для входа из шапки и группы «Ещё».
+Future<void> openAdultSection(BuildContext context) async {
+  final unlocked = await showAccessibleDialog<bool>(
+    context: context,
+    builder: (_) => const _AdultGate(),
+  );
+  if (unlocked == true && context.mounted) {
+    await Navigator.of(
+      context,
+    ).push(MaterialPageRoute<void>(builder: (_) => const AdultScreen()));
+  }
 }
 
 class _AdultGate extends StatefulWidget {

@@ -11,16 +11,19 @@
     {"id":"ribbon","title":"Праздничная лента","category":"wants","price":15,"satiety":0,"mood":5,"description":"Маленькое украшение: настроение +5. Покупку можно отложить."},
     {"id":"berry_treat","title":"Ягодное лакомство","category":"wants","price":20,"satiety":5,"mood":12,"description":"Любимое лакомство: настроение +12. Иногда лакомство — часть радости."},
     {"id":"puzzle","title":"Большая головоломка","category":"wants","price":80,"satiety":0,"mood":25,"description":"Новая игра: настроение +25. Покупку можно отложить."},
-    {"id":"star_scarf","title":"Звёздный шарф","category":"wants","price":35,"satiety":0,"mood":8,"accessory":"scarf","description":"Тёплый шарф для прогулок. После покупки останется в гардеробе."},
+    {"id":"star_scarf","title":"Бирюзовый платок","category":"wants","price":35,"satiety":0,"mood":8,"accessory":"scarf","description":"Мягкий платок для прогулок. После покупки останется в гардеробе."},
     {"id":"berry_bow","title":"Ягодный бантик","category":"wants","price":25,"satiety":0,"mood":8,"accessory":"bow","description":"Яркий бантик для праздника. Его можно надевать и снимать."},
     {"id":"explorer_cap","title":"Шапочка исследователя","category":"wants","price":45,"satiety":0,"mood":10,"accessory":"cap","description":"Шапочка для больших открытий. Она навсегда останется в гардеробе."},
+    {"id":"sport_headband","title":"Спортивная повязка","category":"wants","price":35,"satiety":0,"mood":8,"accessory":"headband","description":"Жёлтая повязка для игр. После покупки останется в гардеробе."},
+    {"id":"blue_wristbands","title":"Синие напульсники","category":"wants","price":30,"satiety":0,"mood":8,"accessory":"wristbands","description":"Удобные напульсники для игр. После покупки останутся в гардеробе."},
     {"id":"owl_seedlings","title":"Саженцы для совёнка","category":"gifts","price":20,"satiety":0,"mood":6,"description":"Подарок соседу по лесу. Щедрость тоже можно запланировать."},
     {"id":"friend_postcard","title":"Открытка для друга","category":"gifts","price":15,"satiety":0,"mood":5,"description":"Добрый знак внимания внутри мира питомца."}
   ],
   "goals": [
     {"id":"tent","title":"Уютная палатка","price":120,"description":"Свой уголок для игр и отдыха."},
     {"id":"telescope","title":"Телескоп","price":180,"description":"Наблюдать звёзды вместе с питомцем."},
-    {"id":"garden","title":"Маленький сад","price":240,"description":"Место для цветов и прогулок."}
+    {"id":"garden","title":"Маленький сад","price":240,"description":"Место для цветов и прогулок."},
+    {"id":"tree_bank","title":"Дерево-копилка","price":400,"description":"Большая цель для долгих накоплений."}
   ],
   "saplings": [
     {"id":"sapling_5","title":"Саженец на 5 дней","price":20,"term":5,"reward":30,"description":"Маленький урожай за короткое ожидание."},

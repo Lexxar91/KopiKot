@@ -1,4 +1,4 @@
-enum TaskKind { budget, basket, saving }
+enum TaskKind { budget, basket, saving, choice }
 
 /// Параметры учебной ситуации хранятся в каталоге, отдельно от обработчика и UI.
 class LearningTask {
@@ -40,11 +40,13 @@ class TaskAnswer {
     this.wants = 0,
     this.savings = 0,
     this.products = const [],
+    this.choice,
   });
   final int needs;
   final int wants;
   final int savings;
   final List<String> products;
+  final String? choice;
 }
 
 /// Попытки и выданная награда сохраняются вместе с новым балансом.

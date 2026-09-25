@@ -26,6 +26,16 @@ void main() {
     );
   });
 
+  test('Срок накопления округляется вверх и зависит от регулярного взноса', () {
+    expect(EconomyRules.periodsToGoal(price: 120, saved: 30, perPeriod: 30), 3);
+    expect(EconomyRules.periodsToGoal(price: 120, saved: 20, perPeriod: 30), 4);
+    expect(EconomyRules.periodsToGoal(price: 120, saved: 120, perPeriod: 0), 0);
+    expect(
+      EconomyRules.periodsToGoal(price: 120, saved: 20, perPeriod: 0),
+      isNull,
+    );
+  });
+
   test('Каталог содержит покупки трёх типов и три цели', () {
     expect(catalog.products.length, greaterThanOrEqualTo(8));
     expect(catalog.products.map((item) => item.category).toSet().length, 3);

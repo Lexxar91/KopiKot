@@ -3,14 +3,18 @@ import 'package:flutter/material.dart';
 import '../../domain/models/game_profile.dart';
 
 const Map<PetCoat, String> coatLabels = {
-  PetCoat.ginger: 'Рыжий',
-  PetCoat.grey: 'Серый',
-  PetCoat.cream: 'Кремовый',
+  PetCoat.ginger: 'Рыжик',
+  PetCoat.grey: 'Дымок',
+  PetCoat.cream: 'Кремок',
+  PetCoat.dark: 'Темныш',
+  PetCoat.white: 'Облачко',
 };
 const Map<PetAccessory, String> accessoryLabels = {
-  PetAccessory.scarf: 'Шарф',
+  PetAccessory.scarf: 'Платок',
   PetAccessory.bow: 'Бантик',
   PetAccessory.cap: 'Шапочка',
+  PetAccessory.headband: 'Повязка',
+  PetAccessory.wristbands: 'Напульсники',
 };
 const Map<PetEmotion, String> emotionLabels = {
   PetEmotion.calm: 'спокоен',
@@ -21,7 +25,7 @@ const Map<PetEmotion, String> emotionLabels = {
   PetEmotion.proud: 'гордится планом',
 };
 
-/// Собственная векторная иллюстрация: 3 окраса × 3 аксессуара без сетевых файлов.
+/// Питомец сохраняет разные окрасы, аксессуары и эмоции без сети.
 class PetPortrait extends StatelessWidget {
   const PetPortrait({
     required this.coat,
@@ -44,9 +48,77 @@ class PetPortrait extends StatelessWidget {
         '${coatLabels[coat]} кот, ${accessory == null ? 'без аксессуара' : accessoryLabels[accessory]}',
     child: SizedBox.square(
       dimension: size,
-      child: CustomPaint(painter: _CatPainter(coat, accessory, stage, emotion)),
+      child: accessory == PetAccessory.scarf
+          ? _storybookPortrait()
+          : CustomPaint(painter: _CatPainter(coat, accessory, stage, emotion)),
     ),
   );
+
+  Widget _storybookPortrait() {
+    final path = switch (coat) {
+      PetCoat.ginger => 'assets/images/orange_kitten.png',
+      PetCoat.grey => 'assets/images/grey_kitten.png',
+      PetCoat.cream => 'assets/images/cream_kitten.png',
+      PetCoat.dark => 'assets/images/dark_kitten.png',
+      PetCoat.white => 'assets/images/white_kitten.png',
+    };
+    final emotionIcon = switch (emotion) {
+      PetEmotion.calm => null,
+      PetEmotion.happy => Icons.favorite_rounded,
+      PetEmotion.excited => Icons.celebration_rounded,
+      PetEmotion.hungry => Icons.restaurant_rounded,
+      PetEmotion.thoughtful => Icons.lightbulb_rounded,
+      PetEmotion.proud => Icons.star_rounded,
+    };
+    final emotionColor = switch (emotion) {
+      PetEmotion.calm => Colors.transparent,
+      PetEmotion.happy => const Color(0xFFFF6985),
+      PetEmotion.excited => const Color(0xFFAF65EC),
+      PetEmotion.hungry => const Color(0xFFFF9F4A),
+      PetEmotion.thoughtful => const Color(0xFF58BEE6),
+      PetEmotion.proud => const Color(0xFFFFC342),
+    };
+    return Stack(
+      alignment: Alignment.center,
+      children: [
+        Image.asset(
+          path,
+          key: ValueKey(path),
+          fit: BoxFit.contain,
+          width: size,
+          height: size,
+        ),
+        if (stage > 1)
+          Positioned(
+            left: size * 0.12,
+            top: size * 0.1,
+            child: CircleAvatar(
+              radius: size * 0.085,
+              backgroundColor: stage == 2
+                  ? const Color(0xFF40BDE0)
+                  : const Color(0xFFFFC342),
+              child: Icon(
+                stage == 2
+                    ? Icons.auto_awesome_rounded
+                    : Icons.workspace_premium_rounded,
+                size: size * 0.1,
+                color: Colors.white,
+              ),
+            ),
+          ),
+        if (emotionIcon != null)
+          Positioned(
+            right: size * 0.1,
+            bottom: size * 0.1,
+            child: CircleAvatar(
+              radius: size * 0.08,
+              backgroundColor: emotionColor,
+              child: Icon(emotionIcon, size: size * 0.09, color: Colors.white),
+            ),
+          ),
+      ],
+    );
+  }
 }
 
 class _CatPainter extends CustomPainter {
@@ -64,6 +136,8 @@ class _CatPainter extends CustomPainter {
       PetCoat.ginger => const Color(0xFFEBA559),
       PetCoat.grey => const Color(0xFF9CAEBB),
       PetCoat.cream => const Color(0xFFF0D5A7),
+      PetCoat.dark => const Color(0xFF48434B),
+      PetCoat.white => const Color(0xFFF5F5F1),
     };
     final Paint fill = Paint()..color = fur;
     final Paint ink = Paint()
@@ -183,6 +257,38 @@ class _CatPainter extends CustomPainter {
           7,
           Paint()..color = const Color(0xFFE6B953),
         );
+      case PetAccessory.headband:
+        final band = Path()
+          ..moveTo(59, 55)
+          ..quadraticBezierTo(100, 32, 141, 55);
+        canvas.drawPath(
+          band,
+          Paint()
+            ..color = const Color(0xFFFFBE23)
+            ..style = PaintingStyle.stroke
+            ..strokeWidth = 12,
+        );
+        canvas.drawCircle(
+          const Offset(100, 41),
+          7,
+          Paint()..color = Colors.white,
+        );
+      case PetAccessory.wristbands:
+        final wristband = Paint()..color = const Color(0xFF1D74D8);
+        for (final x in [66.0, 116.0]) {
+          canvas.drawRRect(
+            RRect.fromRectAndRadius(
+              Rect.fromLTWH(x, 153, 25, 14),
+              const Radius.circular(4),
+            ),
+            wristband,
+          );
+          canvas.drawCircle(
+            Offset(x + 12, 160),
+            3,
+            Paint()..color = Colors.white,
+          );
+        }
     }
     if (stage >= 2) {
       final badgePaint = Paint()..color = const Color(0xFFB97818);

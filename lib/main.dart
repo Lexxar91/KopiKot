@@ -18,7 +18,7 @@ class KopiKotApp extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final reduceMotion = ref.watch(reduceMotionProvider).asData?.value ?? true;
     return MaterialApp(
-      title: 'Питомец Финни',
+      title: 'КопиКот',
       debugShowCheckedModeBanner: false,
       themeAnimationStyle: AnimationStyle.noAnimation,
       builder: (context, child) => MediaQuery(
@@ -30,6 +30,7 @@ class KopiKotApp extends ConsumerWidget {
       ),
       theme: ThemeData(
         useMaterial3: true,
+        fontFamily: 'Nunito',
         colorScheme: ColorScheme.fromSeed(
           seedColor: const Color(0xFF6C5CE7),
           primary: const Color(0xFF6252D8),

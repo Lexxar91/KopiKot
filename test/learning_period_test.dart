@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kopikot/data/content/catalog_loader.dart';
 import 'package:kopikot/domain/models/learning_task.dart';
+import 'package:kopikot/domain/rules/daily_reward_rules.dart';
 import 'package:kopikot/domain/rules/economy_rules.dart';
 import 'package:kopikot/domain/rules/game_rules.dart';
 import 'package:kopikot/domain/rules/learning_rules.dart';
@@ -16,12 +17,12 @@ void main() {
   final tasks = File('assets/content/tasks.json').readAsStringSync();
   final catalog = parseGameCatalog(source, taskSource: tasks);
   final answers = <String, TaskAnswer>{
-    'budget_lunch': const TaskAnswer(needs: 30, savings: 10),
-    'budget_reserve': const TaskAnswer(needs: 40, savings: 20),
-    'basket_food': const TaskAnswer(products: ['porridge', 'water']),
-    'basket_care': const TaskAnswer(products: ['shampoo', 'water', 'ribbon']),
+    'budget_lunch': const TaskAnswer(needs: 30, wants: 20, savings: 10),
+    'budget_reserve': const TaskAnswer(products: ['feed', 'vet']),
+    'basket_food': const TaskAnswer(choice: 'food'),
+    'basket_care': const TaskAnswer(choice: 'no'),
     'saving_start': const TaskAnswer(savings: 10),
-    'saving_finish': const TaskAnswer(savings: 15),
+    'saving_finish': const TaskAnswer(choice: 'fluffy'),
   };
 
   test('Шесть заданий по трём темам; разные способы взаимодействия', () {
@@ -48,66 +49,288 @@ void main() {
       );
       expect(profile.balance, 100);
       expect(profile.completedTask(task.id), isFalse);
-      expect(profile.feedback, contains(task.retry));
+      if (task.id == 'budget_lunch') {
+        expect(profile.feedback, contains('Распредели все 60 коткоинов'));
+      } else if (task.id == 'basket_food') {
+        expect(profile.feedback, contains('Выбери покупку'));
+      } else if (task.id == 'basket_care') {
+        expect(profile.feedback, contains('Посчитай полную цену'));
+      } else if (task.id == 'saving_finish') {
+        expect(profile.feedback, contains('Выбери способ копить'));
+      } else {
+        expect(profile.feedback, contains(task.retry));
+      }
       expect(profile.satiety, 70);
       profile = LearningRules.submit(profile, catalog, task, answers[task.id]!);
-      expect(profile.balance, 100 + task.reward);
+      const expectedReward = 8;
+      expect(profile.balance, 100 + expectedReward);
       expect(profile.completedTask(task.id), isTrue);
       expect(profile.taskProgress.single.attempts, 2);
-      expect(profile.feedback, contains(task.success));
+      if (task.id == 'saving_start') {
+        expect(profile.feedback, contains('Умное решение!'));
+      } else {
+        expect(profile.feedback, contains(task.success));
+      }
       expect(profile.transactions.single.label, 'Задание: ${task.title}');
       profile = LearningRules.submit(profile, catalog, task, answers[task.id]!);
-      expect(profile.balance, 100 + task.reward);
+      expect(profile.balance, 100 + expectedReward);
       expect(profile.transactions.length, 1);
     });
   }
 
-  test(
-    'Недопустимая корзина, перерасход и слишком большой перевод не вознаграждаются',
-    () {
-      final profile = initialProfile.withPlan(
-        GameRules.confirmBudget(
-          initialProfile,
-          needs: 50,
-          wants: 20,
-          savings: 30,
-        ),
-      );
-      for (final answer in [
-        const TaskAnswer(products: ['missing']),
-        const TaskAnswer(products: ['water', 'water', 'porridge']),
-        const TaskAnswer(products: ['water', 'porridge', 'ball']),
-      ]) {
-        expect(
-          LearningRules.submit(
-            profile,
-            catalog,
-            catalog.task('basket_food'),
-            answer,
-          ).balance,
-          100,
-        );
-      }
+  test('Недельный бюджет: три исхода и 12 коткоинов с первой попытки', () {
+    const missingNeeds = TaskAnswer(needs: 20, wants: 30, savings: 10);
+    const littleSavings = TaskAnswer(needs: 30, wants: 30);
+    const ideal = TaskAnswer(needs: 30, wants: 20, savings: 10);
+    expect(
+      LearningRules.evaluateWeeklyBudget(missingNeeds).title,
+      'Ой, корм пропал из плана',
+    );
+    expect(
+      LearningRules.evaluateWeeklyBudget(littleSavings).title,
+      'Почти получилось!',
+    );
+    expect(LearningRules.evaluateWeeklyBudget(littleSavings).canClaim, isTrue);
+    expect(LearningRules.evaluateWeeklyBudget(ideal).title, 'Отличный план!');
+    expect(
+      LearningRules.evaluateWeeklyBudget(const TaskAnswer(needs: 30)).canClaim,
+      isFalse,
+    );
+    final profile = initialProfile.withPlan(
+      GameRules.confirmBudget(
+        initialProfile,
+        needs: 50,
+        wants: 20,
+        savings: 30,
+      ),
+    );
+    final completed = LearningRules.submit(
+      profile,
+      catalog,
+      catalog.task('budget_lunch'),
+      ideal,
+    );
+    expect(completed.balance, 112);
+    expect(completed.transactions.single.amount, 12);
+    expect(completed.feedback, contains('С первой попытки — ты молодец!'));
+    final partial = LearningRules.submit(
+      profile,
+      catalog,
+      catalog.task('budget_lunch'),
+      littleSavings,
+    );
+    expect(partial.balance, 108);
+    expect(partial.feedback, contains('Почти получилось!'));
+  });
+
+  test('План на день: нужное, полный расход и запас', () {
+    const missingVet = TaskAnswer(products: ['feed', 'mouse']);
+    const allSpent = TaskAnswer(products: ['feed', 'vet', 'mouse']);
+    const withReserve = TaskAnswer(products: ['feed', 'vet']);
+    expect(
+      LearningRules.evaluateDayPlan(missingVet).title,
+      'Нужное пропустили',
+    );
+    expect(LearningRules.evaluateDayPlan(allSpent).title, 'Нужное закрыто!');
+    expect(LearningRules.evaluateDayPlan(allSpent).canClaim, isTrue);
+    expect(LearningRules.evaluateDayPlan(withReserve).perfect, isTrue);
+    expect(
+      LearningRules.evaluateDayPlan(withReserve).consequence,
+      '10 коткоинов можно отложить на мечту.',
+    );
+    expect(
+      LearningRules.evaluateDayPlan(
+        const TaskAnswer(products: ['feed', 'vet', 'bow']),
+      ).canClaim,
+      isFalse,
+    );
+    final profile = initialProfile.withPlan(
+      GameRules.confirmBudget(
+        initialProfile,
+        needs: 50,
+        wants: 20,
+        savings: 30,
+      ),
+    );
+    final task = catalog.task('budget_reserve');
+    expect(
+      LearningRules.submit(profile, catalog, task, withReserve).balance,
+      112,
+    );
+    expect(LearningRules.submit(profile, catalog, task, allSpent).balance, 108);
+  });
+
+  test('Что купить сначала: мышку можно вернуть, награда за исправление 8', () {
+    expect(
+      LearningRules.evaluateFirstPurchase(
+        const TaskAnswer(choice: 'mouse'),
+      ).fixButton,
+      'Вернуть мышку и купить корм',
+    );
+    expect(
+      LearningRules.evaluateFirstPurchase(
+        const TaskAnswer(choice: 'food'),
+      ).consequence,
+      'Останется 10 коткоинов, которые можно отложить на мышку.',
+    );
+    final profile = initialProfile.withPlan(
+      GameRules.confirmBudget(
+        initialProfile,
+        needs: 50,
+        wants: 20,
+        savings: 30,
+      ),
+    );
+    final task = catalog.task('basket_food');
+    final wrong = LearningRules.submit(
+      profile,
+      catalog,
+      task,
+      const TaskAnswer(choice: 'mouse'),
+    );
+    expect(wrong.balance, 100);
+    expect(wrong.completedTask(task.id), isFalse);
+    final corrected = LearningRules.submit(
+      wrong,
+      catalog,
+      task,
+      const TaskAnswer(choice: 'food'),
+    );
+    expect(corrected.balance, 108);
+    expect(corrected.completedTask(task.id), isTrue);
+  });
+
+  test('Полная цена: ответ 60 против 40 и исправление покупки', () {
+    final wrong = LearningRules.evaluateFullPrice(
+      const TaskAnswer(choice: 'yes'),
+    );
+    expect(wrong.title, 'Проверим цену ещё раз');
+    expect(wrong.consequence, contains('не хватит денег'));
+    expect(wrong.fixButton, 'Выбрать корм и лекарство');
+    expect(wrong.canClaim, isFalse);
+    final correct = LearningRules.evaluateFullPrice(
+      const TaskAnswer(choice: 'no'),
+    );
+    expect(correct.title, 'Точно подсчитано!');
+    expect(correct.perfect, isTrue);
+  });
+
+  test('Награда 30: пустая, малая и достаточная копилка', () {
+    expect(
+      LearningRules.evaluateRewardSaving(const TaskAnswer()).title,
+      'Копилка стоит пустая',
+    );
+    final partial = LearningRules.evaluateRewardSaving(
+      const TaskAnswer(savings: 7),
+    );
+    expect(partial.title, 'Неплохо, но можно больше');
+    expect(partial.canClaim, isTrue);
+    expect(partial.perfect, isFalse);
+    final ideal = LearningRules.evaluateRewardSaving(
+      const TaskAnswer(savings: 10),
+    );
+    expect(
+      ideal.explanation,
+      'Ты не тратишь всё сразу: 20 коткоинов — на игрушку, а 10 — в копилку.',
+    );
+    expect(ideal.perfect, isTrue);
+    expect(
+      LearningRules.evaluateRewardSaving(
+        const TaskAnswer(savings: 31),
+      ).canClaim,
+      isFalse,
+    );
+    final profile = initialProfile.withPlan(
+      GameRules.confirmBudget(
+        initialProfile,
+        needs: 50,
+        wants: 20,
+        savings: 30,
+      ),
+    );
+    final task = catalog.task('saving_start');
+    expect(
+      LearningRules.submit(
+        profile,
+        catalog,
+        task,
+        const TaskAnswer(savings: 7),
+      ).balance,
+      108,
+    );
+    expect(
+      LearningRules.submit(
+        profile,
+        catalog,
+        task,
+        const TaskAnswer(savings: 10),
+      ).balance,
+      112,
+    );
+  });
+
+  test('Регулярные накопления: оба неверных ответа исправимы', () {
+    final fluffy = LearningRules.evaluateDailySavings(
+      const TaskAnswer(choice: 'fluffy'),
+    );
+    expect(fluffy.title, 'Верно! Копилка любит регулярность');
+    expect(fluffy.perfect, isTrue);
+    expect(
+      LearningRules.evaluateDailySavings(
+        const TaskAnswer(choice: 'coal'),
+      ).fixButton,
+      'Начать откладывать понемногу',
+    );
+    expect(
+      LearningRules.evaluateDailySavings(
+        const TaskAnswer(choice: 'same'),
+      ).fixButton,
+      'Понял! Маленькие шаги каждый день',
+    );
+  });
+
+  test('Ошибочный ответ и сумма сверх награды не дают коткоинов', () {
+    final profile = initialProfile.withPlan(
+      GameRules.confirmBudget(
+        initialProfile,
+        needs: 50,
+        wants: 20,
+        savings: 30,
+      ),
+    );
+    for (final answer in [
+      const TaskAnswer(choice: 'yes'),
+      const TaskAnswer(choice: 'invalid'),
+    ]) {
       expect(
         LearningRules.submit(
           profile,
           catalog,
-          catalog.task('saving_start'),
-          const TaskAnswer(savings: 30),
+          catalog.task('basket_care'),
+          answer,
         ).balance,
         100,
       );
-      expect(
-        LearningRules.submit(
-          profile,
-          catalog,
-          catalog.task('budget_lunch'),
-          const TaskAnswer(needs: 50, wants: 30, savings: 10),
-        ).balance,
-        100,
-      );
-    },
-  );
+    }
+    expect(
+      LearningRules.submit(
+        profile,
+        catalog,
+        catalog.task('saving_start'),
+        const TaskAnswer(savings: 31),
+      ).balance,
+      100,
+    );
+    expect(
+      LearningRules.submit(
+        profile,
+        catalog,
+        catalog.task('budget_lunch'),
+        const TaskAnswer(needs: 50, wants: 30, savings: 10),
+      ).balance,
+      100,
+    );
+  });
 
   test('Невыполнимое задание отклоняется загрузчиком', () {
     final data = jsonDecode(tasks) as List<dynamic>;
@@ -172,8 +395,8 @@ void main() {
       }
       expect(profile.periodSummaries.length, 5);
       expect(profile.savings, 100);
-      // Базовый доход 500 и подарки серии за пять периодов: 2+3+5+7+10.
-      expect(profile.balance, 402);
+      // Серия не начисляется при завершении периода.
+      expect(profile.balance, 375);
       profile = profile.withPlan(
         GameRules.confirmBudget(profile, needs: 0, wants: 0, savings: 0),
       );
@@ -186,7 +409,7 @@ void main() {
 
   test('Контрольные суммы полной демонстрации из docs/demo_scenario.md', () {
     var profile = EconomyRules.selectGoal(initialProfile, catalog.goal('tent'));
-    const balances = [137, 195, 255, 317, 382];
+    const balances = [133, 188, 243, 298, 353];
     for (var period = 1; period <= 5; period++) {
       profile = profile.withPlan(
         GameRules.confirmBudget(
@@ -202,7 +425,7 @@ void main() {
           profile,
           catalog,
           task,
-          const TaskAnswer(needs: 60),
+          const TaskAnswer(needs: 20, wants: 30, savings: 10),
         );
         expect(profile.balance, 100);
         profile = LearningRules.submit(
@@ -211,7 +434,7 @@ void main() {
           task,
           const TaskAnswer(needs: 30, wants: 20, savings: 10),
         );
-        expect(profile.balance, 110);
+        expect(profile.balance, 108);
       }
       profile = EconomyRules.purchase(
         profile,
@@ -224,7 +447,7 @@ void main() {
           catalog.product('ball'),
           'ball',
         );
-        expect(profile.balance, 55);
+        expect(profile.balance, 53);
       }
       profile = EconomyRules.transfer(
         profile,
@@ -235,7 +458,7 @@ void main() {
       );
       if (period == 1) {
         final before = profile;
-        expect(profile.balance, 35);
+        expect(profile.balance, 33);
         expect(
           () =>
               EconomyRules.purchase(profile, catalog.product('puzzle'), 'fail'),
@@ -288,8 +511,16 @@ void main() {
       initialProfile,
       catalog.goal('garden'),
     );
-    const bonuses = [2, 3, 5, 7, 10, 14, 20];
+    final start = DateTime(2026, 9, 1, 10);
+    const bonuses = [5, 10, 15, 20, 25, 30, 35, 35];
     for (var period = 1; period <= 8; period++) {
+      profile = DailyRewardRules.claim(
+        profile,
+        now: start.add(Duration(days: period - 1)),
+      );
+      final bonus = profile.transactions.last;
+      expect(bonus.amount, bonuses[period - 1]);
+      expect(bonus.label, 'Ежедневная награда: день ${period.clamp(1, 7)}');
       profile = profile.withPlan(
         GameRules.confirmBudget(profile, needs: 25, wants: 0, savings: 20),
       );
@@ -306,53 +537,35 @@ void main() {
         withdraw: false,
       );
       profile = PeriodRules.finish(profile, period);
-      final bonus = profile.transactions
-          .where((entry) => entry.id == 'streak-bonus-${period + 1}')
-          .single;
-      expect(bonus.amount, bonuses[(period - 1).clamp(0, 6)]);
-      expect(bonus.label, contains('серии'));
+      expect(profile.transactions.last.id, 'period-income-${period + 1}');
     }
     expect(profile.streak, 7);
-    // 100 стартовых + 800 дохода + 81 подарок − 200 еды − 160 накоплений.
-    expect(profile.balance, 621);
+    // 100 стартовых + 800 дохода + 175 наград − 200 еды − 160 накоплений.
+    expect(profile.balance, 715);
     expect(profile.savings, 160);
   });
 
   test('Пропуск дней уменьшает серию на один уровень, не обнуляя её', () {
     final DateTime start = DateTime(2026, 9, 1, 10);
-    var profile = initialProfile
-        .copyWith(streak: 7, lastRewardAt: start)
-        .withPlan(
-          GameRules.confirmBudget(initialProfile, needs: 0, wants: 0, savings: 0),
-        );
-    profile = PeriodRules.finish(
-      profile,
-      1,
+    var profile = DailyRewardRules.claim(
+      initialProfile.copyWith(streak: 7, lastRewardAt: start),
       now: start.add(const Duration(days: 4)),
     );
-    // 7 → 6 после пропуска, начислен подарок шестого дня, серия снова растёт.
-    final bonus = profile.transactions
-        .where((entry) => entry.id == 'streak-bonus-2')
-        .single;
-    expect(bonus.amount, 14);
-    expect(bonus.label, 'Подарок за день 6 серии');
+    // 7 → 6 после пропуска, затем серия снова растёт.
+    final bonus = profile.transactions.last;
+    expect(bonus.amount, 30);
+    expect(bonus.label, 'Ежедневная награда: день 6');
     expect(profile.streak, 7);
-    expect(profile.feedback, contains('уменьшилась на один уровень'));
+    expect(profile.feedback, contains('уменьшилась всего на один шаг'));
 
     // Серия первого уровня не обнуляется: приветствие остаётся тёплым.
-    profile = initialProfile
-        .copyWith(streak: 1, lastRewardAt: start)
-        .withPlan(
-          GameRules.confirmBudget(initialProfile, needs: 0, wants: 0, savings: 0),
-        );
-    profile = PeriodRules.finish(
-      profile,
-      1,
+    profile = DailyRewardRules.claim(
+      initialProfile.copyWith(streak: 1, lastRewardAt: start),
       now: start.add(const Duration(days: 4)),
     );
     expect(profile.streak, 2);
     expect(profile.feedback, contains('Рад тебя видеть'));
-    expect(profile.transactions.last.amount, 2);
+    expect(profile.transactions.last.amount, 5);
   });
 
   test('Завершение периода снижает энергию, прогулка и еда её возвращают', () {
@@ -365,7 +578,11 @@ void main() {
     profile = profile.withPlan(
       GameRules.confirmBudget(profile, needs: 0, wants: 0, savings: 0),
     );
-    profile = EconomyRules.purchase(profile, catalog.product('porridge'), 'eat');
+    profile = EconomyRules.purchase(
+      profile,
+      catalog.product('porridge'),
+      'eat',
+    );
     expect(profile.energy, 65);
   });
 }

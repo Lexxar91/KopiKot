@@ -13,6 +13,7 @@ import '../../domain/models/learning_task.dart';
 import '../../domain/models/help_topic.dart';
 import '../../domain/repositories/game_repository.dart';
 import '../../domain/rules/game_rules.dart';
+import '../../domain/rules/mini_game_rules.dart';
 
 /// Точка сборки зависимостей: виджеты не знают ни о каталогах, ни об Isar.
 final gameRepositoryProvider = FutureProvider<GameRepository>((ref) async {
@@ -91,6 +92,10 @@ class GameController extends AsyncNotifier<GameProfile?> {
 
   Future<void> submitTask(String taskId, TaskAnswer answer) =>
       _perform((repository) => repository.submitTask(taskId, answer));
+  Future<void> claimMiniGame(MiniGameKind kind, String commandId) =>
+      _perform((repository) => repository.claimMiniGame(kind, commandId));
+  Future<void> claimDailyReward() =>
+      _perform((repository) => repository.claimDailyReward());
   Future<void> finishPeriod(int expectedPeriod) =>
       _perform((repository) => repository.finishPeriod(expectedPeriod));
 
@@ -138,9 +143,8 @@ class GameController extends AsyncNotifier<GameProfile?> {
     (repository) => repository.plantSapling(definitionId, commandId),
   );
 
-  Future<void> harvestSapling(String saplingId, String commandId) => _perform(
-    (repository) => repository.harvestSapling(saplingId, commandId),
-  );
+  Future<void> harvestSapling(String saplingId, String commandId) =>
+      _perform((repository) => repository.harvestSapling(saplingId, commandId));
 
   Future<void> selectGoal(String goalId) =>
       _perform((repository) => repository.selectGoal(goalId));

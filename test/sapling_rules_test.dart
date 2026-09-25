@@ -95,8 +95,8 @@ void main() {
       catalog.sapling('sapling_5'),
       'take-1',
     );
-    // 80 после посадки + 500 дохода + 27 подарков серии + 30 урожая.
-    expect(harvested.balance, 637);
+    // 80 после посадки + 500 дохода + 30 урожая. Награда за вход отдельна.
+    expect(harvested.balance, 610);
     expect(harvested.saplings, isEmpty);
     expect(harvested.transactions.last.label, 'Урожай: Саженец на 5 дней');
     expect(harvested.transactions.last.amount, 30);

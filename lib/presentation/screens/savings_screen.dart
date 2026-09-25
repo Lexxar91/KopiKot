@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../domain/models/game_catalog.dart';
 import '../../domain/models/game_profile.dart';
+import '../../domain/rules/economy_rules.dart';
 import '../providers/game_controller.dart';
 import '../widgets/game_action_dialog.dart';
 import '../widgets/accessible_motion.dart';
@@ -38,8 +39,22 @@ class _SavingsScreenState extends ConsumerState<SavingsScreen> {
     final int saved = profile.savedFor(goal.id);
     final String impact;
     if (withdraw) {
+      final int perPeriod = profile.plan?.savings ?? 0;
+      final int? beforePeriods = EconomyRules.periodsToGoal(
+        price: goal.price,
+        saved: saved,
+        perPeriod: perPeriod,
+      );
+      final int? afterPeriods = EconomyRules.periodsToGoal(
+        price: goal.price,
+        saved: saved - amount,
+        perPeriod: perPeriod,
+      );
+      final String timeline = beforePeriods == null || afterPeriods == null
+          ? 'В бюджете пока не запланированы накопления, поэтому срок достижения цели оценить нельзя.'
+          : 'Примерное число игровых периодов до цели: $beforePeriods → $afterPeriods, если откладывать по $perPeriod монет каждый период.';
       impact = amount <= saved
-          ? 'На цели останется ${saved - amount} из ${goal.price}. До мечты будет не хватать ${goal.price - saved + amount} монет. Баланс станет ${profile.balance + amount}.'
+          ? 'На цели останется ${saved - amount} из ${goal.price}. До мечты будет не хватать ${goal.price - saved + amount} монет. Баланс станет ${profile.balance + amount}. $timeline'
           : 'На этой цели только $saved монет. Такую сумму снять нельзя.';
     } else {
       impact =

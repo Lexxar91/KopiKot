@@ -4,6 +4,8 @@ import '../../domain/models/game_transaction.dart';
 import '../../domain/models/learning_task.dart';
 import '../../domain/models/period_summary.dart';
 import '../../domain/rules/learning_rules.dart';
+import '../../domain/rules/mini_game_rules.dart';
+import '../../domain/rules/daily_reward_rules.dart';
 import '../../domain/rules/period_rules.dart';
 import '../../domain/rules/activity_rules.dart';
 import '../../domain/rules/sapling_rules.dart';
@@ -253,8 +255,7 @@ class LocalGameRepository implements GameRepository {
       _change((profile) => EconomyRules.equipAccessory(profile, accessory));
 
   @override
-  Future<GameProfile> walk() =>
-      _change(ActivityRules.walk);
+  Future<GameProfile> walk() => _change(ActivityRules.walk);
 
   @override
   Future<GameProfile> plantSapling(String definitionId, String commandId) =>
@@ -419,6 +420,13 @@ class LocalGameRepository implements GameRepository {
     (profile) =>
         LearningRules.submit(profile, catalog, catalog.task(taskId), answer),
   );
+
+  @override
+  Future<GameProfile> claimMiniGame(MiniGameKind kind, String commandId) =>
+      _change((profile) => MiniGameRules.claim(profile, kind, commandId));
+
+  @override
+  Future<GameProfile> claimDailyReward() => _change(DailyRewardRules.claim);
 
   @override
   Future<GameProfile> finishPeriod(int expectedPeriod) =>

@@ -15,7 +15,13 @@ abstract final class EconomyRules {
       ExpenseCategory.wants => TransactionKind.wantPurchase,
       ExpenseCategory.gifts => TransactionKind.giftPurchase,
     };
-    if (GameRules.isReplay(profile, commandId, kind, product.id, product.price)) {
+    if (GameRules.isReplay(
+      profile,
+      commandId,
+      kind,
+      product.id,
+      product.price,
+    )) {
       return profile;
     }
     GameRules.requirePlan(profile);
@@ -99,9 +105,11 @@ abstract final class EconomyRules {
   }.toList(growable: false);
 
   static String _accessoryName(PetAccessory accessory) => switch (accessory) {
-    PetAccessory.scarf => 'Шарф',
+    PetAccessory.scarf => 'Платок',
     PetAccessory.bow => 'Бантик',
     PetAccessory.cap => 'Шапочка',
+    PetAccessory.headband => 'Повязка',
+    PetAccessory.wristbands => 'Напульсники',
   };
 
   static GameProfile selectGoal(
@@ -113,6 +121,19 @@ abstract final class EconomyRules {
         'Мечта — ${goal.title}. Нужно ${goal.price} монет. '
         'На эту цель отложено ${profile.savedFor(goal.id)}. Накопления на другие цели сохранены.',
   );
+
+  /// Примерное число периодов при одинаковом пополнении в каждом периоде.
+  /// Без регулярного пополнения срок неизвестен.
+  static int? periodsToGoal({
+    required int price,
+    required int saved,
+    required int perPeriod,
+  }) {
+    final remaining = price - saved;
+    if (remaining <= 0) return 0;
+    if (perPeriod <= 0) return null;
+    return (remaining + perPeriod - 1) ~/ perPeriod;
+  }
 
   static GameProfile transfer(
     GameProfile profile,
