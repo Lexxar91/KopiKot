@@ -2,12 +2,12 @@ import '../models/game_profile.dart';
 
 /// Бесплатные активности: забота и радость не всегда стоят монет.
 abstract final class ActivityRules {
-  /// Бесплатная прогулка: раз в игровой период, без монет и плана.
+  /// Бесплатная прогулка: раз в игровой день, без монет и плана.
   static GameProfile walk(GameProfile profile) {
     if (profile.walkPeriod == profile.period) {
       return profile.copyWith(
         feedback:
-            'Сегодня уже гуляли. Прогулка бесплатная — можно повторить в следующем периоде.',
+            'Сегодня уже гуляли. Прогулка бесплатная — можно повторить завтра.',
       );
     }
     final int energy = (profile.energy + 15).clamp(0, 100);

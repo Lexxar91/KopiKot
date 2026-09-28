@@ -2,8 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../domain/models/game_profile.dart';
+import '../../domain/models/learning_task.dart';
+import '../../domain/models/market_session.dart';
 import '../../domain/rules/market_game_rules.dart';
-import '../../domain/rules/mini_game_rules.dart';
+import '../../domain/rules/activity_reward_rules.dart';
+import '../../domain/rules/game_rules.dart';
 import '../providers/game_controller.dart';
 import '../widgets/pet_portrait.dart';
 import '../widgets/story_logo.dart';
@@ -15,6 +18,8 @@ String _itemAsset(String id) => switch (id) {
   'food' => 'assets/images/quest_cat_food.png',
   'shampoo' => 'assets/images/market_shampoo.png',
   'toy' => 'assets/images/quest_toy_mouse.png',
+  'vet' => 'assets/images/vet_rabbit.png',
+  'book' => 'assets/images/quest_budget.png',
   _ => throw ArgumentError.value(id, 'id', 'Unknown market item'),
 };
 
@@ -27,34 +32,19 @@ class MarketGameScreen extends ConsumerStatefulWidget {
 }
 
 class _MarketGameScreenState extends ConsumerState<MarketGameScreen> {
-  final List<String> _selected = [];
-  final String _commandId = newCommandId();
-  MarketCartResult? _preview;
   bool _claiming = false;
-  bool _completed = false;
-  int? _reward;
+  String? _sessionId;
+  MarketSession? _session;
   String? _error;
 
-  void _toggle(String id) {
-    if (_claiming || _completed) return;
-    setState(() {
-      if (_selected.contains(id)) {
-        _selected.remove(id);
-      } else {
-        _selected.add(id);
-      }
-      _preview = null;
-      _error = null;
-    });
-  }
+  List<String> get _selected => _session?.selectedIds ?? const [];
+  MarketScenario get _scenario => _session!.scenario;
+  bool get _completed => _session?.completed ?? false;
+  int get _reward => _session?.paidReward ?? 0;
 
-  Future<void> _confirm() async {
-    if (_claiming || _completed) return;
-    final preview = MarketGameRules.evaluate(_selected);
-    setState(() => _preview = preview);
-    if (!preview.canClaim) return;
-    final profile = ref.read(gameControllerProvider).asData?.value;
-    if (profile == null) return;
+  Future<void> _apply(MarketAction action, {String? itemId}) async {
+    final id = _sessionId;
+    if (id == null || _claiming) return;
     setState(() {
       _claiming = true;
       _error = null;
@@ -62,22 +52,24 @@ class _MarketGameScreenState extends ConsumerState<MarketGameScreen> {
     try {
       await ref
           .read(gameControllerProvider.notifier)
-          .claimMiniGame(MiniGameKind.kotomarket, _commandId);
-      if (mounted) {
-        setState(() {
-          _reward = MiniGameRules.rewardFor(profile);
-          _completed = true;
-        });
-      }
+          .marketAction(id, action, itemId: itemId);
+    } on GameRuleException catch (error) {
+      if (mounted) setState(() => _error = error.message);
     } catch (_) {
       if (mounted) {
         setState(
-          () => _error = 'Не удалось сохранить награду. Попробуй ещё раз.',
+          () => _error = 'Не удалось сохранить выбор. Попробуй ещё раз.',
         );
       }
     } finally {
       if (mounted) setState(() => _claiming = false);
     }
+  }
+
+  Future<void> _start() async {
+    _sessionId = newCommandId();
+    await _apply(MarketAction.start);
+    if (mounted && _session == null && _error != null) _sessionId = null;
   }
 
   @override
@@ -88,8 +80,24 @@ class _MarketGameScreenState extends ConsumerState<MarketGameScreen> {
         body: Center(child: Text('Сначала создай питомца.')),
       );
     }
-    final spent = MarketGameRules.spent(_selected);
-    final remaining = MarketGameRules.budget - spent;
+    if (_sessionId == null) {
+      final unfinished = profile.marketSessions
+          .where(
+            (entry) =>
+                !entry.completed &&
+                entry.period == profile.period &&
+                entry.dayKey == profile.dayKey,
+          )
+          .lastOrNull;
+      if (unfinished != null) _sessionId = unfinished.id;
+    }
+    _session = profile.marketSessions
+        .where((entry) => entry.id == _sessionId)
+        .firstOrNull;
+    final spent = _session == null
+        ? 0
+        : MarketGameRules.spent(_selected, scenario: _scenario);
+    final remaining = _session == null ? 0 : _scenario.budget - spent;
     return Scaffold(
       backgroundColor: const Color(0xFF88C9F6),
       body: Stack(
@@ -112,40 +120,74 @@ class _MarketGameScreenState extends ConsumerState<MarketGameScreen> {
                     const SizedBox(height: 7),
                     _titleBar(context),
                     _hero(profile),
-                    _products(),
-                    const SizedBox(height: 8),
-                    _basketArea(),
-                    const SizedBox(height: 8),
-                    _summary(spent, remaining),
-                    if (_preview != null || _error != null) ...[
+                    _panel(
+                      child: Text(
+                        (_session == null
+                                ? ActivityRewardSnapshot.fromProfile(profile)
+                                : MarketGameRules.snapshot(_session!))
+                            .gamePreview,
+                        style: const TextStyle(color: _brown),
+                      ),
+                    ),
+                    if (_session == null)
+                      _startCard(profile)
+                    else ...[
+                      _products(),
                       const SizedBox(height: 8),
-                      _panel(
-                        child: Text(
-                          _error ?? _preview!.message,
-                          textAlign: TextAlign.center,
-                          style: const TextStyle(
-                            color: _brown,
-                            fontWeight: FontWeight.w800,
+                      _basketArea(),
+                      const SizedBox(height: 8),
+                      _summary(spent, remaining),
+                      if (_session?.lastFeedback != null || _error != null) ...[
+                        const SizedBox(height: 8),
+                        _panel(
+                          child: Text(
+                            _error ?? _session!.lastFeedback!,
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                              color: _brown,
+                              fontWeight: FontWeight.w800,
+                            ),
                           ),
                         ),
-                      ),
-                    ],
-                    if (_completed) ...[
-                      const SizedBox(height: 8),
-                      _panel(
-                        child: Text(
-                          'Отличный выбор! +$_reward коткоинов за игру. '
-                          'Товары были учебными — настоящий баланс не уменьшился.',
-                          textAlign: TextAlign.center,
-                          style: const TextStyle(
-                            color: _brown,
-                            fontWeight: FontWeight.w900,
+                      ],
+                      if (_completed) ...[
+                        const SizedBox(height: 8),
+                        _panel(
+                          child: Column(
+                            children: [
+                              Text(
+                                _reward == 0
+                                    ? 'Тренировка без новой награды.'
+                                    : 'Корзина собрана! Получено $_reward коткоинов.',
+                                textAlign: TextAlign.center,
+                                style: const TextStyle(
+                                  color: _brown,
+                                  fontWeight: FontWeight.w900,
+                                ),
+                              ),
+                              Text(
+                                _session!.firstTry
+                                    ? '⭐ Звезда за первую попытку!'
+                                    : _session!.reviewed
+                                    ? 'Разбор завершён.'
+                                    : 'Ты исправил выбор.',
+                              ),
+                              if (_reward > 0)
+                                Text(
+                                  MarketGameRules.snapshot(
+                                    _session!,
+                                  ).gameExplanation,
+                                ),
+                              const Text(
+                                'Учебные товары не списали коткоины из кошелька.',
+                              ),
+                            ],
                           ),
                         ),
-                      ),
+                      ],
+                      const SizedBox(height: 8),
+                      _actions(context),
                     ],
-                    const SizedBox(height: 8),
-                    _actions(context),
                   ],
                 ),
               ),
@@ -268,6 +310,143 @@ class _MarketGameScreenState extends ConsumerState<MarketGameScreen> {
     ),
   );
 
+  Widget _startCard(GameProfile profile) => _panel(
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const Text(
+          'Собери корзину',
+          style: TextStyle(
+            color: _brown,
+            fontSize: 22,
+            fontWeight: FontWeight.w900,
+          ),
+        ),
+        const Text(
+          'Сначала нужное, потом радость. Не забудь оставить коткоины в копилке!',
+        ),
+        const SizedBox(height: 8),
+        const Text(
+          'Сложность:',
+          style: TextStyle(color: _brown, fontWeight: FontWeight.w900),
+        ),
+        Wrap(
+          spacing: 6,
+          children: [
+            for (final difficulty in LearningDifficulty.values)
+              ChoiceChip(
+                label: Text(switch (difficulty) {
+                  LearningDifficulty.simple => 'Простая',
+                  LearningDifficulty.medium => 'Средняя',
+                  LearningDifficulty.hard => 'Сложная',
+                }),
+                selected:
+                    profile.learningTopic('kotomarket').difficulty ==
+                    difficulty,
+                onSelected: _claiming
+                    ? null
+                    : (_) => ref
+                          .read(gameControllerProvider.notifier)
+                          .chooseLearningDifficulty('kotomarket', difficulty),
+                selectedColor: const Color(0xFF00B896),
+                backgroundColor: const Color(0xFFFFE9BF),
+                labelStyle: const TextStyle(
+                  color: _brown,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+          ],
+        ),
+        if (profile.learningTopic('kotomarket').downgradePending) ...[
+          const Text(
+            'Понадобилась помощь в трёх играх. Попробуем ступень проще?',
+            style: TextStyle(color: _brown, fontWeight: FontWeight.w800),
+          ),
+          Wrap(
+            spacing: 8,
+            children: [
+              TextButton(
+                onPressed: () => ref
+                    .read(gameControllerProvider.notifier)
+                    .chooseLearningDifficulty(
+                      'kotomarket',
+                      LearningDifficulty.values[profile
+                              .learningTopic('kotomarket')
+                              .difficulty
+                              .index -
+                          1],
+                    ),
+                child: const Text('Ступень проще'),
+              ),
+              TextButton(
+                onPressed: () => ref
+                    .read(gameControllerProvider.notifier)
+                    .dismissLearningDowngrade('kotomarket'),
+                child: const Text('Оставить как есть'),
+              ),
+            ],
+          ),
+        ],
+        const SizedBox(height: 9),
+        FilledButton.icon(
+          key: const Key('market-start'),
+          onPressed: _claiming ? null : _start,
+          style: FilledButton.styleFrom(
+            backgroundColor: const Color(0xFFFFCE31),
+            foregroundColor: _brown,
+            minimumSize: const Size(0, 52),
+          ),
+          icon: const Icon(Icons.play_arrow_rounded),
+          label: const Text(
+            'Начать',
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
+          ),
+        ),
+        if (_error != null)
+          Text(_error!, style: const TextStyle(color: _brown)),
+      ],
+    ),
+  );
+
+  Widget _reviewCard() {
+    final needs = _scenario.items.where((entry) => entry.needed).toList();
+    final needsTotal = needs.fold<int>(0, (sum, entry) => sum + entry.price);
+    final desire = MarketGameRules.item(
+      MarketGameRules.targetIds(_scenario).last,
+      scenario: _scenario,
+    );
+    return _panel(
+      child: Column(
+        children: [
+          const Text(
+            'Проверим по шагам',
+            style: TextStyle(
+              color: _brown,
+              fontSize: 18,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+          Text(
+            'Нужное: ${needs.map((entry) => entry.price).join(' + ')} = $needsTotal',
+          ),
+          Text(
+            '${_scenario.budget} − $needsTotal − ${_scenario.reserve} = '
+            '${_scenario.budget - needsTotal - _scenario.reserve} на радость',
+          ),
+          Text('Подходит ${desire.title.toLowerCase()} за ${desire.price}.'),
+          FilledButton(
+            key: const Key('market-understood'),
+            onPressed: _claiming ? null : () => _apply(MarketAction.understood),
+            style: FilledButton.styleFrom(
+              backgroundColor: const Color(0xFF09AC78),
+            ),
+            child: const Text('Понятно'),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _products() => _panel(
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -278,7 +457,7 @@ class _MarketGameScreenState extends ConsumerState<MarketGameScreen> {
             const SizedBox(width: 6),
             Expanded(
               child: Text(
-                'Бюджет: ${MarketGameRules.budget} коткоинов',
+                'Бюджет: ${_scenario.budget} коткоинов',
                 style: const TextStyle(
                   color: _brown,
                   fontSize: 19,
@@ -288,15 +467,23 @@ class _MarketGameScreenState extends ConsumerState<MarketGameScreen> {
             ),
           ],
         ),
+        Text(
+          'Оставить в копилке: ${_scenario.reserve}',
+          style: const TextStyle(color: _brown, fontWeight: FontWeight.w800),
+        ),
         const SizedBox(height: 8),
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            for (final item in MarketGameRules.items) ...[
-              if (item != MarketGameRules.items.first) const SizedBox(width: 5),
-              Expanded(child: _draggableProduct(item)),
+        LayoutBuilder(
+          builder: (context, constraints) => Wrap(
+            spacing: 5,
+            runSpacing: 5,
+            children: [
+              for (final item in _scenario.items)
+                SizedBox(
+                  width: (constraints.maxWidth - 10) / 3,
+                  child: _draggableProduct(item),
+                ),
             ],
-          ],
+          ),
         ),
       ],
     ),
@@ -322,7 +509,9 @@ class _MarketGameScreenState extends ConsumerState<MarketGameScreen> {
     child: InkWell(
       key: Key('market-item-${item.id}'),
       borderRadius: BorderRadius.circular(19),
-      onTap: () => _toggle(item.id),
+      onTap: _claiming || _session!.solved
+          ? null
+          : () => _apply(MarketAction.toggle, itemId: item.id),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 4),
         decoration: BoxDecoration(
@@ -388,8 +577,9 @@ class _MarketGameScreenState extends ConsumerState<MarketGameScreen> {
   Widget _basketArea() => DragTarget<String>(
     key: const Key('market-basket'),
     onWillAcceptWithDetails: (details) =>
-        !_completed && !_selected.contains(details.data),
-    onAcceptWithDetails: (details) => _toggle(details.data),
+        !_claiming && !_session!.solved && !_selected.contains(details.data),
+    onAcceptWithDetails: (details) =>
+        _apply(MarketAction.toggle, itemId: details.data),
     builder: (context, candidates, rejected) => _panel(
       child: Column(
         children: [
@@ -437,7 +627,10 @@ class _MarketGameScreenState extends ConsumerState<MarketGameScreen> {
                           width: 43,
                           height: 45,
                           fit: BoxFit.contain,
-                          semanticLabel: MarketGameRules.item(id).title,
+                          semanticLabel: MarketGameRules.item(
+                            id,
+                            scenario: _scenario,
+                          ).title,
                         ),
                     ],
                   ),
@@ -470,7 +663,7 @@ class _MarketGameScreenState extends ConsumerState<MarketGameScreen> {
         Expanded(
           child: _summaryTile(
             'Можно отложить',
-            remaining.clamp(0, MarketGameRules.budget),
+            remaining.clamp(0, _scenario.budget),
             const Color(0xFFE4FBE8),
           ),
         ),
@@ -521,9 +714,11 @@ class _MarketGameScreenState extends ConsumerState<MarketGameScreen> {
               ? null
               : _completed
               ? () => Navigator.of(context).maybePop()
+              : _session!.solved
+              ? () => _apply(MarketAction.finish)
               : _selected.isEmpty
               ? null
-              : _confirm,
+              : () => _apply(MarketAction.confirm),
           style: FilledButton.styleFrom(
             backgroundColor: const Color(0xFFFFCE31),
             foregroundColor: _brown,
@@ -534,22 +729,21 @@ class _MarketGameScreenState extends ConsumerState<MarketGameScreen> {
                 ? 'Сохраняем…'
                 : _completed
                 ? 'К котику'
+                : _session!.solved
+                ? 'Получить награду'
                 : 'Готово',
             style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900),
           ),
         ),
       ),
-      if (!_completed)
+      if (!_completed && !_session!.solved)
         TextButton(
           onPressed: _selected.isEmpty || _claiming
               ? null
-              : () => setState(() {
-                  _selected.clear();
-                  _preview = null;
-                  _error = null;
-                }),
+              : () => _apply(MarketAction.clear),
           child: const Text('Изменить выбор'),
         ),
+      if (_session!.attempts >= 2 && !_session!.solved) _reviewCard(),
     ],
   );
 

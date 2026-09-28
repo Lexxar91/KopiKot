@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../domain/models/game_catalog.dart';
 import '../../domain/models/game_profile.dart';
+import '../../domain/rules/sapling_rules.dart';
 import '../providers/game_controller.dart';
 import '../widgets/accessible_motion.dart';
 import '../widgets/game_action_dialog.dart';
@@ -12,7 +13,12 @@ import '../widgets/story_logo.dart';
 const _brown = Color(0xFF642818);
 const _cream = Color(0xFFFFF9EA);
 
-/// Котодерево-копилка: саженец растёт по игровым периодам и приносит монеты.
+String _readableDay(String key) {
+  final parts = key.split('-');
+  return '${parts[2]}.${parts[1]}.${parts[0]}';
+}
+
+/// Котодерево-копилка: саженец созревает через пять календарных дней.
 ///
 /// Перед каждым решением ребёнок видит оба варианта: собрать сейчас
 /// с меньшей наградой или подождать и получить больше.
@@ -257,13 +263,20 @@ class _GrowingSaplingCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final int elapsed =
-        (profile?.period ?? sapling.plantedPeriod) - sapling.plantedPeriod;
+    final int elapsed = profile == null
+        ? 0
+        : SaplingRules.elapsedDays(profile!, sapling);
     final bool ripe = elapsed >= definition.term;
     final int payout = ripe
         ? definition.reward
         : definition.earlyReward(elapsed);
     final remaining = (definition.term - elapsed).clamp(0, definition.term);
+    final plantedDay = sapling.plantedDayKey ?? profile?.dayKey;
+    final maturityDay = plantedDay == null
+        ? null
+        : _readableDay(
+            SaplingRules.maturityDayKey(plantedDay, definition.term),
+          );
     final currentStage = ripe
         ? 5
         : ((elapsed * 5) ~/ definition.term).clamp(0, 4) + 1;
@@ -402,7 +415,7 @@ class _GrowingSaplingCard extends ConsumerWidget {
                                     'Собрать сейчас: +${definition.reward} монет.'
                               : 'Деревце растёт $elapsed из ${definition.term} дней.\n\n'
                                     'Собрать сейчас: +$payout монет.\n'
-                                    'Подождать ещё $remaining дней: +${definition.reward} монет.\n\n'
+                                    'Подождать до ${maturityDay ?? 'созревания'}: +${definition.reward} монет — на ${definition.reward - payout} больше.\n\n'
                                     'Оба варианта — не ошибка. Решай сам!',
                           confirmLabel: 'Собрать сейчас',
                           action: (id) => ref
@@ -563,6 +576,11 @@ class _PlantTreeCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final maturityDay = profile.dayKey == null
+        ? null
+        : _readableDay(
+            SaplingRules.maturityDayKey(profile.dayKey!, definition.term),
+          );
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -582,7 +600,7 @@ class _PlantTreeCard extends ConsumerWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            'Посади деревце. До урожая: ${definition.term} дней',
+            'Посади деревце. Цена ${definition.price}; собрать раньше — 30, через ${definition.term} дней — ${definition.reward}.',
             textAlign: TextAlign.center,
             style: const TextStyle(color: _brown, fontSize: 17),
           ),
@@ -590,7 +608,8 @@ class _PlantTreeCard extends ConsumerWidget {
           SizedBox(
             width: double.infinity,
             child: FilledButton.icon(
-              onPressed: profile.plan == null
+              onPressed:
+                  profile.plan == null || SaplingRules.harvestedToday(profile)
                   ? null
                   : () => showAccessibleDialog<bool>(
                       context: context,
@@ -601,7 +620,7 @@ class _PlantTreeCard extends ConsumerWidget {
                             'Стоимость: ${definition.price} коткоинов. '
                             'После посадки останется ${profile.balance - definition.price}.\n\n'
                             'Собрать сейчас: ${definition.earlyReward(0)} коткоинов. '
-                            'Подождать ${definition.term} дней: ${definition.reward} коткоинов.',
+                            'Подождать до ${maturityDay ?? 'дня созревания'}: ${definition.reward} коткоинов — на ${definition.reward - definition.earlyReward(0)} больше.',
                         confirmLabel: 'Посадить',
                         action: (id) => ref
                             .read(gameControllerProvider.notifier)
@@ -618,6 +637,8 @@ class _PlantTreeCard extends ConsumerWidget {
             ),
           ),
           if (profile.plan == null) const Text('Сначала сохрани бюджет.'),
+          if (SaplingRules.harvestedToday(profile))
+            const Text('Новое деревце можно посадить завтра.'),
         ],
       ),
     );

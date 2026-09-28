@@ -135,11 +135,15 @@ class PetPortrait extends StatelessWidget {
             top: size * 0.1,
             child: CircleAvatar(
               radius: size * 0.085,
-              backgroundColor: stage == 2
+              backgroundColor: stage >= 4
+                  ? const Color(0xFF9747D9)
+                  : stage == 2
                   ? const Color(0xFF40BDE0)
                   : const Color(0xFFFFC342),
               child: Icon(
-                stage == 2
+                stage >= 4
+                    ? Icons.diamond_rounded
+                    : stage == 2
                     ? Icons.auto_awesome_rounded
                     : Icons.workspace_premium_rounded,
                 size: size * 0.1,

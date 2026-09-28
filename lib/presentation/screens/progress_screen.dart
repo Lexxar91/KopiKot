@@ -4,8 +4,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../domain/models/game_catalog.dart';
+import '../../domain/models/day_financial_report.dart';
 import '../../domain/models/game_profile.dart';
+import '../../domain/models/learning_task.dart';
 import '../../domain/models/period_summary.dart';
+import '../../domain/rules/growth_rules.dart';
 import '../providers/game_controller.dart';
 import '../widgets/pet_portrait.dart';
 import '../widgets/story_logo.dart';
@@ -146,9 +149,9 @@ class ProgressScreen extends ConsumerWidget {
                             bottom: 0,
                             child: PetPortrait(
                               coat: profile.coat,
-                              accessory:
-                                  profile.accessory ?? PetAccessory.scarf,
+                              accessory: profile.accessory,
                               size: 140,
+                              stage: profile.growthStage,
                               emotion: PetEmotion.happy,
                             ),
                           ),
@@ -177,9 +180,11 @@ class ProgressScreen extends ConsumerWidget {
                     ),
                     _tasksPanel(profile, catalog, completed, total),
                     const SizedBox(height: 9),
+                    _growthPanel(profile),
+                    const SizedBox(height: 9),
                     _goalPanel(goal, saved),
                     const SizedBox(height: 9),
-                    _planPanel(summary),
+                    _planPanel(profile, summary),
                     const SizedBox(height: 10),
                     SizedBox(
                       height: 58,
@@ -318,6 +323,11 @@ class ProgressScreen extends ConsumerWidget {
             ),
           ],
         ),
+        const SizedBox(height: 5),
+        const Text(
+          '✓ решено самостоятельно · 📖 разобрано после подсказки',
+          style: TextStyle(color: Color(0xFF5D6773), fontSize: 12),
+        ),
       ],
     ),
   );
@@ -331,6 +341,12 @@ class ProgressScreen extends ConsumerWidget {
   ) {
     final tasks =
         catalog?.tasks.where((task) => task.topic == topic).toList() ?? [];
+    final learning = profile.learningTopic(topic);
+    final level = switch (learning.difficulty) {
+      LearningDifficulty.simple => 'Простая',
+      LearningDifficulty.medium => 'Средняя',
+      LearningDifficulty.hard => 'Сложная',
+    };
     return Expanded(
       child: Column(
         children: [
@@ -349,26 +365,89 @@ class ProgressScreen extends ConsumerWidget {
           const SizedBox(height: 4),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              for (final task in tasks)
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 1),
-                  child: Icon(
-                    profile.completedTask(task.id)
-                        ? Icons.check_circle_rounded
-                        : Icons.circle_outlined,
-                    color: profile.completedTask(task.id)
-                        ? const Color(0xFF00A965)
-                        : const Color(0xFFC8C8C8),
-                    size: 17,
-                  ),
-                ),
-            ],
+            children: [for (final task in tasks) _taskStatus(profile, task)],
+          ),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              level,
+              style: const TextStyle(
+                color: _ink,
+                fontSize: 11,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              learning.difficulty == LearningDifficulty.hard
+                  ? 'Высшая ступень'
+                  : 'До следующей: ${2 - learning.cleanStreak}',
+              style: const TextStyle(color: Color(0xFF5D6773), fontSize: 9),
+            ),
           ),
         ],
       ),
     );
   }
+
+  Widget _taskStatus(GameProfile profile, LearningTask task) {
+    final progress = profile.taskProgress
+        .where((entry) => entry.taskId == task.id)
+        .firstOrNull;
+    final label = progress?.reviewed == true
+        ? 'разобрано'
+        : progress?.completed == true && progress?.hintUsed == true
+        ? 'решено с подсказкой'
+        : progress?.completed == true
+        ? 'решено'
+        : 'пока не выполнено';
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 1),
+      child: Semantics(
+        label: '${task.title}: $label',
+        child: Icon(
+          progress?.reviewed == true
+              ? Icons.menu_book_rounded
+              : progress?.completed == true && progress?.hintUsed == true
+              ? Icons.lightbulb_rounded
+              : progress?.completed == true
+              ? Icons.check_circle_rounded
+              : Icons.circle_outlined,
+          color:
+              progress?.reviewed == true ||
+                  (progress?.completed == true && progress?.hintUsed == true)
+              ? const Color(0xFFFFA726)
+              : progress?.completed == true
+              ? const Color(0xFF00A965)
+              : const Color(0xFFC8C8C8),
+          size: 17,
+        ),
+      ),
+    );
+  }
+
+  Widget _growthPanel(GameProfile profile) => _panel(
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Стадия: ${profile.growthLabel}',
+          style: const TextStyle(
+            color: _ink,
+            fontSize: 23,
+            fontWeight: FontWeight.w900,
+          ),
+        ),
+        Text(
+          'Успешных игровых дней: ${GrowthRules.qualifyingPeriods(profile)}',
+        ),
+        const SizedBox(height: 5),
+        Text(GrowthRules.nextStep(profile)),
+      ],
+    ),
+  );
 
   Widget _goalPanel(GoalDefinition? goal, int saved) {
     final price = goal?.price ?? 400;
@@ -492,7 +571,7 @@ class ProgressScreen extends ConsumerWidget {
     );
   }
 
-  Widget _planPanel(PeriodSummary? summary) => _panel(
+  Widget _planPanel(GameProfile profile, PeriodSummary? summary) => _panel(
     child: Column(
       children: [
         const Row(
@@ -560,6 +639,7 @@ class ProgressScreen extends ConsumerWidget {
             summary.netSaved,
             const Color(0xFFFFF3D7),
           ),
+          _dayDetails(profile, summary),
           const SizedBox(height: 7),
           Container(
             width: double.infinity,
@@ -582,6 +662,39 @@ class ProgressScreen extends ConsumerWidget {
       ],
     ),
   );
+
+  Widget _dayDetails(GameProfile profile, PeriodSummary summary) {
+    final report = DayFinancialReport.fromProfile(profile, summary.period);
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(top: 6),
+      padding: const EdgeInsets.all(9),
+      decoration: BoxDecoration(
+        color: const Color(0xFFE5F3FF),
+        borderRadius: BorderRadius.circular(18),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'В начале: кошелёк ${report.openingWallet} · накопления ${report.openingSavings}',
+          ),
+          Text(
+            'Доходы: план ${summary.plannedIncome ?? '—'} / получилось ${report.income}',
+          ),
+          for (final source in report.incomeBySource.entries)
+            Text('• ${source.key}: +${source.value}'),
+          Text(
+            'Покупки: нужное ${report.needs} · радость ${report.wants} · подарки ${report.gifts} · Котодерево ${report.saplings}',
+          ),
+          Text('В копилку +${report.deposits} · снято −${report.withdrawals}'),
+          Text(
+            'В конце: кошелёк ${report.closingWallet} · накопления ${report.closingSavings}',
+          ),
+        ],
+      ),
+    );
+  }
 
   Widget _planRow(
     String title,

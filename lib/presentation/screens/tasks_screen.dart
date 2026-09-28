@@ -5,9 +5,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../domain/models/game_catalog.dart';
 import '../../domain/models/game_profile.dart';
 import '../../domain/models/learning_task.dart';
+import '../../domain/models/learning_scenario.dart';
 import '../../domain/rules/game_rules.dart';
+import '../../domain/rules/activity_reward_rules.dart';
 import '../../domain/rules/learning_rules.dart';
 import '../providers/game_controller.dart';
+import 'learning_challenge_screen.dart';
 import '../widgets/accessible_motion.dart';
 import '../widgets/pet_portrait.dart';
 import '../widgets/story_logo.dart';
@@ -157,12 +160,103 @@ class _TasksScreenState extends ConsumerState<TasksScreen> {
                     style: TextStyle(color: _questBrown),
                   ),
                 ),
+              for (final topic in _questTopics)
+                _difficultySelector(profile, catalog, topic),
               const SizedBox(height: 6),
               for (final task in tasks) _taskCard(profile, catalog, task),
             ],
           ),
         ),
       ],
+    );
+  }
+
+  Widget _difficultySelector(
+    GameProfile profile,
+    GameCatalog catalog,
+    _QuestTopic topic,
+  ) {
+    final progress = profile.learningTopic(topic.id);
+    final completed = catalog.tasks
+        .where(
+          (task) => task.topic == topic.id && profile.completedTask(task.id),
+        )
+        .length;
+    return Padding(
+      padding: const EdgeInsets.only(top: 5),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  '${topic.shortLabel}: $completed/2 · до повышения ${2 - progress.cleanStreak}',
+                  style: const TextStyle(
+                    color: _questBrown,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+              DropdownButton<LearningDifficulty>(
+                value: progress.difficulty,
+                items: const [
+                  DropdownMenuItem(
+                    value: LearningDifficulty.simple,
+                    child: Text('Простая'),
+                  ),
+                  DropdownMenuItem(
+                    value: LearningDifficulty.medium,
+                    child: Text('Средняя'),
+                  ),
+                  DropdownMenuItem(
+                    value: LearningDifficulty.hard,
+                    child: Text('Сложная'),
+                  ),
+                ],
+                onChanged: (value) async {
+                  if (value == null) return;
+                  try {
+                    await ref
+                        .read(gameControllerProvider.notifier)
+                        .chooseLearningDifficulty(topic.id, value);
+                  } catch (_) {
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Не удалось сохранить сложность.'),
+                        ),
+                      );
+                    }
+                  }
+                },
+              ),
+            ],
+          ),
+          if (progress.downgradePending)
+            Wrap(
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: [
+                const Text('Хочешь попробовать ступень проще?'),
+                TextButton(
+                  onPressed: () => ref
+                      .read(gameControllerProvider.notifier)
+                      .chooseLearningDifficulty(
+                        topic.id,
+                        LearningDifficulty.values[progress.difficulty.index -
+                            1],
+                      ),
+                  child: const Text('Да'),
+                ),
+                TextButton(
+                  onPressed: () => ref
+                      .read(gameControllerProvider.notifier)
+                      .dismissLearningDowngrade(topic.id),
+                  child: const Text('Остаться'),
+                ),
+              ],
+            ),
+        ],
+      ),
     );
   }
 
@@ -486,6 +580,16 @@ class _TasksScreenState extends ConsumerState<TasksScreen> {
   ) {
     final topic = _questTopics.firstWhere((item) => item.id == task.topic);
     final completed = profile.completedTask(task.id);
+    final isScenario = LearningRules.scenarioIds.contains(task.id);
+    final scenario = isScenario
+        ? LearningScenario.forTask(
+            task.id,
+            profile.learningTopic(task.topic).difficulty,
+            practice: completed,
+          )
+        : null;
+    final snapshot = ActivityRewardSnapshot.fromProfile(profile);
+    final expected = completed ? 0 : snapshot.taskReward;
     final tint = switch (topic.id) {
       'Планирование' => const Color(0xFFE0FFF1),
       'Покупки' => const Color(0xFFFFE5E5),
@@ -500,7 +604,9 @@ class _TasksScreenState extends ConsumerState<TasksScreen> {
           borderRadius: BorderRadius.circular(19),
           onTap: () => Navigator.of(context).push(
             MaterialPageRoute<void>(
-              builder: (_) => TaskScreen(task: task, catalog: catalog),
+              builder: (_) => isScenario
+                  ? LearningChallengeScreen(task: task)
+                  : TaskScreen(task: task, catalog: catalog),
             ),
           ),
           child: Container(
@@ -536,7 +642,7 @@ class _TasksScreenState extends ConsumerState<TasksScreen> {
                         ),
                       ),
                       Text(
-                        task.prompt,
+                        scenario?.prompt ?? task.prompt,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
@@ -556,7 +662,9 @@ class _TasksScreenState extends ConsumerState<TasksScreen> {
                         ),
                       ),
                       Text(
-                        'Награда до ${task.reward}',
+                        completed
+                            ? 'Тренировка без награды'
+                            : snapshot.taskPreview,
                         style: const TextStyle(
                           color: _questBrown,
                           fontSize: 10,
@@ -585,7 +693,7 @@ class _TasksScreenState extends ConsumerState<TasksScreen> {
                       children: [
                         Image.asset('assets/images/cat_coin.png', width: 20),
                         Text(
-                          '+${task.reward}',
+                          '+$expected',
                           style: const TextStyle(
                             color: _questBrown,
                             fontWeight: FontWeight.w900,
@@ -699,6 +807,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
   String? _choice;
   String? _fixedText;
   bool _practiceViewed = false;
+  ActivityRewardSnapshot? _startSnapshot;
 
   bool get _isWeeklyBudget => widget.task.id == 'budget_lunch';
   bool get _isDayPlan => widget.task.id == 'budget_reserve';
@@ -774,24 +883,18 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
         });
         return;
       }
-      if (_isCustomQuest && _questPreview?.canClaim == false) return;
-      if (_isCustomQuest && _questPreview?.canClaim != true) {
+      if (_isCustomQuest) {
+        final readyToClaim = _questPreview?.canClaim == true;
         final preview = _evaluateQuest(answer);
         if (mounted) setState(() => _questPreview = preview);
-        if (preview.canClaim ||
-            (_isWeeklyBudget &&
-                answer.needs + answer.wants + answer.savings != 60) ||
-            (_isDayPlan &&
-                (preview.title == 'План больше бюджета' ||
-                    preview.title == 'Проверь план дня')) ||
-            (_isChoiceQuest && answer.choice == null) ||
-            (_isRewardSaving && (answer.savings < 0 || answer.savings > 30))) {
+        if (preview.canClaim && !readyToClaim) {
           return;
         }
       }
       await ref
           .read(gameControllerProvider.notifier)
-          .submitTask(widget.task.id, answer);
+          .submitTask(widget.task.id, answer, snapshot: _startSnapshot);
+      if (mounted) setState(() => _questPreview = null);
     } on GameRuleException catch (error) {
       if (mounted) {
         setState(() {
@@ -806,6 +909,25 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
           _questPreview = null;
         });
       }
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  Future<void> _understand() async {
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+    try {
+      await ref
+          .read(gameControllerProvider.notifier)
+          .acknowledgeTask(widget.task.id, snapshot: _startSnapshot);
+      if (mounted) setState(() => _questPreview = null);
+    } on GameRuleException catch (error) {
+      if (mounted) setState(() => _error = error.message);
+    } catch (_) {
+      if (mounted) setState(() => _error = 'Не удалось сохранить разбор.');
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -1221,6 +1343,13 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
                     ),
                   ),
                 ),
+              if (enabled &&
+                  progress?.solutionShown == true &&
+                  progress?.completed == false)
+                FilledButton(
+                  onPressed: _understand,
+                  child: const Text('Понятно'),
+                ),
               if (enabled && _questPreview?.fixButton != null)
                 OutlinedButton(
                   onPressed: () => setState(() {
@@ -1249,16 +1378,16 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
   @override
   Widget build(BuildContext context) {
     final profile = ref.watch(gameControllerProvider).asData?.value;
+    if (profile != null) {
+      _startSnapshot ??= ActivityRewardSnapshot.fromProfile(profile);
+    }
     final progress = profile?.taskProgress
         .where((entry) => entry.taskId == widget.task.id)
         .firstOrNull;
     final enabled = !_busy;
     final answer = _answer;
     final distributed = answer.needs + answer.wants + answer.savings;
-    final questReward =
-        _questPreview?.perfect == false || (progress?.attempts ?? 0) > 0
-        ? 8
-        : 12;
+    final questReward = _startSnapshot?.taskReward ?? 12;
     final feedback =
         _error ??
         (_isCustomQuest
@@ -1266,7 +1395,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
                   ? (_practiceViewed
                         ? _questPreview?.message
                         : progress!.feedback)
-                  : _questPreview?.message)
+                  : _questPreview?.message ?? progress?.feedback)
             : progress?.feedback);
     final displayedFeedback =
         feedback ??
@@ -1484,6 +1613,10 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
                 child: Text(displayedFeedback),
               ),
             ),
+          if (enabled &&
+              progress?.solutionShown == true &&
+              progress?.completed == false)
+            FilledButton(onPressed: _understand, child: const Text('Понятно')),
           if (enabled && _questPreview?.fixButton != null)
             OutlinedButton(
               onPressed: _correctChoice,

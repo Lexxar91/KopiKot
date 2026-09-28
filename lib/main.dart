@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'presentation/providers/game_controller.dart';
 import 'presentation/screens/create_pet_screen.dart';
+import 'presentation/screens/budget_screen.dart';
 import 'presentation/screens/home_screen.dart';
 import 'presentation/widgets/accessible_motion.dart';
 
@@ -11,11 +12,36 @@ void main() {
 }
 
 /// Корень приложения и общая конфигурация Material UI.
-class KopiKotApp extends ConsumerWidget {
+class KopiKotApp extends ConsumerStatefulWidget {
   const KopiKotApp({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<KopiKotApp> createState() => _KopiKotAppState();
+}
+
+class _KopiKotAppState extends ConsumerState<KopiKotApp>
+    with WidgetsBindingObserver {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      ref.invalidate(gameControllerProvider);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final reduceMotion = ref.watch(reduceMotionProvider).asData?.value ?? true;
     return MaterialApp(
       title: 'КопиКот',
@@ -109,11 +135,18 @@ class KopiKotApp extends ConsumerWidget {
   }
 }
 
-class _ProfileGate extends ConsumerWidget {
+class _ProfileGate extends ConsumerStatefulWidget {
   const _ProfileGate();
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) => ref
+  ConsumerState<_ProfileGate> createState() => _ProfileGateState();
+}
+
+class _ProfileGateState extends ConsumerState<_ProfileGate> {
+  String? _offeredDay;
+
+  @override
+  Widget build(BuildContext context) => ref
       .watch(gameControllerProvider)
       .when(
         loading: () => const Scaffold(
@@ -144,8 +177,19 @@ class _ProfileGate extends ConsumerWidget {
             ),
           ),
         ),
-        data: (profile) => profile == null
-            ? const CreatePetScreen()
-            : HomeScreen(profile: profile),
+        data: (profile) {
+          if (profile == null) return const CreatePetScreen();
+          final day = '${profile.isTest}-${profile.period}';
+          if (profile.plan == null && _offeredDay != day) {
+            _offeredDay = day;
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (!mounted) return;
+              Navigator.of(context).push(
+                MaterialPageRoute<void>(builder: (_) => const BudgetScreen()),
+              );
+            });
+          }
+          return HomeScreen(profile: profile);
+        },
       );
 }

@@ -22,9 +22,11 @@ class SavingsScreen extends ConsumerStatefulWidget {
 
 class _SavingsScreenState extends ConsumerState<SavingsScreen> {
   final _amount = TextEditingController(text: '20');
+  final _reserveAmount = TextEditingController(text: '10');
   @override
   void dispose() {
     _amount.dispose();
+    _reserveAmount.dispose();
     super.dispose();
   }
 
@@ -98,6 +100,72 @@ class _SavingsScreenState extends ConsumerState<SavingsScreen> {
     );
   }
 
+  Future<void> _purchaseGoal(GameProfile profile, GoalDefinition goal) async {
+    final purchased = await showAccessibleDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => GameActionDialog(
+        title: 'Купить «${goal.title}»?',
+        description:
+            'Цена: ${goal.price} коткоинов. Они снимутся именно с этой цели. '
+            'В кошельке останется ${profile.balance}, в копилке цели — '
+            '${profile.savedFor(goal.id) - goal.price}.',
+        confirmLabel: 'Купить цель',
+        action: (id) =>
+            ref.read(gameControllerProvider.notifier).purchaseGoal(goal.id, id),
+      ),
+    );
+    if (purchased == true && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          backgroundColor: _ink,
+          content: Text(
+            'Цель «${goal.title}» куплена! Коткоины взяты из её копилки.',
+            style: const TextStyle(color: Colors.white),
+          ),
+        ),
+      );
+    }
+  }
+
+  Future<void> _transferReserve(GameProfile profile, bool withdraw) async {
+    final amount = int.tryParse(_reserveAmount.text);
+    if (amount == null || amount <= 0) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Укажи сумму больше нуля.')));
+      return;
+    }
+    final after = profile.reserveSavings + (withdraw ? -amount : amount);
+    final wallet = profile.balance + (withdraw ? amount : -amount);
+    final confirmed = await showAccessibleDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => GameActionDialog(
+        title: withdraw ? 'Снять из резерва?' : 'Отложить в резерв?',
+        description:
+            'Сейчас в резерве ${profile.reserveSavings}, в кошельке ${profile.balance}. '
+            'После операции в резерве будет $after, в кошельке $wallet. '
+            'Накопления на выбранную цель не изменятся.',
+        confirmLabel: withdraw ? 'Снять' : 'Отложить',
+        action: (id) => ref
+            .read(gameControllerProvider.notifier)
+            .transferReserve(amount, id, withdraw: withdraw),
+      ),
+    );
+    if (confirmed == true && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          backgroundColor: _ink,
+          content: Text(
+            'В резерве теперь $after коткоинов.',
+            style: const TextStyle(color: Colors.white),
+          ),
+        ),
+      );
+    }
+  }
+
   static String _goalImage(String id) => switch (id) {
     'tent' => 'assets/images/savings_treadmill.png',
     'telescope' => 'assets/images/savings_bed.png',
@@ -122,44 +190,50 @@ class _SavingsScreenState extends ConsumerState<SavingsScreen> {
     child: child,
   );
 
-  Widget _goalCard(GoalDefinition goal, bool compact) => Expanded(
+  Widget _goalCard(GoalDefinition goal, bool compact, bool locked) => Expanded(
     child: InkWell(
-      onTap: () => _selectGoal(goal),
+      onTap: locked ? null : () => _selectGoal(goal),
       borderRadius: BorderRadius.circular(20),
-      child: Container(
-        height: compact ? 82 : 104,
-        padding: const EdgeInsets.all(5),
-        decoration: BoxDecoration(
-          color: goal.id == 'telescope'
-              ? const Color(0xFFFFDFDE)
-              : const Color(0xFFDEFFF0),
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: Colors.white, width: 2),
-        ),
-        child: Row(
-          children: [
-            Expanded(
-              flex: 3,
-              child: Image.asset(_goalImage(goal.id), fit: BoxFit.contain),
-            ),
-            const SizedBox(width: 2),
-            Expanded(
-              flex: 3,
-              child: FittedBox(
-                fit: BoxFit.scaleDown,
-                child: Text(
-                  goal.title,
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    color: _ink,
-                    fontSize: 19,
-                    fontWeight: FontWeight.w900,
+      child: Opacity(
+        opacity: locked ? 0.65 : 1,
+        child: Container(
+          height: compact ? 82 : 104,
+          padding: const EdgeInsets.all(5),
+          decoration: BoxDecoration(
+            color: goal.id == 'telescope'
+                ? const Color(0xFFFFDFDE)
+                : const Color(0xFFDEFFF0),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: Colors.white, width: 2),
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                flex: 3,
+                child: Image.asset(_goalImage(goal.id), fit: BoxFit.contain),
+              ),
+              const SizedBox(width: 2),
+              Expanded(
+                flex: 3,
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    goal.title,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      color: _ink,
+                      fontSize: 19,
+                      fontWeight: FontWeight.w900,
+                    ),
                   ),
                 ),
               ),
-            ),
-            const Icon(Icons.chevron_right_rounded, color: Color(0xFFB76A43)),
-          ],
+              Icon(
+                locked ? Icons.lock_rounded : Icons.chevron_right_rounded,
+                color: const Color(0xFFB76A43),
+              ),
+            ],
+          ),
         ),
       ),
     ),
@@ -210,6 +284,12 @@ class _SavingsScreenState extends ConsumerState<SavingsScreen> {
                         final remaining = (goal.price - saved).clamp(
                           0,
                           goal.price,
+                        );
+                        final plannedDaily = profile?.plan?.savings ?? 0;
+                        final daysToGoal = EconomyRules.periodsToGoal(
+                          price: goal.price,
+                          saved: saved,
+                          perPeriod: plannedDaily,
                         );
                         return ListView(
                           padding: const EdgeInsets.fromLTRB(11, 5, 11, 20),
@@ -413,6 +493,17 @@ class _SavingsScreenState extends ConsumerState<SavingsScreen> {
                                             fontWeight: FontWeight.w900,
                                           ),
                                         ),
+                                        Text(
+                                          daysToGoal == null
+                                              ? 'Срок не рассчитан'
+                                              : 'При взносе $plannedDaily в день: $daysToGoal игровых дней',
+                                          textAlign: TextAlign.center,
+                                          style: const TextStyle(
+                                            color: _ink,
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.w700,
+                                          ),
+                                        ),
                                       ],
                                     ),
                                   ),
@@ -448,6 +539,15 @@ class _SavingsScreenState extends ConsumerState<SavingsScreen> {
                                     ],
                                   ),
                                   const SizedBox(height: 5),
+                                  if (profile != null &&
+                                      !profile.goalChoicesUnlocked)
+                                    const Padding(
+                                      padding: EdgeInsets.only(bottom: 6),
+                                      child: Text(
+                                        'Откроются, когда накопишь первую цель полностью.',
+                                        style: TextStyle(color: _ink),
+                                      ),
+                                    ),
                                   Row(
                                     children: [
                                       for (final choice in [10, 20, 50]) ...[
@@ -551,6 +651,8 @@ class _SavingsScreenState extends ConsumerState<SavingsScreen> {
                                     ? () => _selectGoal(goal)
                                     : profile.plan == null
                                     ? null
+                                    : saved >= goal.price
+                                    ? null
                                     : () => _transfer(profile, goal, false),
                                 icon: Image.asset(
                                   'assets/images/cat_coin.png',
@@ -576,6 +678,52 @@ class _SavingsScreenState extends ConsumerState<SavingsScreen> {
                                 ),
                               ),
                             ),
+                            if (profile != null &&
+                                profile.selectedGoalId == goal.id &&
+                                saved > 0) ...[
+                              const SizedBox(height: 7),
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: OutlinedButton.icon(
+                                      onPressed: profile.plan == null
+                                          ? null
+                                          : () =>
+                                                _transfer(profile, goal, true),
+                                      icon: const Icon(Icons.savings_outlined),
+                                      label: const Text('Снять'),
+                                      style: OutlinedButton.styleFrom(
+                                        foregroundColor: _ink,
+                                        backgroundColor: _cream,
+                                        minimumSize: const Size(0, 49),
+                                      ),
+                                    ),
+                                  ),
+                                  if (saved >= goal.price) ...[
+                                    const SizedBox(width: 7),
+                                    Expanded(
+                                      child: FilledButton.icon(
+                                        onPressed: profile.plan == null
+                                            ? null
+                                            : () =>
+                                                  _purchaseGoal(profile, goal),
+                                        icon: const Icon(
+                                          Icons.shopping_bag_rounded,
+                                        ),
+                                        label: const Text('Купить цель'),
+                                        style: FilledButton.styleFrom(
+                                          backgroundColor: const Color(
+                                            0xFFFFCE31,
+                                          ),
+                                          foregroundColor: _ink,
+                                          minimumSize: const Size(0, 49),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ],
+                              ),
+                            ],
                             if (profile?.plan == null)
                               const Padding(
                                 padding: EdgeInsets.only(top: 5),
@@ -584,6 +732,71 @@ class _SavingsScreenState extends ConsumerState<SavingsScreen> {
                                   style: TextStyle(color: _ink),
                                 ),
                               ),
+                            const SizedBox(height: 7),
+                            _panel(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: [
+                                  const Text(
+                                    'Резерв',
+                                    style: TextStyle(
+                                      color: _ink,
+                                      fontSize: 22,
+                                      fontWeight: FontWeight.w900,
+                                    ),
+                                  ),
+                                  Text(
+                                    'Отложено: ${profile?.reserveSavings ?? 0} коткоинов. '
+                                    'Этот запас не входит в прогресс цели.',
+                                    style: const TextStyle(color: _ink),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  TextField(
+                                    controller: _reserveAmount,
+                                    keyboardType: TextInputType.number,
+                                    decoration: InputDecoration(
+                                      labelText: 'Сумма для резерва',
+                                      filled: true,
+                                      fillColor: Colors.white,
+                                      border: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(18),
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 7),
+                                  FilledButton.icon(
+                                    onPressed: profile?.plan == null
+                                        ? null
+                                        : () =>
+                                              _transferReserve(profile!, false),
+                                    icon: const Icon(Icons.savings_rounded),
+                                    label: const Text('Отложить в резерв'),
+                                    style: FilledButton.styleFrom(
+                                      backgroundColor: const Color(0xFFFFCE31),
+                                      foregroundColor: _ink,
+                                      minimumSize: const Size(0, 49),
+                                    ),
+                                  ),
+                                  OutlinedButton.icon(
+                                    onPressed:
+                                        profile?.plan == null ||
+                                            (profile?.reserveSavings ?? 0) == 0
+                                        ? null
+                                        : () =>
+                                              _transferReserve(profile!, true),
+                                    icon: const Icon(
+                                      Icons.arrow_circle_up_rounded,
+                                    ),
+                                    label: const Text('Снять из резерва'),
+                                    style: OutlinedButton.styleFrom(
+                                      foregroundColor: _ink,
+                                      backgroundColor: _cream,
+                                      minimumSize: const Size(0, 49),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
                             const SizedBox(height: 7),
                             _panel(
                               child: Column(
@@ -606,7 +819,12 @@ class _SavingsScreenState extends ConsumerState<SavingsScreen> {
                                         index++
                                       ) ...[
                                         if (index > 0) const SizedBox(width: 5),
-                                        _goalCard(others[index], compact),
+                                        _goalCard(
+                                          others[index],
+                                          compact,
+                                          profile != null &&
+                                              !profile.goalChoicesUnlocked,
+                                        ),
                                       ],
                                     ],
                                   ),

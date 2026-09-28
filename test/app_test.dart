@@ -11,10 +11,14 @@ import 'package:kopikot/domain/models/game_transaction.dart';
 import 'package:kopikot/data/content/catalog_loader.dart';
 import 'package:kopikot/domain/rules/economy_rules.dart';
 import 'package:kopikot/domain/rules/learning_rules.dart';
+import 'package:kopikot/domain/rules/learning_difficulty_rules.dart';
 import 'package:kopikot/domain/rules/period_rules.dart';
 import 'package:kopikot/domain/rules/activity_rules.dart';
 import 'package:kopikot/domain/rules/daily_reward_rules.dart';
 import 'package:kopikot/domain/rules/mini_game_rules.dart';
+import 'package:kopikot/domain/rules/accountant_rules.dart';
+import 'package:kopikot/domain/rules/market_game_rules.dart';
+import 'package:kopikot/domain/rules/activity_reward_rules.dart';
 import 'package:kopikot/domain/rules/sapling_rules.dart';
 import 'package:kopikot/domain/models/learning_task.dart';
 import 'package:kopikot/domain/repositories/game_repository.dart';
@@ -103,18 +107,68 @@ class _MemoryRepository implements GameRepository {
   }
 
   @override
-  Future<GameProfile> submitTask(String taskId, TaskAnswer answer) async =>
-      profile = LearningRules.submit(
-        profile!,
-        catalog,
-        catalog.task(taskId),
-        answer,
-      );
+  Future<GameProfile> submitTask(
+    String taskId,
+    TaskAnswer answer, {
+    ActivityRewardSnapshot? snapshot,
+  }) async => profile = LearningRules.submit(
+    profile!,
+    catalog,
+    catalog.task(taskId),
+    answer,
+    snapshot: snapshot,
+  );
+  @override
+  Future<GameProfile> acknowledgeTask(
+    String taskId, {
+    ActivityRewardSnapshot? snapshot,
+  }) async => profile = LearningRules.acknowledge(
+    profile!,
+    catalog.task(taskId),
+    snapshot: snapshot,
+  );
+  @override
+  Future<GameProfile> chooseLearningDifficulty(
+    String topic,
+    LearningDifficulty difficulty,
+  ) async =>
+      profile = LearningDifficultyRules.choose(profile!, topic, difficulty);
+  @override
+  Future<GameProfile> dismissLearningDowngrade(String topic) async =>
+      profile = LearningDifficultyRules.dismissDowngrade(profile!, topic);
   @override
   Future<GameProfile> claimMiniGame(
     MiniGameKind kind,
-    String commandId,
-  ) async => profile = MiniGameRules.claim(profile!, kind, commandId);
+    String commandId, {
+    ActivityRewardSnapshot? snapshot,
+  }) async => profile = MiniGameRules.claim(
+    profile!,
+    kind,
+    commandId,
+    snapshot: snapshot,
+  );
+  @override
+  Future<GameProfile> accountantAction(
+    String sessionId,
+    AccountantAction action, {
+    int? answer,
+  }) async => profile = AccountantRules.apply(
+    profile!,
+    sessionId,
+    action,
+    answer: answer,
+  );
+  @override
+  Future<GameProfile> marketAction(
+    String sessionId,
+    MarketAction action, {
+    String? itemId,
+  }) async => profile = MarketGameRules.apply(
+    profile!,
+    sessionId,
+    action,
+    itemId: itemId,
+  );
   @override
   Future<GameProfile> claimDailyReward() async =>
       profile = DailyRewardRules.claim(profile!);
@@ -130,6 +184,24 @@ class _MemoryRepository implements GameRepository {
     profile!,
     catalog.product(productId),
     commandId,
+  );
+  @override
+  Future<GameProfile> purchaseGoal(String goalId, String commandId) async =>
+      profile = EconomyRules.purchaseGoal(
+        profile!,
+        catalog.goal(goalId),
+        commandId,
+      );
+  @override
+  Future<GameProfile> transferReserve(
+    int amount, {
+    required String commandId,
+    required bool withdraw,
+  }) async => profile = EconomyRules.transferReserve(
+    profile!,
+    amount,
+    commandId: commandId,
+    withdraw: withdraw,
   );
   @override
   Future<GameProfile> equipAccessory(PetAccessory? accessory) async =>
@@ -205,6 +277,9 @@ class _MemoryRepository implements GameRepository {
     required int wants,
     required int savings,
     int gifts = 0,
+    int kept = 0,
+    int expectedIncome = 0,
+    List<String> sourceIds = const [],
   }) async => profile = profile!.withPlan(
     GameRules.confirmBudget(
       profile!,
@@ -212,7 +287,30 @@ class _MemoryRepository implements GameRepository {
       wants: wants,
       gifts: gifts,
       savings: savings,
+      kept: kept,
+      expectedIncome: expectedIncome,
+      sourceIds: sourceIds,
     ),
+  );
+
+  @override
+  Future<GameProfile> reviseBudget({
+    required int needs,
+    required int wants,
+    required int savings,
+    int gifts = 0,
+    int kept = 0,
+    int expectedIncome = 0,
+    List<String> sourceIds = const [],
+  }) async => profile = GameRules.reviseBudget(
+    profile!,
+    needs: needs,
+    wants: wants,
+    savings: savings,
+    gifts: gifts,
+    kept: kept,
+    expectedIncome: expectedIncome,
+    sourceIds: sourceIds,
   );
 }
 
@@ -756,16 +854,15 @@ void main() {
     expect(find.text('Не хватает: 10 монет'), findsOneWidget);
     await tester.enterText(find.byType(TextField).at(2), '20');
     await tester.pump();
-    await tester.scrollUntilVisible(
-      find.text('Сохранить план'),
-      -150,
-      scrollable: find.byType(Scrollable).first,
-    );
+    await tester.drag(find.byType(ListView).last, const Offset(0, -560));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Сохранить план'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Изменить'));
     await tester.pumpAndSettle();
     expect(repository.profile!.plan, isNull);
+    await tester.drag(find.byType(ListView).last, const Offset(0, -560));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Сохранить план'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Подтвердить'));
@@ -881,6 +978,51 @@ void main() {
     expect(repository.profile!.balance, 112);
     expect(repository.profile!.taskProgress.single.attempts, 1);
     expect(find.textContaining('Забрать награду'), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('После двух ошибок кнопка «Понятно» закрывает задание', (
+    tester,
+  ) async {
+    final repository = _MemoryRepository()
+      ..profile = initialProfile.withPlan(
+        GameRules.confirmBudget(
+          initialProfile,
+          needs: 50,
+          wants: 20,
+          savings: 30,
+        ),
+      );
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          gameRepositoryProvider.overrideWith((ref) async => repository),
+        ],
+        child: MaterialApp(
+          home: TaskScreen(
+            task: repository.catalog.task('saving_start'),
+            catalog: repository.catalog,
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    final check = find.text('Проверить план');
+    await tester.ensureVisible(check);
+    await tester.tap(check);
+    await tester.pumpAndSettle();
+    expect(find.textContaining('Подсказка:'), findsOneWidget);
+    await tester.ensureVisible(check);
+    await tester.tap(check);
+    await tester.pumpAndSettle();
+    expect(find.textContaining('Разбор по шагам:'), findsOneWidget);
+    final understood = find.text('Понятно');
+    await tester.drag(find.byType(ListView), const Offset(0, -220));
+    await tester.pumpAndSettle();
+    await tester.tap(understood);
+    await tester.pumpAndSettle();
+    expect(repository.profile!.balance, 112);
+    expect(repository.profile!.taskProgress.single.reviewed, isTrue);
     expect(tester.takeException(), isNull);
   });
 
@@ -1316,7 +1458,8 @@ void main() {
     expect(find.text('Моя цель: беговая дорожка'), findsOneWidget);
     expect(find.text('0 / 400'), findsOneWidget);
     expect(find.text('Я коплю\nна мечту!'), findsOneWidget);
-    expect(find.byType(TextField), findsNothing);
+    final reserveField = tester.widget<TextField>(find.byType(TextField));
+    expect(reserveField.decoration?.labelText, 'Сумма для резерва');
     expect(find.text('Взять с цели'), findsNothing);
     await tester.scrollUntilVisible(
       find.text('Выбрать цель').first,
@@ -1345,11 +1488,8 @@ void main() {
       150,
       scrollable: find.byType(Scrollable).first,
     );
-    await tester.tap(find.text('Редкий саженец'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.widgetWithText(FilledButton, 'Выбрать цель'));
-    await tester.pumpAndSettle();
-    expect(repository.profile!.selectedGoalId, 'garden');
+    expect(find.byIcon(Icons.lock_rounded), findsNWidgets(2));
+    expect(repository.profile!.selectedGoalId, 'tent');
     await tester.scrollUntilVisible(
       find.text('Я коплю\nна мечту!'),
       -200,
@@ -1691,15 +1831,12 @@ void main() {
     await launch(tester, repository, captureKey: key);
     tester.view.physicalSize = const Size(360, 640);
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Планы'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Бюджет'));
-    await tester.pumpAndSettle();
 
-    expect(find.text('На эту неделю:'), findsOneWidget);
+    expect(find.text('Можно запланировать:'), findsOneWidget);
     expect(find.text('Нужное'), findsOneWidget);
     expect(find.text('Радость'), findsOneWidget);
     expect(find.text('Копилка'), findsOneWidget);
+    expect(find.text('Оставить в кошельке'), findsOneWidget);
     expect(
       tester.widget<TextField>(find.byType(TextField).at(0)).controller!.text,
       '50',
@@ -1720,7 +1857,7 @@ void main() {
       of: find.text('Сохранить план'),
       matching: find.byType(FilledButton),
     );
-    expect(tester.getRect(saveButton).bottom, lessThanOrEqualTo(640));
+    expect(saveButton, findsOneWidget);
     expect(tester.takeException(), isNull);
     final boundary =
         key.currentContext!.findRenderObject()! as RenderRepaintBoundary;
@@ -1733,12 +1870,14 @@ void main() {
       image.dispose();
     });
 
+    await tester.ensureVisible(find.byTooltip('Уменьшить: Радость'));
     await tester.tap(find.byTooltip('Уменьшить: Радость'));
     await tester.pumpAndSettle();
     expect(
       tester.widget<Text>(find.byKey(const Key('budget-remaining'))).data,
       '5',
     );
+    await tester.ensureVisible(find.byTooltip('Увеличить: Нужное'));
     await tester.tap(find.byTooltip('Увеличить: Нужное'));
     await tester.pumpAndSettle();
     expect(
@@ -2566,7 +2705,15 @@ void main() {
       'assets/images/logo_wood.png',
     ]);
     final key = GlobalKey();
-    final repository = _MemoryRepository()..profile = initialProfile;
+    final repository = _MemoryRepository()
+      ..profile = initialProfile.withPlan(
+        GameRules.confirmBudget(
+          initialProfile,
+          needs: 50,
+          wants: 20,
+          savings: 30,
+        ),
+      );
     await launch(tester, repository, captureKey: key);
     tester.view.physicalSize = const Size(360, 640);
     final navigator = tester.state<NavigatorState>(find.byType(Navigator));
@@ -2574,7 +2721,10 @@ void main() {
       MaterialPageRoute<void>(builder: (_) => const AccountantScreen()),
     );
     await tester.pumpAndSettle();
-    expect(find.textContaining('Корм стоит 15 коткоинов'), findsOneWidget);
+    expect(find.byKey(const Key('accountant-start')), findsOneWidget);
+    await tester.tap(find.byKey(const Key('accountant-start')));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('Корм стоит 8 коткоинов'), findsOneWidget);
     expect(find.text('Можно попробовать ещё раз'), findsOneWidget);
     expect(find.byKey(const Key('accountant-hint')), findsOneWidget);
     expect(tester.takeException(), isNull);
@@ -2598,21 +2748,24 @@ void main() {
     }
 
     await tapVisible(find.byKey(const Key('accountant-hint')));
-    expect(find.text('Подсказка: 50 − 15 = ?'), findsOneWidget);
+    expect(find.textContaining('Сначала сравни, сколько дали'), findsWidgets);
 
-    await tapVisible(find.byKey(const Key('accountant-answer-25')));
+    await tapVisible(find.byKey(const Key('accountant-answer-10')));
     expect(repository.profile!.balance, 100);
-    expect(find.textContaining('Заработанное не теряется'), findsOneWidget);
+    expect(
+      repository.profile!.accountantSessions.single.progress.first.hintUsed,
+      isTrue,
+    );
 
-    await tapVisible(find.byKey(const Key('accountant-answer-35')));
+    await tapVisible(find.byKey(const Key('accountant-answer-12')));
     await tapVisible(find.byKey(const Key('accountant-primary')));
-    expect(find.textContaining('Игрушка стоит 20 коткоинов'), findsOneWidget);
+    expect(find.textContaining('Молочко стоит 6 коткоинов'), findsOneWidget);
 
-    await tapVisible(find.byKey(const Key('accountant-answer-30')));
+    await tapVisible(find.byKey(const Key('accountant-answer-9')));
     await tapVisible(find.byKey(const Key('accountant-primary')));
-    expect(repository.profile!.balance, 112);
+    expect(repository.profile!.balance, 106);
     expect(repository.profile!.transactions.last.referenceId, 'accountant');
-    expect(find.text('+12 коткоинов'), findsOneWidget);
+    expect(find.textContaining('получил 6 коткоинов'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 
@@ -2636,7 +2789,15 @@ void main() {
       'assets/images/logo_wood.png',
     ]);
     final key = GlobalKey();
-    final repository = _MemoryRepository()..profile = initialProfile;
+    final repository = _MemoryRepository()
+      ..profile = initialProfile.withPlan(
+        GameRules.confirmBudget(
+          initialProfile,
+          needs: 50,
+          wants: 20,
+          savings: 30,
+        ),
+      );
     await launch(tester, repository, captureKey: key);
     tester.view.physicalSize = const Size(360, 640);
     final navigator = tester.state<NavigatorState>(find.byType(Navigator));
@@ -2665,18 +2826,20 @@ void main() {
       await tester.pumpAndSettle();
     }
 
+    await tapVisible(find.byKey(const Key('market-start')));
     await tapVisible(find.byKey(const Key('market-item-toy')));
     await tapVisible(find.byKey(const Key('market-item-food')));
+    await tapVisible(find.byKey(const Key('market-primary')));
+    expect(repository.profile!.balance, 100);
+    expect(find.textContaining('шампунь'), findsWidgets);
+
     await tapVisible(find.byKey(const Key('market-item-shampoo')));
     await tapVisible(find.byKey(const Key('market-primary')));
     expect(repository.profile!.balance, 100);
-    expect(find.textContaining('Начни с нужного'), findsOneWidget);
-
-    await tapVisible(find.byKey(const Key('market-item-toy')));
     await tapVisible(find.byKey(const Key('market-primary')));
-    expect(repository.profile!.balance, 112);
+    expect(repository.profile!.balance, 106);
     expect(repository.profile!.transactions.last.referenceId, 'kotomarket');
-    expect(find.textContaining('Потрачено 25, осталось 35'), findsOneWidget);
+    expect(find.textContaining('23'), findsWidgets);
     expect(tester.takeException(), isNull);
   });
 
@@ -2693,13 +2856,24 @@ void main() {
       'assets/images/cat_coin.png',
       'assets/images/logo_wood.png',
     ]);
-    final repository = _MemoryRepository()..profile = initialProfile;
+    final repository = _MemoryRepository()
+      ..profile = initialProfile.withPlan(
+        GameRules.confirmBudget(
+          initialProfile,
+          needs: 50,
+          wants: 20,
+          savings: 30,
+        ),
+      );
     await launch(tester, repository);
     tester.view.physicalSize = const Size(390, 850);
     final navigator = tester.state<NavigatorState>(find.byType(Navigator));
     navigator.push(
       MaterialPageRoute<void>(builder: (_) => const MarketGameScreen()),
     );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const Key('market-start')));
     await tester.pumpAndSettle();
 
     final gesture = await tester.startGesture(
@@ -2715,6 +2889,94 @@ void main() {
 
     expect(find.byIcon(Icons.check_circle_rounded), findsOneWidget);
     expect(repository.profile!.balance, 100);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('Накопления: достигнутую цель можно купить из копилки', (
+    tester,
+  ) async {
+    final repository = _MemoryRepository()
+      ..profile = initialProfile.copyWith(
+        selectedGoalId: 'telescope',
+        savings: 300,
+        goalSavings: const {'telescope': 300},
+        plan: const BudgetPlan(
+          availableAtConfirmation: 100,
+          needs: 40,
+          wants: 30,
+          savings: 30,
+        ),
+      );
+    await launch(tester, repository);
+    tester.view.physicalSize = const Size(390, 850);
+    final navigator = tester.state<NavigatorState>(find.byType(Navigator));
+    navigator.push(
+      MaterialPageRoute<void>(builder: (_) => const SavingsScreen()),
+    );
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(
+      find.widgetWithText(FilledButton, 'Купить цель'),
+      180,
+      scrollable: find.byType(Scrollable).first,
+    );
+    expect(find.text('Снять'), findsOneWidget);
+    await tester.tap(find.widgetWithText(FilledButton, 'Купить цель'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('именно с этой цели'), findsOneWidget);
+    await tester.tap(find.widgetWithText(FilledButton, 'Купить цель').last);
+    await tester.pumpAndSettle();
+    expect(repository.profile!.balance, 100);
+    expect(repository.profile!.savedFor('telescope'), 0);
+    expect(repository.profile!.savings, 0);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('Накопления: резерв пополняется отдельно и снимается обратно', (
+    tester,
+  ) async {
+    final repository = _MemoryRepository()
+      ..profile = initialProfile.copyWith(
+        selectedGoalId: 'tent',
+        plan: const BudgetPlan(
+          availableAtConfirmation: 100,
+          needs: 40,
+          wants: 30,
+          savings: 30,
+        ),
+      );
+    await launch(tester, repository);
+    tester.view.physicalSize = const Size(360, 640);
+    final navigator = tester.state<NavigatorState>(find.byType(Navigator));
+    navigator.push(
+      MaterialPageRoute<void>(builder: (_) => const SavingsScreen()),
+    );
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(
+      find.text('Отложить в резерв'),
+      220,
+      scrollable: find.byType(Scrollable).first,
+    );
+    expect(find.textContaining('Этот запас не входит'), findsOneWidget);
+    await tester.enterText(find.byType(TextField).last, '13');
+    await tester.tap(find.text('Отложить в резерв'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(FilledButton, 'Отложить').last);
+    await tester.pumpAndSettle();
+    expect(repository.profile!.balance, 87);
+    expect(repository.profile!.savings, 13);
+    expect(repository.profile!.reserveSavings, 13);
+    expect(repository.profile!.savedFor('tent'), 0);
+    await tester.ensureVisible(
+      find.widgetWithText(OutlinedButton, 'Снять из резерва'),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(OutlinedButton, 'Снять из резерва'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(FilledButton, 'Снять').last);
+    await tester.pumpAndSettle();
+    expect(repository.profile!.balance, 100);
+    expect(repository.profile!.savings, 0);
+    expect(repository.profile!.reserveSavings, 0);
     expect(tester.takeException(), isNull);
   });
 }

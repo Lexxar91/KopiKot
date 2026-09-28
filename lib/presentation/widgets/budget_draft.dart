@@ -14,6 +14,9 @@ class BudgetDraft extends StatelessWidget {
     required this.needs,
     required this.wants,
     required this.savings,
+    required this.kept,
+    required this.planningBudget,
+    required this.forecastPanel,
     required this.remaining,
     required this.saving,
     required this.onInputChanged,
@@ -26,6 +29,9 @@ class BudgetDraft extends StatelessWidget {
   final TextEditingController needs;
   final TextEditingController wants;
   final TextEditingController savings;
+  final TextEditingController kept;
+  final int planningBudget;
+  final Widget forecastPanel;
   final int remaining;
   final bool saving;
   final VoidCallback onInputChanged;
@@ -43,10 +49,13 @@ class BudgetDraft extends StatelessWidget {
     final needsValue = _value(needs);
     final wantsValue = _value(wants);
     final savingsValue = _value(savings);
-    final distributed = needsValue + wantsValue + savingsValue;
+    final keptValue = _value(kept);
+    final distributed = needsValue + wantsValue + savingsValue + keptValue;
     return Column(
       children: [
         _BudgetHero(profile: profile, compact: compact),
+        forecastPanel,
+        SizedBox(height: compact ? 5 : 8),
         Container(
           padding: EdgeInsets.fromLTRB(8, compact ? 6 : 10, 8, compact ? 5 : 9),
           decoration: BoxDecoration(
@@ -68,7 +77,7 @@ class BudgetDraft extends StatelessWidget {
                 children: [
                   Flexible(
                     child: Text(
-                      'На эту неделю:',
+                      'Можно запланировать:',
                       style: TextStyle(
                         color: _brown,
                         fontSize: compact ? 20 : 22,
@@ -79,7 +88,7 @@ class BudgetDraft extends StatelessWidget {
                   const SizedBox(width: 6),
                   Image.asset('assets/images/cat_coin.png', width: 26),
                   Text(
-                    '${profile.balance}',
+                    '$planningBudget',
                     style: TextStyle(
                       color: _brown,
                       fontSize: compact ? 22 : 25,
@@ -126,6 +135,19 @@ class BudgetDraft extends StatelessWidget {
                 onInputChanged: onInputChanged,
                 onDecrease: () => onAdjust(savings, -5),
                 onIncrease: () => onAdjust(savings, 5),
+              ),
+              SizedBox(height: compact ? 3 : 5),
+              _BudgetAmountRow(
+                label: 'Оставить в кошельке',
+                compact: compact,
+                assetPath: 'assets/images/cat_coin.png',
+                background: const Color(0xFFFFF1D3),
+                controller: kept,
+                saving: saving,
+                canIncrease: remaining > 0,
+                onInputChanged: onInputChanged,
+                onDecrease: () => onAdjust(kept, -5),
+                onIncrease: () => onAdjust(kept, 5),
               ),
             ],
           ),
@@ -186,6 +208,11 @@ class BudgetDraft extends StatelessWidget {
                         Expanded(
                           flex: savingsValue,
                           child: const ColoredBox(color: Color(0xFF36AFF1)),
+                        ),
+                      if (keptValue > 0)
+                        Expanded(
+                          flex: keptValue,
+                          child: const ColoredBox(color: Color(0xFFFFC342)),
                         ),
                       if (remaining > 0)
                         Expanded(

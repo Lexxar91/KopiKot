@@ -233,7 +233,10 @@ void main() {
   });
 
   test('Смена цели не переносит её монеты; снять с другой цели нельзя', () {
-    profile = EconomyRules.selectGoal(profile, catalog.goal('tent'));
+    profile = EconomyRules.selectGoal(
+      profile.copyWith(goalChoicesUnlocked: true),
+      catalog.goal('tent'),
+    );
     profile = EconomyRules.transfer(
       profile,
       catalog.goal('tent'),
@@ -266,6 +269,39 @@ void main() {
       throwsA(isA<GameRuleException>()),
     );
   });
+
+  test(
+    'Другие цели открываются после достижения первой и остаются открыты',
+    () {
+      final firstGoal = catalog.goal('tent');
+      final nextGoal = catalog.goal('telescope');
+      profile = profile.copyWith(selectedGoalId: firstGoal.id, balance: 400);
+      expect(
+        () => EconomyRules.selectGoal(profile, nextGoal),
+        throwsA(isA<GameRuleException>()),
+      );
+      profile = EconomyRules.transfer(
+        profile,
+        firstGoal,
+        firstGoal.price,
+        commandId: 'reach-first-goal',
+        withdraw: false,
+      );
+      expect(profile.goalChoicesUnlocked, isTrue);
+      profile = EconomyRules.transfer(
+        profile,
+        firstGoal,
+        10,
+        commandId: 'take-after-goal',
+        withdraw: true,
+      );
+      expect(profile.goalChoicesUnlocked, isTrue);
+      expect(
+        EconomyRules.selectGoal(profile, nextGoal).selectedGoalId,
+        nextGoal.id,
+      );
+    },
+  );
 
   test('Нулевые, отрицательные и слишком большие переводы отклоняются', () {
     profile = EconomyRules.selectGoal(profile, catalog.goal('tent'));
@@ -345,4 +381,107 @@ void main() {
     expect(repeat.savedFor(goal.id), 380);
     expect(repeat.balance + repeat.savings, 500);
   });
+
+  test(
+    'Достигнутая цель покупается только из своей копилки и ровно один раз',
+    () {
+      final goal = catalog.goal('telescope');
+      profile = EconomyRules.selectGoal(
+        profile.copyWith(balance: 400, selectedGoalId: goal.id),
+        goal,
+      );
+      expect(
+        () => EconomyRules.purchaseGoal(profile, goal, 'too-early'),
+        throwsA(isA<GameRuleException>()),
+      );
+      profile = EconomyRules.transfer(
+        profile,
+        goal,
+        goal.price,
+        commandId: 'save',
+        withdraw: false,
+      );
+      final wallet = profile.balance;
+      final purchased = EconomyRules.purchaseGoal(profile, goal, 'buy-goal');
+      expect(purchased.balance, wallet);
+      expect(purchased.savedFor(goal.id), 0);
+      expect(purchased.savings, 0);
+      expect(purchased.transactions.last.kind, TransactionKind.wantPurchase);
+      expect(purchased.transactions.last.referenceId, goal.id);
+      expect(purchased.transactions.last.amount, goal.price);
+      expect(
+        purchased.transactions[purchased.transactions.length - 2].kind,
+        TransactionKind.withdrawal,
+      );
+      expect(purchased.feedback, contains('из накоплений'));
+      expect(
+        identical(
+          purchased,
+          EconomyRules.purchaseGoal(purchased, goal, 'buy-goal'),
+        ),
+        isTrue,
+      );
+      expect(
+        () => EconomyRules.purchaseGoal(purchased, goal, 'buy-again'),
+        throwsA(isA<GameRuleException>()),
+      );
+    },
+  );
+
+  test(
+    'Резерв отделён от цели, перевод обратим и повтор команды безопасен',
+    () {
+      profile = EconomyRules.selectGoal(profile, catalog.goal('tent'));
+      profile = EconomyRules.transfer(
+        profile,
+        catalog.goal('tent'),
+        20,
+        commandId: 'goal-save',
+        withdraw: false,
+      );
+      final beforeGoal = profile.savedFor('tent');
+      profile = EconomyRules.transferReserve(
+        profile,
+        30,
+        commandId: 'reserve-save',
+        withdraw: false,
+      );
+      expect(profile.balance, 50);
+      expect(profile.savings, 50);
+      expect(profile.reserveSavings, 30);
+      expect(profile.savedFor('tent'), beforeGoal);
+      expect(
+        identical(
+          profile,
+          EconomyRules.transferReserve(
+            profile,
+            30,
+            commandId: 'reserve-save',
+            withdraw: false,
+          ),
+        ),
+        isTrue,
+      );
+      expect(
+        () => EconomyRules.transferReserve(
+          profile,
+          31,
+          commandId: 'too-much',
+          withdraw: true,
+        ),
+        throwsA(isA<GameRuleException>()),
+      );
+      profile = EconomyRules.transferReserve(
+        profile,
+        10,
+        commandId: 'reserve-take',
+        withdraw: true,
+      );
+      expect(profile.balance, 60);
+      expect(profile.savings, 40);
+      expect(profile.reserveSavings, 20);
+      expect(profile.savedFor('tent'), beforeGoal);
+      expect(profile.transactions.last.referenceId, GameProfile.reserveId);
+    },
+  );
 }

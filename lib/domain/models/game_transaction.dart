@@ -21,6 +21,10 @@ class GameTransaction {
     required this.satietyAfter,
     required this.moodAfter,
     this.referenceId,
+    this.startSatiety,
+    this.startEnergy,
+    this.startMood,
+    this.baseReward,
   });
   final String id;
   final int period;
@@ -28,6 +32,10 @@ class GameTransaction {
   final int amount;
   final String label;
   final String? referenceId;
+  final int? startSatiety;
+  final int? startEnergy;
+  final int? startMood;
+  final int? baseReward;
   final int balanceAfter;
   final int savingsAfter;
   final int satietyAfter;

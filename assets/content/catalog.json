@@ -30,7 +30,7 @@
     {"id":"tree_bank","title":"Дерево-копилка","price":400,"description":"Большая цель для долгих накоплений."}
   ],
   "saplings": [
-    {"id":"sapling_5","title":"Деревце","price":30,"term":5,"reward":50,"description":"Подождём — вырастет больше!"},
+    {"id":"sapling_5","title":"Деревце","price":20,"term":5,"reward":50,"description":"Собрать раньше — 30, через пять дней — 50 коткоинов."},
     {"id":"sapling_10","title":"Саженец на 10 дней","price":20,"term":10,"reward":50,"description":"Средний урожай: ждать дольше — получить больше."},
     {"id":"sapling_15","title":"Саженец на 15 дней","price":20,"term":15,"reward":80,"description":"Большой урожай для терпеливых друзей."}
   ]

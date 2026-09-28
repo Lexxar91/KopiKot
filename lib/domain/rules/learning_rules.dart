@@ -2,7 +2,10 @@ import '../models/game_catalog.dart';
 import '../models/game_profile.dart';
 import '../models/game_transaction.dart';
 import '../models/learning_task.dart';
+import '../models/learning_scenario.dart';
+import 'activity_reward_rules.dart';
 import 'game_rules.dart';
+import 'learning_difficulty_rules.dart';
 
 /// Обратная связь учебной ситуации без изменения профиля.
 class QuestFeedback {
@@ -32,6 +35,15 @@ class QuestFeedback {
 
 /// Учебные монеты моделируют ситуацию; в основном балансе меняется только награда.
 abstract final class LearningRules {
+  static const scenarioIds = <String>{
+    'need_first',
+    'day_plan',
+    'regular_saving',
+    'saving_target',
+    'compare_price',
+    'free_paid',
+  };
+
   static QuestFeedback evaluateWeeklyBudget(TaskAnswer answer) {
     final total = answer.needs + answer.wants + answer.savings;
     if (answer.needs < 0 ||
@@ -308,12 +320,57 @@ abstract final class LearningRules {
     }
   }
 
+  static String hintFor(String taskId) => switch (taskId) {
+    'budget_lunch' => 'Сначала выдели не меньше 30 на нужное и 5 в копилку.',
+    'budget_reserve' => 'Сначала сложи цену корма и осмотра.',
+    'basket_food' => 'Сравни, что котику необходимо сегодня.',
+    'basket_care' => 'Сложи цены всех трёх товаров и сравни с 40.',
+    'saving_start' =>
+      'Часть награды можно отложить, а часть оставить на игрушку.',
+    'saving_finish' => 'Регулярные взносы увеличивают копилку каждый день.',
+    _ => 'Сравни сумму с бюджетом и проверь обязательные покупки.',
+  };
+
+  static String stepsFor(String taskId) => switch (taskId) {
+    'budget_lunch' =>
+      '1. Всего 60 коткоинов.\n'
+          '2. На нужное выдели хотя бы 30.\n'
+          '3. В копилку — хотя бы 5. Например: 30 + 20 + 10 = 60.',
+    'budget_reserve' =>
+      '1. Корм стоит 15, осмотр — 20.\n'
+          '2. Нужное вместе: 15 + 20 = 35.\n'
+          '3. Из 45 остаётся 10 коткоинов.',
+    'basket_food' =>
+      '1. Корм нужен сегодня и стоит 20.\n'
+          '2. В кошельке 30.\n'
+          '3. После корма останется 10; мышку можно купить позже.',
+    'basket_care' =>
+      '1. Сложи цены: 15 + 20 + 25 = 60.\n'
+          '2. Есть только 40.\n'
+          '3. На всё сразу не хватает 20 коткоинов.',
+    'saving_start' =>
+      '1. Награда — 30 коткоинов.\n'
+          '2. Отложи 10 в копилку.\n'
+          '3. Остаток 20 можно потратить на игрушку.',
+    'saving_finish' =>
+      '1. Цель стоит 90 коткоинов.\n'
+          '2. Если откладывать по 5 в день, сумма растёт ежедневно.\n'
+          '3. 90 ÷ 5 = 18 игровых дней.',
+    _ =>
+      '1. Найди обязательные расходы.\n'
+          '2. Сложи их.\n3. Сравни сумму с учебным бюджетом.',
+  };
+
   static GameProfile submit(
     GameProfile profile,
     GameCatalog catalog,
     LearningTask task,
-    TaskAnswer answer,
-  ) {
+    TaskAnswer answer, {
+    ActivityRewardSnapshot? snapshot,
+  }) {
+    if (scenarioIds.contains(task.id)) {
+      return _submitScenario(profile, task, answer, snapshot: snapshot);
+    }
     if (profile.completedTask(task.id)) {
       return profile.copyWith(
         feedback: 'Задание уже выполнено. Награда выдана один раз.',
@@ -324,6 +381,8 @@ abstract final class LearningRules {
         'Сначала подтверди бюджет, затем переходи к заданиям.',
       );
     }
+    final started = snapshot ?? ActivityRewardSnapshot.fromProfile(profile);
+    started.requireCurrentDay(profile);
     bool correct = false;
     String result = '';
     final questFeedback = switch (task.id) {
@@ -381,27 +440,23 @@ abstract final class LearningRules {
     final old = profile.taskProgress
         .where((progress) => progress.taskId == task.id)
         .firstOrNull;
-    final reward =
-        questFeedback != null &&
-            (!questFeedback.perfect || (old?.attempts ?? 0) > 0)
-        ? 8
-        : task.reward;
-    final retryHint = switch (task.id) {
-      'budget_reserve' =>
-        'Добавь нужное и проверь снова — прогресс не теряется.',
-      'basket_food' || 'basket_care' || 'saving_finish' =>
-        'Нажми кнопку, чтобы исправить выбор, или выбери другой ответ.',
-      _ => 'Поправь план и проверь снова — ничего не теряется.',
-    };
-    final feedback = questFeedback == null
-        ? '$result${correct ? task.success : task.retry} '
-              '${correct ? 'Награда: +$reward игровых монет.' : 'Баланс и состояние питомца не изменились. Попробуй ещё раз.'}'
-        : '$result\n${correct ? 'Забрано $reward коткоинов. ${reward == 12 ? 'С первой попытки — ты молодец!' : 'Мяу! Ты справился, так держать!'}' : retryHint}';
+    final reward = started.taskReward;
+    final attempts = (old?.attempts ?? 0) + 1;
+    final feedback = correct
+        ? '$result ${started.taskExplanation} '
+              'Уже заработанные коткоины остаются у тебя.'
+        : attempts == 1
+        ? 'Подсказка: ${hintFor(task.id)} Попробуй ещё раз — коткоины не потеряны.'
+        : 'Разбор по шагам:\n${stepsFor(task.id)}\n'
+              'Можешь попробовать ещё раз или нажать «Понятно». '
+              'Награда не уменьшается.';
     final progress = TaskProgress(
       taskId: task.id,
-      attempts: (old?.attempts ?? 0) + 1,
+      attempts: attempts,
       completed: correct,
       feedback: feedback,
+      hintUsed: old?.hintUsed == true || !correct,
+      solutionShown: old?.solutionShown == true || (!correct && attempts >= 2),
     );
     final balance = profile.balance + (correct ? reward : 0);
     return profile.copyWith(
@@ -421,6 +476,10 @@ abstract final class LearningRules {
             amount: reward,
             label: 'Задание: ${task.title}',
             referenceId: task.id,
+            startSatiety: started.satiety,
+            startEnergy: started.energy,
+            startMood: started.mood,
+            baseReward: 12,
             balanceAfter: balance,
             savingsAfter: profile.savings,
             satietyAfter: profile.satiety,
@@ -428,5 +487,234 @@ abstract final class LearningRules {
           ),
       ],
     );
+  }
+
+  /// После разбора «Понятно» закрывает задание той же первой наградой.
+  static GameProfile acknowledge(
+    GameProfile profile,
+    LearningTask task, {
+    ActivityRewardSnapshot? snapshot,
+  }) {
+    if (scenarioIds.contains(task.id)) {
+      return _acknowledgeScenario(profile, task, snapshot: snapshot);
+    }
+    if (profile.completedTask(task.id)) return profile;
+    GameRules.requirePlan(profile);
+    final old = profile.taskProgress
+        .where((entry) => entry.taskId == task.id)
+        .firstOrNull;
+    if (old == null || !old.solutionShown) {
+      throw const GameRuleException(
+        'Сначала посмотри разбор после двух попыток.',
+      );
+    }
+    final started = snapshot ?? ActivityRewardSnapshot.fromProfile(profile);
+    started.requireCurrentDay(profile);
+    final reward = started.taskReward;
+    final balance = profile.balance + reward;
+    final feedback =
+        'Разбор понятен. ${started.taskExplanation} '
+        'Уже заработанные коткоины остаются у тебя.';
+    return profile.copyWith(
+      balance: balance,
+      feedback: feedback,
+      taskProgress: [
+        ...profile.taskProgress.where((entry) => entry.taskId != task.id),
+        TaskProgress(
+          taskId: task.id,
+          attempts: old.attempts,
+          completed: true,
+          feedback: feedback,
+          hintUsed: true,
+          solutionShown: true,
+          reviewed: true,
+        ),
+      ],
+      transactions: [
+        ...profile.transactions,
+        GameTransaction(
+          id: 'task-reward-${task.id}',
+          period: profile.period,
+          kind: TransactionKind.income,
+          amount: reward,
+          label: 'Разобранное задание: ${task.title}',
+          referenceId: task.id,
+          startSatiety: started.satiety,
+          startEnergy: started.energy,
+          startMood: started.mood,
+          baseReward: 12,
+          balanceAfter: balance,
+          savingsAfter: profile.savings,
+          satietyAfter: profile.satiety,
+          moodAfter: profile.mood,
+        ),
+      ],
+    );
+  }
+
+  static GameProfile _submitScenario(
+    GameProfile profile,
+    LearningTask task,
+    TaskAnswer answer, {
+    ActivityRewardSnapshot? snapshot,
+  }) {
+    GameRules.requirePlan(profile);
+    final old = profile.taskProgress
+        .where((entry) => entry.taskId == task.id)
+        .firstOrNull;
+    final practice = old?.completed == true;
+    final scenario = LearningScenario.forTask(
+      task.id,
+      profile.learningTopic(task.topic).difficulty,
+      practice: practice,
+    );
+    final correct = scenario.accepts(answer);
+    final attempts = practice
+        ? (old?.practiceAttempts ?? 0) + 1
+        : (old?.attempts ?? 0) + 1;
+    final reward = correct && !practice;
+    final started = snapshot ?? ActivityRewardSnapshot.fromProfile(profile);
+    started.requireCurrentDay(profile);
+    final balance = profile.balance + (reward ? started.taskReward : 0);
+    final feedback = correct
+        ? '${scenario.explanation} ${practice ? 'Это тренировка без повторной награды.' : '${started.taskExplanation} Уже заработанные коткоины остаются у тебя.'}'
+        : attempts == 1
+        ? 'Подсказка: ${scenario.hint} Попробуй ещё раз — коткоины не потеряны.'
+        : 'Разбор по шагам:\n${scenario.steps}\nМожешь попробовать ещё раз или нажать «Понятно». Награда не уменьшается.';
+    final progress = practice
+        ? TaskProgress(
+            taskId: task.id,
+            attempts: old!.attempts,
+            completed: true,
+            feedback: feedback,
+            hintUsed: old.hintUsed,
+            solutionShown: old.solutionShown,
+            reviewed: old.reviewed,
+            practiceAttempts: correct ? 0 : attempts,
+          )
+        : TaskProgress(
+            taskId: task.id,
+            attempts: attempts,
+            completed: correct,
+            feedback: feedback,
+            hintUsed: old?.hintUsed == true || !correct,
+            solutionShown:
+                old?.solutionShown == true || (!correct && attempts >= 2),
+          );
+    var next = profile.copyWith(
+      balance: balance,
+      feedback: feedback,
+      taskProgress: [
+        ...profile.taskProgress.where((entry) => entry.taskId != task.id),
+        progress,
+      ],
+      transactions: [
+        ...profile.transactions,
+        if (reward)
+          GameTransaction(
+            id: 'task-reward-${task.id}',
+            period: profile.period,
+            kind: TransactionKind.income,
+            amount: started.taskReward,
+            label: 'Задание: ${task.title}',
+            referenceId: task.id,
+            startSatiety: started.satiety,
+            startEnergy: started.energy,
+            startMood: started.mood,
+            baseReward: 12,
+            balanceAfter: balance,
+            savingsAfter: profile.savings,
+            satietyAfter: profile.satiety,
+            moodAfter: profile.mood,
+          ),
+      ],
+    );
+    if (correct) {
+      next = LearningDifficultyRules.afterTask(
+        next,
+        task.topic,
+        clean: attempts == 1,
+      );
+    }
+    return next;
+  }
+
+  static GameProfile _acknowledgeScenario(
+    GameProfile profile,
+    LearningTask task, {
+    ActivityRewardSnapshot? snapshot,
+  }) {
+    GameRules.requirePlan(profile);
+    final old = profile.taskProgress
+        .where((entry) => entry.taskId == task.id)
+        .firstOrNull;
+    if (old == null ||
+        (old.completed ? old.practiceAttempts < 2 : !old.solutionShown)) {
+      throw const GameRuleException(
+        'Сначала посмотри разбор после двух попыток.',
+      );
+    }
+    if (old.completed) {
+      return LearningDifficultyRules.afterTask(
+        profile.copyWith(
+          feedback: 'Разбор понятен. Это тренировка без повторной награды.',
+          taskProgress: [
+            ...profile.taskProgress.where((entry) => entry.taskId != task.id),
+            TaskProgress(
+              taskId: task.id,
+              attempts: old.attempts,
+              completed: true,
+              feedback: 'Разбор понятен. Это тренировка без повторной награды.',
+              hintUsed: old.hintUsed,
+              solutionShown: old.solutionShown,
+              reviewed: old.reviewed,
+            ),
+          ],
+        ),
+        task.topic,
+        clean: false,
+      );
+    }
+    final started = snapshot ?? ActivityRewardSnapshot.fromProfile(profile);
+    started.requireCurrentDay(profile);
+    final balance = profile.balance + started.taskReward;
+    final feedback =
+        'Разбор понятен. ${started.taskExplanation} Уже заработанные коткоины остаются у тебя.';
+    final next = profile.copyWith(
+      balance: balance,
+      feedback: feedback,
+      taskProgress: [
+        ...profile.taskProgress.where((entry) => entry.taskId != task.id),
+        TaskProgress(
+          taskId: task.id,
+          attempts: old.attempts,
+          completed: true,
+          feedback: feedback,
+          hintUsed: true,
+          solutionShown: true,
+          reviewed: true,
+        ),
+      ],
+      transactions: [
+        ...profile.transactions,
+        GameTransaction(
+          id: 'task-reward-${task.id}',
+          period: profile.period,
+          kind: TransactionKind.income,
+          amount: started.taskReward,
+          label: 'Разобранное задание: ${task.title}',
+          referenceId: task.id,
+          startSatiety: started.satiety,
+          startEnergy: started.energy,
+          startMood: started.mood,
+          baseReward: 12,
+          balanceAfter: balance,
+          savingsAfter: profile.savings,
+          satietyAfter: profile.satiety,
+          moodAfter: profile.mood,
+        ),
+      ],
+    );
+    return LearningDifficultyRules.afterTask(next, task.topic, clean: false);
   }
 }

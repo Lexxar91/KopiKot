@@ -29,7 +29,7 @@ class ShopProduct {
   final PetAccessory? accessory;
 }
 
-/// Обычный саженец котодерева: цена одна, но срок и награда растут вместе.
+/// Фиксированные условия саженца показываются до посадки.
 class SaplingDefinition {
   const SaplingDefinition({
     required this.id,
@@ -46,9 +46,8 @@ class SaplingDefinition {
   final int reward;
   final String description;
 
-  /// Досрочный сбор возвращает вложение без потерь и часть бонуса.
-  int earlyReward(int elapsedPeriods) =>
-      price + ((reward - price) * elapsedPeriods.clamp(0, term) ~/ term);
+  /// До зрелости ребёнок получает одинаковые 30 коткоинов в любой день.
+  int earlyReward(int elapsedPeriods) => elapsedPeriods >= term ? reward : 30;
 }
 
 class GoalDefinition {

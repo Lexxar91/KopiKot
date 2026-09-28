@@ -2,6 +2,7 @@ import '../models/game_catalog.dart';
 import '../models/game_profile.dart';
 import '../models/game_transaction.dart';
 import 'game_rules.dart';
+import 'growth_rules.dart';
 
 /// Чистые правила покупок и накоплений. Повтор команды не меняет баланс.
 abstract final class EconomyRules {
@@ -112,15 +113,20 @@ abstract final class EconomyRules {
     PetAccessory.wristbands => 'Напульсники',
   };
 
-  static GameProfile selectGoal(
-    GameProfile profile,
-    GoalDefinition goal,
-  ) => profile.copyWith(
-    selectedGoalId: goal.id,
-    feedback:
-        'Мечта — ${goal.title}. Нужно ${goal.price} монет. '
-        'На эту цель отложено ${profile.savedFor(goal.id)}. Накопления на другие цели сохранены.',
-  );
+  static GameProfile selectGoal(GameProfile profile, GoalDefinition goal) {
+    if (!profile.goalChoicesUnlocked &&
+        goal.id != (profile.selectedGoalId ?? 'tent')) {
+      throw const GameRuleException(
+        'Другие цели откроются, когда первая цель будет накоплена полностью.',
+      );
+    }
+    return profile.copyWith(
+      selectedGoalId: goal.id,
+      feedback:
+          'Мечта — ${goal.title}. Нужно ${goal.price} монет. '
+          'На эту цель отложено ${profile.savedFor(goal.id)}. Накопления на другие цели сохранены.',
+    );
+  }
 
   /// Примерное число периодов при одинаковом пополнении в каждом периоде.
   /// Без регулярного пополнения срок неизвестен.
@@ -178,18 +184,129 @@ abstract final class EconomyRules {
         : 'Отложили $amount монет на «${goal.title}». Теперь $after из ${goal.price}. '
               'На балансе стало на $amount меньше. Радость и сытость не изменились. '
               '${after == goal.price ? 'Цель достигнута!' : 'Даже небольшие переводы приближают мечту.'}';
-    return _record(
+    return GrowthRules.refresh(
+      _record(
+        profile,
+        commandId,
+        kind,
+        amount,
+        '${withdraw ? 'Снятие' : 'Пополнение'}: ${goal.title}',
+        goal.id,
+        profile.copyWith(
+          balance: profile.balance - delta,
+          savings: profile.savings + delta,
+          goalSavings: {...profile.goalSavings, goal.id: after},
+          goalChoicesUnlocked:
+              profile.goalChoicesUnlocked || after >= goal.price,
+          feedback: feedback,
+        ),
+      ),
+    );
+  }
+
+  /// Резерв хранится отдельно от прогресса цели, но входит в общие накопления.
+  static GameProfile transferReserve(
+    GameProfile profile,
+    int amount, {
+    required String commandId,
+    required bool withdraw,
+  }) {
+    final kind = withdraw
+        ? TransactionKind.withdrawal
+        : TransactionKind.deposit;
+    if (GameRules.isReplay(
       profile,
       commandId,
       kind,
+      GameProfile.reserveId,
       amount,
-      '${withdraw ? 'Снятие' : 'Пополнение'}: ${goal.title}',
+    )) {
+      return profile;
+    }
+    GameRules.requirePlan(profile);
+    GameRules.requirePositive(amount);
+    final saved = profile.reserveSavings;
+    if (withdraw && amount > saved) {
+      throw GameRuleException(
+        'В резерве только $saved коткоинов. Уменьши сумму снятия.',
+      );
+    }
+    if (!withdraw) GameRules.requireBalance(profile, amount);
+    final delta = withdraw ? -amount : amount;
+    final after = saved + delta;
+    return GrowthRules.refresh(
+      _record(
+        profile,
+        commandId,
+        kind,
+        amount,
+        '${withdraw ? 'Снятие из' : 'Пополнение'} резерва',
+        GameProfile.reserveId,
+        profile.copyWith(
+          balance: profile.balance - delta,
+          savings: profile.savings + delta,
+          goalSavings: {...profile.goalSavings, GameProfile.reserveId: after},
+          feedback: withdraw
+              ? 'Из резерва снято $amount. В резерве осталось $after, в кошельке ${profile.balance + amount}.'
+              : 'В резерве теперь $after коткоинов. Накопления на выбранную цель не изменились.',
+        ),
+      ),
+    );
+  }
+
+  /// Покупка оплачивается из цели: в журнале это снятие и покупка за один шаг.
+  static GameProfile purchaseGoal(
+    GameProfile profile,
+    GoalDefinition goal,
+    String commandId,
+  ) {
+    if (GameRules.isReplay(
+      profile,
+      commandId,
+      TransactionKind.wantPurchase,
+      goal.id,
+      goal.price,
+    )) {
+      return profile;
+    }
+    GameRules.requirePlan(profile);
+    GameRules.requirePositive(goal.price);
+    if (profile.selectedGoalId != goal.id) {
+      throw const GameRuleException('Цель изменилась. Открой её заново.');
+    }
+    final saved = profile.savedFor(goal.id);
+    if (saved < goal.price) {
+      throw GameRuleException(
+        'До покупки «${goal.title}» осталось накопить ${goal.price - saved} коткоинов.',
+      );
+    }
+    final released = _record(
+      profile,
+      '$commandId:release',
+      TransactionKind.withdrawal,
+      goal.price,
+      'Снятие на покупку: ${goal.title}',
       goal.id,
       profile.copyWith(
-        balance: profile.balance - delta,
-        savings: profile.savings + delta,
-        goalSavings: {...profile.goalSavings, goal.id: after},
-        feedback: feedback,
+        balance: profile.balance + goal.price,
+        savings: profile.savings - goal.price,
+        goalSavings: {...profile.goalSavings, goal.id: saved - goal.price},
+      ),
+    );
+    return GrowthRules.refresh(
+      _record(
+        released,
+        commandId,
+        TransactionKind.wantPurchase,
+        goal.price,
+        'Цель куплена: ${goal.title}',
+        goal.id,
+        released.copyWith(
+          balance: released.balance - goal.price,
+          feedback:
+              'Цель «${goal.title}» куплена за ${goal.price} коткоинов из накоплений. '
+              'В кошельке осталось ${profile.balance}, в этой копилке — ${saved - goal.price}.',
+        ),
       ),
     );
   }

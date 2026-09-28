@@ -1,100 +1,108 @@
 import '../models/game_profile.dart';
-import '../models/game_transaction.dart';
 import '../models/period_summary.dart';
+import 'daily_reward_rules.dart';
 import 'game_rules.dart';
+import 'growth_rules.dart';
 
-/// Период завершается вручную; старый запрос никогда не начисляет доход повторно.
+/// Игровой день следует местной дате; деморежим может перейти к следующему дню вручную.
 abstract final class PeriodRules {
-  static const income = 100;
+  static String dayKey(DateTime date) {
+    final local = date.toLocal();
+    return '${local.year.toString().padLeft(4, '0')}-'
+        '${local.month.toString().padLeft(2, '0')}-'
+        '${local.day.toString().padLeft(2, '0')}';
+  }
 
-  static PeriodSummary summarize(GameProfile profile) {
-    final plan = profile.plan;
-    if (plan == null) {
-      throw const GameRuleException(
-        'Сначала составь и подтверди план периода.',
-      );
+  static int daysBetween(String from, String to) {
+    DateTime utcDate(String key) {
+      final parts = key.split('-').map(int.parse).toList();
+      return DateTime.utc(parts[0], parts[1], parts[2]);
     }
-    final needsMet = profile.actualNeeds > 0 && profile.satiety >= 60;
+
+    return utcDate(to).difference(utcDate(from)).inDays;
+  }
+
+  static PeriodSummary summarize(GameProfile profile, {int missedDays = 0}) {
+    final plan = profile.plan;
+    final actualNeeds = profile.actualNeeds;
+    final actualWants = profile.actualWants;
+    final netSaved = profile.netSaved;
     final withinPlan =
-        profile.actualNeeds <= plan.needs &&
-        profile.actualWants <= plan.wants &&
+        plan != null &&
+        actualNeeds <= plan.needs &&
+        actualWants <= plan.wants &&
         profile.actualGifts <= plan.gifts;
     final savedRegularly =
-        profile.netSaved > 0 && profile.netSaved >= plan.savings;
-    final messages = [
-      needsMet
-          ? 'Нужные покупки сделаны, питомец сыт.'
-          : 'В следующем периоде запланируй еду и уход: сытость можно восстановить.',
-      withinPlan
-          ? 'Траты уложились в план. Отложить желаемое — нормально.'
-          : 'Траты превысили план. В следующий раз можно выбрать покупку дешевле.',
-      savedRegularly
-          ? 'На мечту отложено не меньше запланированного.'
-          : 'В следующем периоде попробуй отложить немного на цель и свериться с планом.',
-    ];
+        plan != null && netSaved > 0 && netSaved >= plan.savings;
     return PeriodSummary(
       period: profile.period,
-      plannedNeeds: plan.needs,
-      plannedWants: plan.wants,
-      plannedSavings: plan.savings,
-      plannedGifts: plan.gifts,
-      actualNeeds: profile.actualNeeds,
-      actualWants: profile.actualWants,
+      dayKey: profile.dayKey,
+      missedDays: missedDays,
+      plannedIncome: plan?.expectedIncome,
+      plannedNeeds: plan?.needs ?? 0,
+      plannedWants: plan?.wants ?? 0,
+      plannedSavings: plan?.savings ?? 0,
+      plannedGifts: plan?.gifts ?? 0,
+      actualNeeds: actualNeeds,
+      actualWants: actualWants,
       actualGifts: profile.actualGifts,
-      netSaved: profile.netSaved,
-      needsMet: needsMet,
+      netSaved: netSaved,
+      needsMet: actualNeeds > 0 && profile.satiety >= 60,
       withinPlan: withinPlan,
       savedRegularly: savedRegularly,
-      explanation: messages.join(' '),
+      explanation: plan == null
+          ? 'День завершён без плана. Коткоины остаются у тебя; завтра можно составить новый план.'
+          : 'Сегодня на нужное ушло $actualNeeds, на радость — $actualWants, '
+                'в копилку отправлено $netSaved. План помог сравнить ожидания с результатом.',
     );
   }
 
-  static GameProfile finish(GameProfile profile, int expectedPeriod) {
-    if (profile.periodSummaries.any(
-      (summary) => summary.period == expectedPeriod,
-    )) {
-      return profile;
-    }
-    if (expectedPeriod != profile.period) {
-      throw const GameRuleException(
-        'Период уже изменился. Открой его итоги заново.',
+  /// Идемпотентно открывает сегодняшний день и зачисляет его награду до плана.
+  static GameProfile openToday(GameProfile profile, DateTime now) {
+    final today = dayKey(now);
+    final previous = profile.dayKey;
+    if (previous == null) {
+      return GrowthRules.refresh(
+        DailyRewardRules.claim(profile.copyWith(dayKey: today), now: now),
       );
     }
-    final summary = summarize(profile);
-    final nextPeriod = profile.period + 1;
-    final int balance = profile.balance + income;
-    final int satiety = (profile.satiety - 20).clamp(30, 100);
-    final int energy = (profile.energy - 15).clamp(20, 100);
-    var next = profile.copyWith(
-      period: nextPeriod,
-      balance: balance,
-      satiety: satiety,
-      energy: energy,
+    if (today.compareTo(previous) <= 0) return profile;
+    final summary = summarize(
+      profile,
+      missedDays: daysBetween(previous, today) - 1,
+    );
+    final next = profile.copyWith(
+      period: profile.period + 1,
+      dayKey: today,
       clearPlan: true,
       periodSummaries: [...profile.periodSummaries, summary],
     );
-    next = next.copyWith(
-      transactions: [
-        ...next.transactions,
-        GameTransaction(
-          id: 'period-income-$nextPeriod',
-          period: nextPeriod,
-          kind: TransactionKind.income,
-          amount: income,
-          label: 'Начало периода $nextPeriod',
-          balanceAfter: balance,
-          savingsAfter: profile.savings,
-          satietyAfter: satiety,
-          moodAfter: profile.mood,
-        ),
-      ],
+    return GrowthRules.refresh(DailyRewardRules.claim(next, now: now));
+  }
+
+  /// Только демонстрация может перейти к следующей дате без ожидания календаря.
+  static GameProfile finish(GameProfile profile, int expectedPeriod) {
+    if (!profile.isTest) {
+      throw const GameRuleException(
+        'Игровой день завершится при наступлении следующей даты.',
+      );
+    }
+    if (profile.periodSummaries.any((item) => item.period == expectedPeriod)) {
+      return profile;
+    }
+    if (expectedPeriod != profile.period) {
+      throw const GameRuleException('Игровой день уже изменился.');
+    }
+    final date = profile.dayKey ?? dayKey(DateTime.now());
+    final parts = date.split('-').map(int.parse).toList();
+    final nextDate = DateTime(parts[0], parts[1], parts[2] + 1, 12);
+    final summary = summarize(profile);
+    final next = profile.copyWith(
+      period: profile.period + 1,
+      dayKey: dayKey(nextDate),
+      clearPlan: true,
+      periodSummaries: [...profile.periodSummaries, summary],
     );
-    return next.copyWith(
-      feedback:
-          '${summary.explanation} '
-          '${next.growthStage > profile.growthStage ? 'Новая стадия: ${next.growthLabel}!' : 'Достигнутый рост сохранён.'} '
-          'Период $nextPeriod: +$income монет. Ежедневную награду можно забрать отдельно. '
-          'Энергия уменьшилась на ${profile.energy - energy}: полезная еда и бесплатная прогулка вернут бодрость.',
-    );
+    return GrowthRules.refresh(DailyRewardRules.claim(next, now: nextDate));
   }
 }

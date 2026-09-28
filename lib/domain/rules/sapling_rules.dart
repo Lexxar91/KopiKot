@@ -2,13 +2,33 @@ import '../models/game_catalog.dart';
 import '../models/game_profile.dart';
 import '../models/game_transaction.dart';
 import 'game_rules.dart';
+import 'period_rules.dart';
 
-/// Котодерево-копилка: монеты работают, если дать им время.
-///
-/// Саженец покупается за баланс, растёт по игровым периодам и приносит
-/// награду. Досрочный сбор не создаёт потерь: возвращается цена и часть
-/// бонуса, поэтому любое решение ребёнка остаётся безопасным.
+/// Одно дерево: 20 за посадку, 30 при раннем сборе, 50 через пять дней.
 abstract final class SaplingRules {
+  static bool harvestedToday(GameProfile profile) => profile.transactions.any(
+    (entry) =>
+        entry.period == profile.period &&
+        entry.kind == TransactionKind.income &&
+        entry.label.startsWith('Урожай:'),
+  );
+
+  static int elapsedDays(GameProfile profile, SaplingState state) {
+    final planted = state.plantedDayKey;
+    final today = profile.dayKey;
+    if (planted != null && today != null) {
+      return PeriodRules.daysBetween(planted, today).clamp(0, 100000);
+    }
+    return (profile.period - state.plantedPeriod).clamp(0, 100000);
+  }
+
+  static String maturityDayKey(String plantedDayKey, int term) {
+    final parts = plantedDayKey.split('-').map(int.parse).toList();
+    return PeriodRules.dayKey(
+      DateTime(parts[0], parts[1], parts[2] + term, 12),
+    );
+  }
+
   static GameProfile plant(
     GameProfile profile,
     SaplingDefinition sapling,
@@ -23,6 +43,15 @@ abstract final class SaplingRules {
     )) {
       return profile;
     }
+    if (sapling.id != 'sapling_5') {
+      throw const GameRuleException('Этот вид саженца больше не продаётся.');
+    }
+    if (profile.saplings.isNotEmpty) {
+      throw const GameRuleException('Сначала собери урожай текущего дерева.');
+    }
+    if (harvestedToday(profile)) {
+      throw const GameRuleException('Новое деревце можно посадить завтра.');
+    }
     GameRules.requirePlan(profile);
     GameRules.requirePositive(sapling.price);
     GameRules.requireBalance(profile, sapling.price);
@@ -31,14 +60,16 @@ abstract final class SaplingRules {
       id: commandId,
       definitionId: sapling.id,
       plantedPeriod: profile.period,
+      plantedDayKey: profile.dayKey,
     );
     final GameProfile planted = profile.copyWith(
       balance: balance,
       saplings: [...profile.saplings, state],
       feedback:
           'Саженец «${sapling.title}» посажен: −${sapling.price} монет. '
-          'Через ${sapling.term} игровых дней он подарит ${sapling.reward} монет. '
-          'Собрать раньше тоже можно — просто меньше. Сытость и радость не изменились.',
+          'Собрать раньше можно за 30 коткоинов. '
+          'Через ${sapling.term} полных игровых дней придёт ${sapling.reward}. '
+          'Сытость и радость не изменились.',
     );
     return planted.copyWith(
       transactions: [
@@ -74,17 +105,15 @@ abstract final class SaplingRules {
         'Этот саженец уже собрали или его нет в саду.',
       );
     }
-    final int elapsed = profile.period - state.plantedPeriod;
+    final int elapsed = elapsedDays(profile, state);
     final bool ripe = elapsed >= sapling.term;
     final int payout = ripe ? sapling.reward : sapling.earlyReward(elapsed);
     final int balance = profile.balance + payout;
     final String feedback = ripe
-        ? 'Котодерево созрело: +$payout монет! '
-              'Можно посадить новый саженец, выбрать долгий или потратить на радость — '
-              'все пути хорошие. Без нового саженца пассивного дохода пока не будет.'
-        : 'Собрали раньше срока: +$payout вместо ${sapling.reward} монет. '
-              'Подождав ещё ${sapling.term - elapsed} дней, получилось бы ${sapling.reward}. '
-              'Оба варианта — не ошибка: накопление можно начать снова в любой момент.';
+        ? 'Пять игровых дней прошли. Теперь собрано $payout коткоинов.'
+        : 'Собрано сейчас $payout коткоинов. Если бы подождали до зрелости, '
+              'пришло бы ${sapling.reward} — на ${sapling.reward - payout} больше. '
+              'Ранний сбор тоже хороший выбор.';
     final GameProfile harvested = profile.copyWith(
       balance: balance,
       saplings: profile.saplings

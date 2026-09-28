@@ -13,6 +13,9 @@ import '../../domain/models/learning_task.dart';
 import '../../domain/models/help_topic.dart';
 import '../../domain/repositories/game_repository.dart';
 import '../../domain/rules/game_rules.dart';
+import '../../domain/rules/activity_reward_rules.dart';
+import '../../domain/rules/accountant_rules.dart';
+import '../../domain/rules/market_game_rules.dart';
 import '../../domain/rules/mini_game_rules.dart';
 
 /// Точка сборки зависимостей: виджеты не знают ни о каталогах, ни об Isar.
@@ -90,12 +93,52 @@ class GameController extends AsyncNotifier<GameProfile?> {
     return null;
   });
 
-  Future<void> submitTask(String taskId, TaskAnswer answer) =>
-      _perform((repository) => repository.submitTask(taskId, answer));
-  Future<void> claimMiniGame(MiniGameKind kind, String commandId) =>
-      _perform((repository) => repository.claimMiniGame(kind, commandId));
+  Future<void> submitTask(
+    String taskId,
+    TaskAnswer answer, {
+    ActivityRewardSnapshot? snapshot,
+  }) => _perform(
+    (repository) => repository.submitTask(taskId, answer, snapshot: snapshot),
+  );
+  Future<void> acknowledgeTask(
+    String taskId, {
+    ActivityRewardSnapshot? snapshot,
+  }) => _perform(
+    (repository) => repository.acknowledgeTask(taskId, snapshot: snapshot),
+  );
+  Future<void> chooseLearningDifficulty(
+    String topic,
+    LearningDifficulty difficulty,
+  ) => _perform(
+    (repository) => repository.chooseLearningDifficulty(topic, difficulty),
+  );
+  Future<void> dismissLearningDowngrade(String topic) =>
+      _perform((repository) => repository.dismissLearningDowngrade(topic));
+  Future<void> claimMiniGame(
+    MiniGameKind kind,
+    String commandId, {
+    ActivityRewardSnapshot? snapshot,
+  }) => _perform(
+    (repository) =>
+        repository.claimMiniGame(kind, commandId, snapshot: snapshot),
+  );
   Future<void> claimDailyReward() =>
       _perform((repository) => repository.claimDailyReward());
+  Future<void> accountantAction(
+    String sessionId,
+    AccountantAction action, {
+    int? answer,
+  }) => _perform(
+    (repository) =>
+        repository.accountantAction(sessionId, action, answer: answer),
+  );
+  Future<void> marketAction(
+    String sessionId,
+    MarketAction action, {
+    String? itemId,
+  }) => _perform(
+    (repository) => repository.marketAction(sessionId, action, itemId: itemId),
+  );
   Future<void> finishPeriod(int expectedPeriod) =>
       _perform((repository) => repository.finishPeriod(expectedPeriod));
 
@@ -121,12 +164,38 @@ class GameController extends AsyncNotifier<GameProfile?> {
     int wants,
     int savings, {
     int gifts = 0,
+    int kept = 0,
+    int expectedIncome = 0,
+    List<String> sourceIds = const [],
   }) => _perform(
     (repository) => repository.confirmBudget(
       needs: needs,
       wants: wants,
       gifts: gifts,
       savings: savings,
+      kept: kept,
+      expectedIncome: expectedIncome,
+      sourceIds: sourceIds,
+    ),
+  );
+
+  Future<void> reviseBudget(
+    int needs,
+    int wants,
+    int savings, {
+    int gifts = 0,
+    int kept = 0,
+    int expectedIncome = 0,
+    List<String> sourceIds = const [],
+  }) => _perform(
+    (repository) => repository.reviseBudget(
+      needs: needs,
+      wants: wants,
+      gifts: gifts,
+      savings: savings,
+      kept: kept,
+      expectedIncome: expectedIncome,
+      sourceIds: sourceIds,
     ),
   );
 
@@ -148,6 +217,21 @@ class GameController extends AsyncNotifier<GameProfile?> {
 
   Future<void> selectGoal(String goalId) =>
       _perform((repository) => repository.selectGoal(goalId));
+
+  Future<void> purchaseGoal(String goalId, String commandId) =>
+      _perform((repository) => repository.purchaseGoal(goalId, commandId));
+
+  Future<void> transferReserve(
+    int amount,
+    String commandId, {
+    required bool withdraw,
+  }) => _perform(
+    (repository) => repository.transferReserve(
+      amount,
+      commandId: commandId,
+      withdraw: withdraw,
+    ),
+  );
 
   Future<void> transfer(
     String goalId,

@@ -5,7 +5,6 @@ import 'package:kopikot/data/content/catalog_loader.dart';
 import 'package:kopikot/domain/models/game_profile.dart';
 import 'package:kopikot/domain/models/game_transaction.dart';
 import 'package:kopikot/domain/rules/game_rules.dart';
-import 'package:kopikot/domain/rules/period_rules.dart';
 import 'package:kopikot/domain/rules/sapling_rules.dart';
 
 import 'game_rules_test.dart' show initialProfile;
@@ -15,31 +14,21 @@ void main() {
     File('assets/content/catalog.json').readAsStringSync(),
   );
 
-  GameProfile planned() => initialProfile.withPlan(
-    GameRules.confirmBudget(initialProfile, needs: 50, wants: 20, savings: 30),
-  );
+  GameProfile planned() {
+    final profile = initialProfile.copyWith(dayKey: '2026-09-28');
+    return profile.withPlan(
+      GameRules.confirmBudget(profile, needs: 50, wants: 20, savings: 30),
+    );
+  }
 
-  test('Каталог содержит новое деревце и прежние варианты', () {
-    expect(catalog.saplings.length, 3);
-    expect(catalog.sapling('sapling_5').price, 30);
+  test('Деревце стоит 20, ранний сбор 30, зрелый 50', () {
+    expect(catalog.sapling('sapling_5').price, 20);
     expect(catalog.sapling('sapling_5').reward, 50);
-    expect(catalog.saplings.map((sapling) => sapling.term).toSet(), {
-      5,
-      10,
-      15,
-    });
-    for (final sapling in catalog.saplings) {
-      expect(sapling.reward, greaterThan(sapling.price));
+    expect(catalog.sapling('sapling_5').term, 5);
+    for (var day = 0; day < 5; day++) {
+      expect(catalog.sapling('sapling_5').earlyReward(day), 30);
     }
-  });
-
-  test('Досрочная награда растёт пропорционально и не бывает ниже цены', () {
-    final sapling = catalog.sapling('sapling_10');
-    expect(sapling.earlyReward(0), sapling.price);
-    expect(sapling.earlyReward(5), 35);
-    expect(sapling.earlyReward(9), 47);
-    expect(sapling.earlyReward(10), sapling.reward);
-    expect(sapling.earlyReward(20), sapling.reward);
+    expect(catalog.sapling('sapling_5').earlyReward(5), 50);
   });
 
   test('Посадка списывает монеты, добавляет саженец и объясняет вариант', () {
@@ -48,13 +37,14 @@ void main() {
       catalog.sapling('sapling_5'),
       'seed-1',
     );
-    expect(planted.balance, 70);
+    expect(planted.balance, 80);
     expect(planted.saplings.single.definitionId, 'sapling_5');
     expect(planted.saplings.single.plantedPeriod, 1);
+    expect(planted.saplings.single.plantedDayKey, '2026-09-28');
     expect(planted.transactions.single.kind, TransactionKind.saplingPurchase);
-    expect(planted.transactions.single.amount, 30);
-    expect(planted.feedback, contains('5 игровых дней'));
-    expect(planted.feedback, contains('50 монет'));
+    expect(planted.transactions.single.amount, 20);
+    expect(planted.feedback, contains('30 коткоинов'));
+    expect(planted.feedback, contains('50'));
     // Сытость и настроение не меняются: саженец не тратит заботу.
     expect(planted.satiety, 70);
     expect(planted.mood, 70);
@@ -82,14 +72,8 @@ void main() {
       catalog.sapling('sapling_5'),
       'seed-2',
     );
-    for (var period = 1; period <= 5; period++) {
-      if (profile.plan == null) {
-        profile = profile.withPlan(
-          GameRules.confirmBudget(profile, needs: 0, wants: 0, savings: 0),
-        );
-      }
-      profile = PeriodRules.finish(profile, period);
-    }
+    profile = profile.copyWith(dayKey: '2026-10-03', period: 2);
+    expect(SaplingRules.elapsedDays(profile, profile.saplings.single), 5);
     final state = profile.saplings.single;
     final harvested = SaplingRules.harvest(
       profile,
@@ -97,42 +81,49 @@ void main() {
       catalog.sapling('sapling_5'),
       'take-1',
     );
-    // 70 после посадки + 500 дохода + 50 урожая. Награда за вход отдельна.
-    expect(harvested.balance, 620);
+    expect(harvested.balance, 130);
     expect(harvested.saplings, isEmpty);
     expect(harvested.transactions.last.label, 'Урожай: Деревце');
     expect(harvested.transactions.last.amount, 50);
-    expect(harvested.feedback, contains('Котодерево созрело'));
-    expect(harvested.feedback, contains('пассивного дохода'));
+    expect(harvested.feedback, contains('Пять игровых дней прошли'));
   });
 
   test(
     'Досрочный сбор даёт меньше полной награды и объясняет оба варианта',
     () {
-      var profile = SaplingRules.plant(
+      final profile = SaplingRules.plant(
         planned(),
-        catalog.sapling('sapling_10'),
+        catalog.sapling('sapling_5'),
         'seed-3',
       );
-      for (var period = 1; period <= 2; period++) {
-        if (profile.plan == null) {
-          profile = profile.withPlan(
-            GameRules.confirmBudget(profile, needs: 0, wants: 0, savings: 0),
-          );
-        }
-        profile = PeriodRules.finish(profile, period);
-      }
       final state = profile.saplings.single;
       final harvested = SaplingRules.harvest(
         profile,
         state,
-        catalog.sapling('sapling_10'),
+        catalog.sapling('sapling_5'),
         'early-take',
       );
-      // elapsed = 2, payout = 20 + 30 * 2 / 10 = 26.
-      expect(harvested.transactions.last.amount, 26);
-      expect(harvested.feedback, contains('Собрали раньше срока'));
+      expect(harvested.transactions.last.amount, 30);
+      expect(harvested.balance, 110);
+      expect(harvested.feedback, contains('Собрано сейчас'));
       expect(harvested.feedback, contains('50'));
+      expect(
+        () => SaplingRules.plant(
+          harvested,
+          catalog.sapling('sapling_5'),
+          'again',
+        ),
+        throwsA(isA<GameRuleException>()),
+      );
+      final tomorrow = harvested.copyWith(dayKey: '2026-09-29', period: 2);
+      expect(
+        SaplingRules.plant(
+          tomorrow,
+          catalog.sapling('sapling_5'),
+          'again',
+        ).saplings,
+        hasLength(1),
+      );
     },
   );
 
@@ -148,6 +139,15 @@ void main() {
       'seed-4',
     );
     expect(identical(profile, replay), isTrue);
+    expect(
+      () =>
+          SaplingRules.plant(profile, catalog.sapling('sapling_5'), 'another'),
+      throwsA(isA<GameRuleException>()),
+    );
+    expect(
+      () => SaplingRules.plant(profile, catalog.sapling('sapling_10'), 'old'),
+      throwsA(isA<GameRuleException>()),
+    );
     final state = profile.saplings.single;
     profile = SaplingRules.harvest(
       profile,

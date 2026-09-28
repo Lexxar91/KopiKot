@@ -3,9 +3,11 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../domain/models/game_profile.dart';
+import '../../domain/models/day_financial_report.dart';
 import '../../domain/models/game_transaction.dart';
 import '../../domain/rules/game_rules.dart';
 import '../../domain/rules/period_rules.dart';
+import '../../domain/rules/budget_income_rules.dart';
 import '../providers/game_controller.dart';
 import '../widgets/accessible_motion.dart';
 import '../widgets/budget_draft.dart';
@@ -26,7 +28,11 @@ class _BudgetScreenState extends ConsumerState<BudgetScreen> {
   final _needs = TextEditingController(text: '0');
   final _wants = TextEditingController(text: '0');
   final _savings = TextEditingController(text: '0');
+  final _kept = TextEditingController(text: '0');
+  final _sourceIds = <String>{};
+  int _draftGifts = 0;
   int? _draftPeriod;
+  bool _editing = false;
   bool _saving = false;
   String? _error;
 
@@ -38,19 +44,112 @@ class _BudgetScreenState extends ConsumerState<BudgetScreen> {
   }
 
   void _seedDraft(GameProfile profile) {
-    final needs = profile.balance ~/ 2;
-    final wants = (profile.balance - needs) ~/ 2;
+    final openingBalance = GameRules.openingBalance(profile);
+    final needs = openingBalance ~/ 2;
+    final wants = (openingBalance - needs) ~/ 2;
     _needs.text = '$needs';
     _wants.text = '$wants';
-    _savings.text = '${profile.balance - needs - wants}';
+    _savings.text = '${openingBalance - needs - wants}';
+    _kept.text = '0';
+    _draftGifts = 0;
+    _sourceIds.clear();
     _draftPeriod = profile.period;
   }
+
+  void _startRevision(BudgetPlan plan, List<BudgetIncomeOption> options) {
+    setState(() {
+      _needs.text = '${plan.needs}';
+      _wants.text = '${plan.wants}';
+      _savings.text = '${plan.savings}';
+      _kept.text = '${plan.kept}';
+      _draftGifts = plan.gifts;
+      _sourceIds
+        ..clear()
+        ..addAll(
+          plan.sourceIds.where(
+            (id) => options.any((option) => option.id == id),
+          ),
+        );
+      _editing = true;
+      _error = null;
+    });
+  }
+
+  Widget _forecastPanel(
+    GameProfile profile,
+    int openingBalance,
+    List<BudgetIncomeOption> options,
+    int expectedIncome,
+  ) => Container(
+    padding: const EdgeInsets.all(10),
+    decoration: BoxDecoration(
+      color: const Color(0xFFFFF9EA),
+      borderRadius: BorderRadius.circular(24),
+      border: Border.all(color: Colors.white, width: 3),
+    ),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text(
+          'Кошелёк в начале: $openingBalance · Сейчас: ${profile.balance}',
+          style: const TextStyle(
+            color: Color(0xFF642818),
+            fontWeight: FontWeight.w900,
+          ),
+        ),
+        Text(
+          'Накопления отдельно: ${profile.savings} · Ожидаемый доход: $expectedIncome',
+          style: const TextStyle(color: Color(0xFF642818)),
+        ),
+        Material(
+          type: MaterialType.transparency,
+          child: ExpansionTile(
+            tilePadding: EdgeInsets.zero,
+            childrenPadding: EdgeInsets.zero,
+            title: const Text(
+              'Выбрать источники дохода',
+              style: TextStyle(
+                color: Color(0xFF642818),
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+            children: [
+              for (final option in options)
+                CheckboxListTile(
+                  dense: true,
+                  controlAffinity: ListTileControlAffinity.leading,
+                  contentPadding: EdgeInsets.zero,
+                  title: Text(option.title),
+                  subtitle: Text(
+                    'Базовая: ${option.base} · ${option.received ? 'получено' : 'ожидается'}: ${option.expected}',
+                  ),
+                  value: _sourceIds.contains(option.id),
+                  onChanged: (value) => setState(() {
+                    if (value == true) {
+                      _sourceIds.add(option.id);
+                    } else {
+                      _sourceIds.remove(option.id);
+                    }
+                    _error = null;
+                  }),
+                ),
+            ],
+          ),
+        ),
+        const Text(
+          'Планируемый доход — прогноз. Потратить его можно только после получения.',
+          style: TextStyle(color: Color(0xFF654938), fontSize: 12),
+        ),
+      ],
+    ),
+  );
 
   @override
   void dispose() {
     _needs.dispose();
     _wants.dispose();
     _savings.dispose();
+    _kept.dispose();
     super.dispose();
   }
 
@@ -63,7 +162,13 @@ class _BudgetScreenState extends ConsumerState<BudgetScreen> {
     int available,
   ) {
     final current = _value(controller);
-    final other = _value(_needs) + _value(_wants) + _value(_savings) - current;
+    final other =
+        _value(_needs) +
+        _value(_wants) +
+        _value(_savings) +
+        _value(_kept) +
+        _draftGifts -
+        current;
     final maximum = (available - other).clamp(0, 999999);
     final next = (current + change).clamp(0, maximum);
     if (next == current) return;
@@ -71,17 +176,36 @@ class _BudgetScreenState extends ConsumerState<BudgetScreen> {
     setState(() => _error = null);
   }
 
-  Future<void> _confirm(GameProfile profile) async {
+  Future<void> _confirm(GameProfile profile, int expectedIncome) async {
     final int needs = _value(_needs);
     final int wants = _value(_wants);
     final int savings = _value(_savings);
+    final int kept = _value(_kept);
+    final sourceIds = _sourceIds.toList()..sort();
     try {
-      GameRules.confirmBudget(
-        profile,
-        needs: needs,
-        wants: wants,
-        savings: savings,
-      );
+      if (_editing) {
+        GameRules.reviseBudget(
+          profile,
+          needs: needs,
+          wants: wants,
+          savings: savings,
+          gifts: _draftGifts,
+          kept: kept,
+          expectedIncome: expectedIncome,
+          sourceIds: sourceIds,
+        );
+      } else {
+        GameRules.confirmBudget(
+          profile,
+          needs: needs,
+          wants: wants,
+          savings: savings,
+          gifts: _draftGifts,
+          kept: kept,
+          expectedIncome: expectedIncome,
+          sourceIds: sourceIds,
+        );
+      }
     } on GameRuleException catch (error) {
       setState(() => _error = error.message);
       return;
@@ -90,9 +214,11 @@ class _BudgetScreenState extends ConsumerState<BudgetScreen> {
       context: context,
       builder: (context) => AlertDialog(
         scrollable: true,
-        title: const Text('Сохранить этот план?'),
+        title: Text(_editing ? 'Обновить план?' : 'Сохранить этот план?'),
         content: Text(
-          'Нужное: $needs\nРадость: $wants\nКопилка: $savings\n\nКоткоины пока не тратятся. После подтверждения изменить план этого периода нельзя.',
+          'Нужное: $needs\nРадость: $wants\nКопилка: $savings\n'
+          'Оставить в кошельке: $kept\nОжидаемый доход: $expectedIncome\n\n'
+          'План не списывает коткоины. Будущий доход можно потратить только после получения. План можно пересчитать.',
         ),
         actions: [
           TextButton(
@@ -112,9 +238,32 @@ class _BudgetScreenState extends ConsumerState<BudgetScreen> {
       _error = null;
     });
     try {
-      await ref
-          .read(gameControllerProvider.notifier)
-          .confirmBudget(needs, wants, savings);
+      if (_editing) {
+        await ref
+            .read(gameControllerProvider.notifier)
+            .reviseBudget(
+              needs,
+              wants,
+              savings,
+              gifts: _draftGifts,
+              kept: kept,
+              expectedIncome: expectedIncome,
+              sourceIds: sourceIds,
+            );
+      } else {
+        await ref
+            .read(gameControllerProvider.notifier)
+            .confirmBudget(
+              needs,
+              wants,
+              savings,
+              gifts: _draftGifts,
+              kept: kept,
+              expectedIncome: expectedIncome,
+              sourceIds: sourceIds,
+            );
+      }
+      if (mounted) setState(() => _editing = false);
     } on GameRuleException catch (error) {
       if (mounted) setState(() => _error = error.message);
     } catch (_) {
@@ -150,8 +299,23 @@ class _BudgetScreenState extends ConsumerState<BudgetScreen> {
       );
     }
     final BudgetPlan? plan = profile.plan;
+    final catalog = ref.watch(gameCatalogProvider).asData?.value;
+    final options = catalog == null
+        ? <BudgetIncomeOption>[]
+        : BudgetIncomeRules.options(profile, catalog);
+    final expectedIncome = options
+        .where((option) => _sourceIds.contains(option.id))
+        .fold<int>(0, (sum, option) => sum + option.expected);
+    final openingBalance =
+        plan?.openingBalance ?? GameRules.openingBalance(profile);
+    final planningBudget = openingBalance + expectedIncome;
     final int remaining =
-        profile.balance - _value(_needs) - _value(_wants) - _value(_savings);
+        planningBudget -
+        _value(_needs) -
+        _value(_wants) -
+        _value(_savings) -
+        _value(_kept) -
+        _draftGifts;
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.dark,
       child: Scaffold(
@@ -175,24 +339,34 @@ class _BudgetScreenState extends ConsumerState<BudgetScreen> {
                       _topBar(profile),
                       const SizedBox(height: 5),
                       _titleBar(),
-                      if (plan == null)
+                      if (plan == null &&
+                          profile.periodSummaries.isNotEmpty &&
+                          profile.periodSummaries.last.period ==
+                              profile.period - 1)
+                        _lastDayCard(profile),
+                      if (plan == null || _editing)
                         BudgetDraft(
                           profile: profile,
                           needs: _needs,
                           wants: _wants,
                           savings: _savings,
+                          kept: _kept,
+                          planningBudget: planningBudget,
+                          forecastPanel: _forecastPanel(
+                            profile,
+                            openingBalance,
+                            options,
+                            expectedIncome,
+                          ),
                           remaining: remaining,
                           saving: _saving,
                           onInputChanged: () => setState(() => _error = null),
-                          onAdjust: (controller, change) => _adjustAmount(
-                            controller,
-                            change,
-                            profile.balance,
-                          ),
-                          onSave: () => _confirm(profile),
+                          onAdjust: (controller, change) =>
+                              _adjustAmount(controller, change, planningBudget),
+                          onSave: () => _confirm(profile, expectedIncome),
                         )
                       else
-                        _confirmedPlan(profile, plan),
+                        _confirmedPlan(profile, plan, options),
                       if (_error != null)
                         Padding(
                           padding: const EdgeInsets.only(top: 12),
@@ -208,6 +382,58 @@ class _BudgetScreenState extends ConsumerState<BudgetScreen> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _lastDayCard(GameProfile profile) {
+    final summary = profile.periodSummaries.last;
+    final report = DayFinancialReport.fromProfile(profile, summary.period);
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFF9EA),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: Colors.white, width: 3),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Итоги прошлого дня',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w900,
+              color: Color(0xFF642818),
+            ),
+          ),
+          Text(
+            'Кошелёк в начале: ${report.openingWallet} · Накопления: ${report.openingSavings}',
+          ),
+          Text(
+            'Доходы: план ${summary.plannedIncome ?? '—'} / факт ${report.income}',
+          ),
+          for (final source in report.incomeBySource.entries)
+            Text('• ${source.key}: +${source.value}'),
+          Text(
+            'Покупки: нужное ${report.needs}, радость ${report.wants}, '
+            'подарки ${report.gifts}, Котодерево ${report.saplings}',
+          ),
+          Text(
+            'Накопления: +${report.deposits} переведено · −${report.withdrawals} снято',
+          ),
+          Text(
+            'В конце: кошелёк ${report.closingWallet} · накопления ${report.closingSavings}',
+          ),
+          Text(
+            'План / факт: нужное ${summary.plannedNeeds}/${report.needs}, '
+            'радость ${summary.plannedWants}/${summary.actualWants}, '
+            'накопления ${summary.plannedSavings}/${report.netSaved}',
+          ),
+          if (summary.missedDays > 0)
+            Text('Был перерыв: ${summary.missedDays} дн. Коткоины не списаны.'),
+        ],
       ),
     );
   }
@@ -313,7 +539,11 @@ class _BudgetScreenState extends ConsumerState<BudgetScreen> {
     ],
   );
 
-  Widget _confirmedPlan(GameProfile profile, BudgetPlan plan) => Column(
+  Widget _confirmedPlan(
+    GameProfile profile,
+    BudgetPlan plan,
+    List<BudgetIncomeOption> options,
+  ) => Column(
     children: [
       SizedBox(
         height: 158,
@@ -407,6 +637,14 @@ class _BudgetScreenState extends ConsumerState<BudgetScreen> {
                 style: TextStyle(color: Color(0xFF642818), fontSize: 15),
               ),
             ),
+            Text(
+              'Кошелёк в начале: ${plan.openingBalance} · Ожидаемый доход: ${plan.expectedIncome}',
+              style: const TextStyle(color: Color(0xFF642818), fontSize: 13),
+            ),
+            Text(
+              'Получено за период: ${profile.totalFor(TransactionKind.income)} · Сейчас в кошельке: ${profile.balance}',
+              style: const TextStyle(color: Color(0xFF642818), fontSize: 13),
+            ),
             const Row(
               children: [
                 Spacer(),
@@ -480,6 +718,13 @@ class _BudgetScreenState extends ConsumerState<BudgetScreen> {
               value: '${plan.remaining}',
             ),
             const SizedBox(height: 7),
+            _BudgetSummaryLine(
+              assetPath: 'assets/images/cat_coin.png',
+              background: const Color(0xFFFFF2CF),
+              title: 'Оставить в кошельке:',
+              value: '${plan.kept}',
+            ),
+            const SizedBox(height: 7),
             Container(
               padding: const EdgeInsets.all(9),
               decoration: BoxDecoration(
@@ -530,40 +775,82 @@ class _BudgetScreenState extends ConsumerState<BudgetScreen> {
           ],
         ),
       ),
-      const SizedBox(height: 9),
-      SizedBox(
-        width: double.infinity,
-        height: 60,
-        child: FilledButton(
-          style: FilledButton.styleFrom(
-            backgroundColor: const Color(0xFFFFC727),
-            foregroundColor: const Color(0xFF642818),
-            side: const BorderSide(color: Colors.white, width: 3),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(32),
+      if (profile.isTest) ...[
+        const SizedBox(height: 9),
+        SizedBox(
+          width: double.infinity,
+          child: OutlinedButton.icon(
+            onPressed: () => _startRevision(plan, options),
+            icon: const Icon(Icons.edit_rounded),
+            label: const Text('Пересчитать план'),
+            style: OutlinedButton.styleFrom(
+              backgroundColor: const Color(0xFFFFF9EA),
+              foregroundColor: const Color(0xFF642818),
+              side: const BorderSide(color: Colors.white, width: 2),
             ),
-          ),
-          onPressed: () => showAccessibleDialog<bool>(
-            context: context,
-            barrierDismissible: false,
-            builder: (_) => GameActionDialog(
-              title: 'Завершить период ${profile.period}?',
-              description:
-                  '${PeriodRules.summarize(profile).explanation}\n\n'
-                  'Итоги сохранятся. В новом периоде получишь 100 монет и составишь новый план. '
-                  'Сытость снизится не больше чем на 20: питомец ждёт следующий обед. Рост и накопления сохранятся.',
-              confirmLabel: 'Следующий период',
-              action: (_) => ref
-                  .read(gameControllerProvider.notifier)
-                  .finishPeriod(profile.period),
-            ),
-          ),
-          child: const Text(
-            'Подвести итоги',
-            style: TextStyle(fontSize: 21, fontWeight: FontWeight.w900),
           ),
         ),
-      ),
+        if (profile.budgetRevisions.any(
+          (entry) => entry.period == profile.period,
+        ))
+          ExpansionTile(
+            title: const Text(
+              'Предыдущие варианты плана',
+              style: TextStyle(
+                color: Color(0xFF642818),
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+            children: [
+              for (final revision in profile.budgetRevisions.where(
+                (entry) => entry.period == profile.period,
+              ))
+                ListTile(
+                  tileColor: const Color(0xFFFFF9EA),
+                  title: Text(
+                    'Нужно ${revision.plan.needs} · Радость ${revision.plan.wants} · Копилка ${revision.plan.savings}',
+                  ),
+                  subtitle: Text(
+                    'Доход ${revision.plan.expectedIncome} · В кошельке ${revision.plan.kept}',
+                  ),
+                ),
+            ],
+          ),
+        const SizedBox(height: 9),
+        SizedBox(
+          width: double.infinity,
+          height: 60,
+          child: FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: const Color(0xFFFFC727),
+              foregroundColor: const Color(0xFF642818),
+              side: const BorderSide(color: Colors.white, width: 3),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(32),
+              ),
+            ),
+            onPressed: () => showAccessibleDialog<bool>(
+              context: context,
+              barrierDismissible: false,
+              builder: (_) => GameActionDialog(
+                title: 'Завершить день ${profile.period}?',
+                description:
+                    '${PeriodRules.summarize(profile).explanation}\n\n'
+                    'В деморежиме сразу откроется следующий игровой день. '
+                    'Награда дня начислится один раз, затем можно составить новый план.',
+                confirmLabel: 'Следующий день',
+                action: (_) => ref
+                    .read(gameControllerProvider.notifier)
+                    .finishPeriod(profile.period),
+              ),
+            ),
+            child: const Text(
+              'Завершить день',
+              style: TextStyle(fontSize: 21, fontWeight: FontWeight.w900),
+            ),
+          ),
+        ),
+      ],
     ],
   );
 }

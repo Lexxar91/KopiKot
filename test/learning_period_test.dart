@@ -7,6 +7,7 @@ import 'package:kopikot/domain/models/learning_task.dart';
 import 'package:kopikot/domain/rules/daily_reward_rules.dart';
 import 'package:kopikot/domain/rules/economy_rules.dart';
 import 'package:kopikot/domain/rules/game_rules.dart';
+import 'package:kopikot/domain/rules/growth_rules.dart';
 import 'package:kopikot/domain/rules/learning_rules.dart';
 import 'package:kopikot/domain/rules/period_rules.dart';
 
@@ -402,7 +403,7 @@ void main() {
       );
       profile = PeriodRules.finish(profile, 6);
       expect(profile.growthStage, 3);
-      expect(profile.growthPeriods, 5);
+      expect(GrowthRules.qualifyingPeriods(profile), 5);
       expect(profile.savings, 100);
     },
   );

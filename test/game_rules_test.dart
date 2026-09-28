@@ -58,6 +58,52 @@ void main() {
     expect(plan.remaining, 0);
   });
 
+  test('Прогноз и оставляемые деньги входят в план, но не в кошелёк', () {
+    final plan = GameRules.confirmBudget(
+      initialProfile,
+      needs: 50,
+      wants: 20,
+      savings: 10,
+      kept: 26,
+      expectedIncome: 6,
+      sourceIds: const ['game:accountant'],
+    );
+    expect(plan.openingBalance, 100);
+    expect(plan.expectedIncome, 6);
+    expect(plan.remaining, 0);
+    expect(initialProfile.balance, 100);
+    expect(
+      () => GameRules.confirmBudget(
+        initialProfile,
+        needs: 50,
+        wants: 20,
+        savings: 10,
+        kept: 27,
+        expectedIncome: 6,
+      ),
+      throwsA(isA<GameRuleException>()),
+    );
+  });
+
+  test('Пересмотр плана сохраняет прежнюю версию без изменения баланса', () {
+    final original = GameRules.confirmBudget(
+      initialProfile,
+      needs: 50,
+      wants: 20,
+      savings: 10,
+    );
+    final revised = GameRules.reviseBudget(
+      initialProfile.withPlan(original),
+      needs: 40,
+      wants: 20,
+      savings: 20,
+      kept: 20,
+    );
+    expect(revised.balance, 100);
+    expect(revised.plan!.savings, 20);
+    expect(revised.budgetRevisions.single.plan, original);
+  });
+
   test('Подтверждённый план нельзя переписать', () {
     final plan = GameRules.confirmBudget(
       initialProfile,

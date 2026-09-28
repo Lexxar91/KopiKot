@@ -82,28 +82,115 @@ abstract final class GameRules {
     required int wants,
     required int savings,
     int gifts = 0,
+    int kept = 0,
+    int expectedIncome = 0,
+    List<String> sourceIds = const [],
   }) {
     if (profile.plan != null) {
       throw const GameRuleException(
-        'План уже подтверждён. Новый составим в следующем периоде.',
+        'План уже подтверждён. Его можно пересмотреть или составить новый завтра.',
       );
     }
-    if (needs < 0 || wants < 0 || gifts < 0 || savings < 0) {
+    return _budgetPlan(
+      openingBalance: openingBalance(profile),
+      needs: needs,
+      wants: wants,
+      savings: savings,
+      gifts: gifts,
+      kept: kept,
+      expectedIncome: expectedIncome,
+      sourceIds: sourceIds,
+    );
+  }
+
+  /// Доход, уже полученный в текущем периоде, не входит в начальный кошелёк.
+  static int openingBalance(GameProfile profile) {
+    final received = profile.transactions
+        .where(
+          (entry) =>
+              entry.period == profile.period &&
+              entry.kind == TransactionKind.income &&
+              entry.id != 'initial-income' &&
+              !entry.id.startsWith('period-income-'),
+        )
+        .fold<int>(0, (sum, entry) => sum + entry.amount);
+    return profile.balance - received;
+  }
+
+  static GameProfile reviseBudget(
+    GameProfile profile, {
+    required int needs,
+    required int wants,
+    required int savings,
+    int gifts = 0,
+    int kept = 0,
+    int expectedIncome = 0,
+    List<String> sourceIds = const [],
+  }) {
+    final old = profile.plan;
+    if (old == null) {
+      throw const GameRuleException('Сначала сохрани первый план.');
+    }
+    final revised = _budgetPlan(
+      openingBalance: old.openingBalance,
+      needs: needs,
+      wants: wants,
+      savings: savings,
+      gifts: gifts,
+      kept: kept,
+      expectedIncome: expectedIncome,
+      sourceIds: sourceIds,
+    );
+    return profile.copyWith(
+      plan: revised,
+      budgetRevisions: [
+        ...profile.budgetRevisions,
+        BudgetRevision(period: profile.period, plan: old),
+      ],
+    );
+  }
+
+  static BudgetPlan _budgetPlan({
+    required int openingBalance,
+    required int needs,
+    required int wants,
+    required int savings,
+    required int gifts,
+    required int kept,
+    required int expectedIncome,
+    required List<String> sourceIds,
+  }) {
+    if (needs < 0 ||
+        wants < 0 ||
+        gifts < 0 ||
+        savings < 0 ||
+        kept < 0 ||
+        expectedIncome < 0) {
       throw const GameRuleException(
         'В каждой части плана должно быть 0 или больше монет.',
       );
     }
-    if (needs + wants + gifts + savings > profile.balance) {
+    if (sourceIds.toSet().length != sourceIds.length) {
+      throw const GameRuleException(
+        'Один источник дохода нельзя выбрать дважды.',
+      );
+    }
+    final available = openingBalance + expectedIncome;
+    if (needs + wants + gifts + savings + kept > available) {
       throw const GameRuleException(
         'Монет не хватает на такой план. Уменьши одну из сумм.',
       );
     }
     return BudgetPlan(
-      availableAtConfirmation: profile.balance,
+      availableAtConfirmation: available,
+      openingBalance: openingBalance,
+      expectedIncome: expectedIncome,
       needs: needs,
       wants: wants,
       savings: savings,
       gifts: gifts,
+      kept: kept,
+      sourceIds: List.unmodifiable(sourceIds),
     );
   }
 }

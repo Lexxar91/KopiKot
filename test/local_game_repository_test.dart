@@ -9,6 +9,7 @@ import 'package:kopikot/data/repositories/local_game_repository.dart';
 import 'package:kopikot/domain/models/game_profile.dart';
 import 'package:kopikot/domain/models/learning_task.dart';
 import 'package:kopikot/domain/rules/game_rules.dart';
+import 'package:kopikot/domain/rules/growth_rules.dart';
 import 'package:kopikot/domain/rules/mini_game_rules.dart';
 import 'support/native_isar.dart';
 
@@ -41,10 +42,39 @@ void main() {
       repository.submitTask('saving_start', const TaskAnswer(savings: 10)),
     ]);
     final profile = (await repository.loadProfile())!;
-    expect(profile.balance, 112);
+    expect(profile.balance, 122);
     expect(profile.taskProgress.single.attempts, 1);
-    expect(profile.transactions.length, 2);
+    expect(profile.transactions.length, 3);
+    final reward = profile.transactions.last;
+    expect(reward.baseReward, 12);
+    expect(reward.startSatiety, 70);
+    expect(reward.startEnergy, 70);
   });
+
+  test(
+    'Подсказка, разбор и награда после «Понятно» переживают перезапуск',
+    () async {
+      await create();
+      await repository.confirmBudget(needs: 50, wants: 20, savings: 30);
+      await repository.submitTask('saving_start', const TaskAnswer());
+      await repository.submitTask('saving_start', const TaskAnswer());
+      await store.close();
+      store = await LocalGameStore.open(
+        directory: directory.path,
+        name: 'test',
+      );
+      repository = LocalGameRepository(store, catalog);
+      var profile = (await repository.loadProfile())!;
+      expect(profile.taskProgress.single.hintUsed, isTrue);
+      expect(profile.taskProgress.single.solutionShown, isTrue);
+      expect(profile.balance, 110);
+      profile = await repository.acknowledgeTask('saving_start');
+      expect(profile.balance, 122);
+      expect(profile.taskProgress.single.reviewed, isTrue);
+      profile = await repository.acknowledgeTask('saving_start');
+      expect(profile.balance, 122);
+    },
+  );
 
   test(
     'Настройка движения переживает переключение, сброс, удаление и перезапуск',
@@ -309,7 +339,7 @@ void main() {
       final profile = (await repository.loadProfile())!;
       expect(profile.period, period + 1);
       expect(profile.periodSummaries.length, period);
-      expect(profile.growthPeriods, period);
+      expect(GrowthRules.qualifyingPeriods(profile), period);
       expect(profile.plan, isNull);
     }
     expect((await repository.loadProfile())!.growthStage, 3);
@@ -332,11 +362,12 @@ void main() {
     'Награда мини-игры сохраняется и одна команда не платит дважды',
     () async {
       await create();
+      await repository.confirmBudget(needs: 50, wants: 20, savings: 30);
       final first = await repository.claimMiniGame(
         MiniGameKind.accountant,
         'accountant-round-1',
       );
-      expect(first.balance, 112);
+      expect(first.balance, 116);
       await repository.claimMiniGame(
         MiniGameKind.accountant,
         'accountant-round-1',
@@ -349,19 +380,24 @@ void main() {
       );
       repository = LocalGameRepository(store, catalog);
       final restored = (await repository.loadProfile())!;
-      expect(restored.balance, 112);
+      expect(restored.balance, 116);
       expect(
         restored.transactions.where(
           (entry) => entry.referenceId == MiniGameKind.accountant.name,
         ),
         hasLength(1),
       );
+      final payout = restored.transactions.firstWhere(
+        (entry) => entry.referenceId == MiniGameKind.accountant.name,
+      );
+      expect(payout.baseReward, 6);
+      expect(payout.startEnergy, 70);
 
       final next = await repository.claimMiniGame(
         MiniGameKind.accountant,
         'accountant-round-2',
       );
-      expect(next.balance, 124);
+      expect(next.balance, 116);
     },
   );
 
@@ -408,7 +444,7 @@ void main() {
     expect(profile.streak, 1);
     expect(profile.walkPeriod, 0);
     expect(profile.saplings, isEmpty);
-    expect((await store.readProfile())!.schemaVersion, 5);
+    expect((await store.readProfile())!.schemaVersion, 8);
   });
 
   test(
@@ -471,6 +507,18 @@ void main() {
     expect(profile.transactions.length, 4);
     await repository.purchase('porridge', commandId: 'buy');
     expect((await repository.loadProfile())!.balance, 55);
+  });
+
+  test('Открытый выбор целей сохраняется после перезапуска', () async {
+    final created = await create();
+    expect(created.goalChoicesUnlocked, isFalse);
+    await store.updateProfile(
+      (current) => current!..goalChoicesUnlocked = true,
+    );
+    await store.close();
+    store = await LocalGameStore.open(directory: directory.path, name: 'test');
+    repository = LocalGameRepository(store, catalog);
+    expect((await repository.loadProfile())!.goalChoicesUnlocked, isTrue);
   });
 
   test('Несогласованные накопления не исправляются потерей монет', () async {
@@ -546,7 +594,7 @@ void main() {
       expect(profile.balance, 100);
       expect(profile.transactions.single.amount, 100);
       await repository.loadProfile();
-      expect((await store.readProfile())!.schemaVersion, 5);
+      expect((await store.readProfile())!.schemaVersion, 8);
       expect((await repository.loadProfile())!.transactions.length, 1);
     },
   );
@@ -569,6 +617,35 @@ void main() {
     expect(profile.plan!.needs, 50);
     expect(profile.plan!.wants, 20);
     expect(profile.plan!.savings, 30);
+  });
+
+  test('Прогноз и пересмотр бюджета переживают перезапуск', () async {
+    await create();
+    await repository.confirmBudget(
+      needs: 40,
+      wants: 20,
+      savings: 20,
+      kept: 26,
+      expectedIncome: 6,
+      sourceIds: const ['game:accountant'],
+    );
+    await repository.reviseBudget(
+      needs: 35,
+      wants: 25,
+      savings: 20,
+      kept: 26,
+      expectedIncome: 6,
+      sourceIds: const ['game:accountant'],
+    );
+    await store.close();
+    store = await LocalGameStore.open(directory: directory.path, name: 'test');
+    repository = LocalGameRepository(store, catalog);
+    final profile = (await repository.loadProfile())!;
+    expect(profile.balance, 100);
+    expect(profile.plan!.openingBalance, 100);
+    expect(profile.plan!.expectedIncome, 6);
+    expect(profile.plan!.kept, 26);
+    expect(profile.budgetRevisions.single.plan.needs, 40);
   });
 
   test('Купленные аксессуары и снятый вид переживают перезапуск', () async {
@@ -609,6 +686,69 @@ void main() {
     expect(profile.ownsAccessory(PetAccessory.headband), isTrue);
     expect(profile.ownsAccessory(PetAccessory.wristbands), isTrue);
     expect(profile.balance, 35);
+  });
+
+  test(
+    'Местная дата закрывает день и начисляет награду только один раз',
+    () async {
+      var now = DateTime(2026, 9, 28, 12);
+      repository = LocalGameRepository(store, catalog, clock: () => now);
+      final first = await create();
+      expect(first.dayKey, '2026-09-28');
+      expect(first.balance, 110);
+      await repository.confirmBudget(needs: 50, wants: 20, savings: 30);
+      expect((await repository.loadProfile())!.balance, 110);
+
+      now = DateTime(2026, 9, 29, 9);
+      await store.close();
+      store = await LocalGameStore.open(
+        directory: directory.path,
+        name: 'test',
+      );
+      repository = LocalGameRepository(store, catalog, clock: () => now);
+      final second = (await repository.loadProfile())!;
+      expect(second.period, 2);
+      expect(second.dayKey, '2026-09-29');
+      expect(second.balance, 122);
+      expect(second.plan, isNull);
+      expect(second.periodSummaries.single.period, 1);
+      expect(second.periodSummaries.single.plannedIncome, 0);
+      expect((await repository.loadProfile())!.balance, 122);
+
+      now = DateTime(2026, 10, 1, 9);
+      final afterGap = (await repository.loadProfile())!;
+      expect(afterGap.period, 3);
+      expect(afterGap.balance, 134);
+      expect(afterGap.periodSummaries.length, 2);
+      expect(afterGap.periodSummaries.last.missedDays, 1);
+      await store.close();
+      store = await LocalGameStore.open(
+        directory: directory.path,
+        name: 'test',
+      );
+      repository = LocalGameRepository(store, catalog, clock: () => now);
+      final restored = (await repository.loadProfile())!;
+      expect(restored.balance, 134);
+      expect(restored.periodSummaries.first.plannedIncome, 0);
+      expect(restored.periodSummaries.last.missedDays, 1);
+    },
+  );
+
+  test('Ручной следующий день доступен только в деморежиме', () async {
+    var now = DateTime(2026, 9, 28, 12);
+    repository = LocalGameRepository(store, catalog, clock: () => now);
+    await create();
+    await repository.confirmBudget(needs: 50, wants: 20, savings: 30);
+    await expectLater(
+      repository.finishPeriod(1),
+      throwsA(isA<GameRuleException>()),
+    );
+    await repository.switchProfile(testProfile: true);
+    await repository.confirmBudget(needs: 50, wants: 20, savings: 30);
+    final next = await repository.finishPeriod(1);
+    expect(next.period, 2);
+    expect(next.balance, 122);
+    expect(next.plan, isNull);
   });
 
   test(

@@ -1,5 +1,26 @@
 enum TaskKind { budget, basket, saving, choice }
 
+enum LearningDifficulty { simple, medium, hard }
+
+/// Настройка одной учебной темы; отсутствие записи означает простую ступень.
+class LearningTopicProgress {
+  const LearningTopicProgress({
+    required this.topic,
+    this.difficulty = LearningDifficulty.simple,
+    this.cleanStreak = 0,
+    this.helpStreak = 0,
+    this.downgradeOffered = false,
+    this.downgradePending = false,
+  });
+
+  final String topic;
+  final LearningDifficulty difficulty;
+  final int cleanStreak;
+  final int helpStreak;
+  final bool downgradeOffered;
+  final bool downgradePending;
+}
+
 /// Параметры учебной ситуации хранятся в каталоге, отдельно от обработчика и UI.
 class LearningTask {
   const LearningTask({
@@ -56,9 +77,17 @@ class TaskProgress {
     required this.attempts,
     required this.completed,
     required this.feedback,
+    this.hintUsed = false,
+    this.solutionShown = false,
+    this.reviewed = false,
+    this.practiceAttempts = 0,
   });
   final String taskId;
   final int attempts;
   final bool completed;
   final String feedback;
+  final bool hintUsed;
+  final bool solutionShown;
+  final bool reviewed;
+  final int practiceAttempts;
 }

@@ -1,10 +1,10 @@
 import '../models/game_profile.dart';
 import '../models/game_transaction.dart';
 
-/// Начисляет награду отдельно от завершения игрового периода.
+/// Начисляет награду один раз при открытии нового игрового дня.
 abstract final class DailyRewardRules {
-  /// Суммы и порядок дней соответствуют экрану ежедневной награды.
-  static const ladder = <int>[5, 10, 15, 20, 25, 30, 35];
+  /// После пятой ступени награда остаётся равной 20 коткоинам.
+  static const ladder = <int>[10, 12, 14, 16, 18, 20, 20];
 
   static bool canClaim(GameProfile profile, {DateTime? now}) {
     if (profile.isTest) {
@@ -68,9 +68,13 @@ abstract final class DailyRewardRules {
     );
   }
 
-  static int _calendarDays(DateTime from, DateTime to) => DateTime.utc(
-    to.year,
-    to.month,
-    to.day,
-  ).difference(DateTime.utc(from.year, from.month, from.day)).inDays;
+  static int _calendarDays(DateTime from, DateTime to) {
+    final start = from.toLocal();
+    final end = to.toLocal();
+    return DateTime.utc(
+      end.year,
+      end.month,
+      end.day,
+    ).difference(DateTime.utc(start.year, start.month, start.day)).inDays;
+  }
 }
