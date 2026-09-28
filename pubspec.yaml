@@ -32,11 +32,18 @@ flutter:
     - assets/content/catalog.json
     - assets/content/tasks.json
     - assets/images/fairytale_background.png
+    - assets/images/garden_background.png
+    - assets/images/wardrobe_background.png
     - assets/images/orange_kitten.png
+    - assets/images/orange_kitten_no_scarf.png
     - assets/images/cream_kitten.png
+    - assets/images/cream_kitten_no_scarf.png
     - assets/images/grey_kitten.png
+    - assets/images/grey_kitten_no_scarf.png
     - assets/images/dark_kitten.png
+    - assets/images/dark_kitten_no_scarf.png
     - assets/images/white_kitten.png
+    - assets/images/white_kitten_no_scarf.png
     - assets/images/action_feed.png
     - assets/images/action_play.png
     - assets/images/action_walk.png
@@ -47,6 +54,9 @@ flutter:
     - assets/images/budget_hero_ginger.png
     - assets/images/cat_coin.png
     - assets/images/logo_wood.png
+    - assets/images/savings_treadmill.png
+    - assets/images/savings_bed.png
+    - assets/images/savings_rare_sapling.png
     - assets/images/daily_reward_chest.png
     - assets/images/daily_reward_hero_ginger.png
     - assets/images/home_coin_tree.png
@@ -70,3 +80,5 @@ flutter:
     - assets/images/quest_toy_mouse.png
     - assets/images/market_shampoo.png
     - assets/images/market_basket.png
+    - assets/images/shop_milk.png
+    - assets/images/shop_brush.png

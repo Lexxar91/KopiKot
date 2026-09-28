@@ -144,6 +144,7 @@ class _HomeSceneState extends State<HomeScene> {
                             height: _useCompactHomeLayout(context) ? 5 : 9,
                           ),
                           _GoalPanel(
+                            goalId: widget.profile.selectedGoalId ?? 'tent',
                             title: widget.goalTitle,
                             saved: widget.goalSaved,
                             price: widget.goalPrice,
@@ -575,11 +576,13 @@ class _CareTile extends StatelessWidget {
 
 class _GoalPanel extends StatelessWidget {
   const _GoalPanel({
+    required this.goalId,
     required this.title,
     required this.saved,
     required this.price,
     required this.onTap,
   });
+  final String goalId;
   final String title;
   final int saved;
   final int price;
@@ -607,7 +610,12 @@ class _GoalPanel extends StatelessWidget {
           children: [
             const SizedBox(width: 10),
             Image.asset(
-              'assets/images/home_goal_sapling.png',
+              switch (goalId) {
+                'tent' => 'assets/images/savings_treadmill.png',
+                'telescope' => 'assets/images/savings_bed.png',
+                'garden' => 'assets/images/savings_rare_sapling.png',
+                _ => 'assets/images/home_coin_tree.png',
+              },
               width: 52,
               height: 58,
               fit: BoxFit.contain,

@@ -46,21 +46,21 @@ class PetPortrait extends StatelessWidget {
     image: true,
     label:
         '${coatLabels[coat]} кот, ${accessory == null ? 'без аксессуара' : accessoryLabels[accessory]}',
-    child: SizedBox.square(
-      dimension: size,
-      child: accessory == PetAccessory.scarf
-          ? _storybookPortrait()
-          : CustomPaint(painter: _CatPainter(coat, accessory, stage, emotion)),
-    ),
+    child: SizedBox.square(dimension: size, child: _storybookPortrait()),
   );
 
   Widget _storybookPortrait() {
-    final path = switch (coat) {
-      PetCoat.ginger => 'assets/images/orange_kitten.png',
-      PetCoat.grey => 'assets/images/grey_kitten.png',
-      PetCoat.cream => 'assets/images/cream_kitten.png',
-      PetCoat.dark => 'assets/images/dark_kitten.png',
-      PetCoat.white => 'assets/images/white_kitten.png',
+    final path = switch ((coat, accessory == PetAccessory.scarf)) {
+      (PetCoat.ginger, true) => 'assets/images/orange_kitten.png',
+      (PetCoat.grey, true) => 'assets/images/grey_kitten.png',
+      (PetCoat.cream, true) => 'assets/images/cream_kitten.png',
+      (PetCoat.dark, true) => 'assets/images/dark_kitten.png',
+      (PetCoat.white, true) => 'assets/images/white_kitten.png',
+      (PetCoat.ginger, false) => 'assets/images/orange_kitten_no_scarf.png',
+      (PetCoat.grey, false) => 'assets/images/grey_kitten_no_scarf.png',
+      (PetCoat.cream, false) => 'assets/images/cream_kitten_no_scarf.png',
+      (PetCoat.dark, false) => 'assets/images/dark_kitten_no_scarf.png',
+      (PetCoat.white, false) => 'assets/images/white_kitten_no_scarf.png',
     };
     final emotionIcon = switch (emotion) {
       PetEmotion.calm => null,
@@ -87,7 +87,48 @@ class PetPortrait extends StatelessWidget {
           fit: BoxFit.contain,
           width: size,
           height: size,
+          errorBuilder: (_, _, _) => CustomPaint(
+            size: Size.square(size),
+            painter: _CatPainter(coat, accessory, stage, emotion),
+          ),
         ),
+        if (accessory == PetAccessory.bow)
+          Positioned(
+            left: size * 0.64,
+            top: size * 0.02,
+            child: Image.asset(
+              'assets/images/wardrobe_bow.png',
+              width: size * 0.2,
+            ),
+          ),
+        if (accessory == PetAccessory.headband)
+          Positioned(
+            left: size * 0.29,
+            top: size * 0.12,
+            child: Image.asset(
+              'assets/images/wardrobe_headband.png',
+              width: size * 0.43,
+            ),
+          ),
+        if (accessory == PetAccessory.wristbands)
+          Positioned(
+            left: size * 0.3,
+            top: size * 0.5,
+            child: Image.asset(
+              'assets/images/wardrobe_wristbands.png',
+              width: size * 0.42,
+            ),
+          ),
+        if (accessory == PetAccessory.cap)
+          Positioned(
+            left: size * 0.39,
+            top: size * 0.07,
+            child: Icon(
+              Icons.emoji_objects_rounded,
+              size: size * 0.22,
+              color: const Color(0xFFFFC342),
+            ),
+          ),
         if (stage > 1)
           Positioned(
             left: size * 0.12,

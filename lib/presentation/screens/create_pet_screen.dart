@@ -21,7 +21,7 @@ class CreatePetScreen extends ConsumerStatefulWidget {
 }
 
 class _CreatePetScreenState extends ConsumerState<CreatePetScreen> {
-  final _name = TextEditingController(text: 'Рут');
+  final _name = TextEditingController();
   final _form = GlobalKey<FormState>();
   PetCoat _coat = PetCoat.ginger;
   int _step = 0;
@@ -241,7 +241,9 @@ class _CreatePetScreenState extends ConsumerState<CreatePetScreen> {
                 border: Border.all(color: Colors.white, width: 2),
               ),
               child: Text(
-                'Привет!\nЯ ${_name.text.trim().isEmpty ? 'Рут' : _name.text.trim()}',
+                _name.text.trim().isEmpty
+                    ? 'Привет, давай придумаем мне имя?'
+                    : 'Привет!\nЯ ${_name.text.trim()}',
                 textAlign: TextAlign.center,
                 style: const TextStyle(
                   color: _ink,
@@ -576,7 +578,6 @@ class _CreatePetScreenState extends ConsumerState<CreatePetScreen> {
                 textCapitalization: TextCapitalization.words,
                 onChanged: (_) => setState(() {}),
                 decoration: InputDecoration(
-                  hintText: 'Рут',
                   suffixIcon: const Icon(
                     Icons.edit_outlined,
                     color: Color(0xFF2466B0),

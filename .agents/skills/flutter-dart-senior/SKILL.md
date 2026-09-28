@@ -11,8 +11,7 @@ The user is an experienced Python backend developer who is learning Flutter/Dart
 
 ## Language
 
-* Write all user-facing explanations in Russian.
-* Keep explanations concise.
+* Write all user-facing explanations in Russian, concisely.
 * Keep code, identifiers, filenames, class names, package names, and APIs in English.
 * Use Russian documentation comments when they help explain unfamiliar Flutter/Dart concepts.
 
@@ -131,25 +130,11 @@ counter++;
 
 ## Workflow
 
-Before editing:
+Before editing: inspect only the files relevant to the task, understand the existing architecture and conventions, and reuse existing abstractions when appropriate.
 
-1. Inspect only the files relevant to the task.
-2. Understand existing architecture and conventions.
-3. Reuse existing abstractions when appropriate.
+During implementation: make the smallest complete change that preserves architecture boundaries, and add or update tests when useful.
 
-During implementation:
-
-1. Make the smallest complete change.
-2. Preserve architecture boundaries.
-3. Do not refactor unrelated code.
-4. Add or update tests when useful.
-
-After implementation:
-
-1. Format changed Dart files.
-2. Run relevant static analysis when available.
-3. Run relevant tests when available.
-4. Fix problems introduced by the change.
+After implementation: format changed Dart files, run relevant static analysis and tests when available, and fix any problems the change introduced.
 
 Never claim something was tested if it was not.
 
@@ -181,12 +166,13 @@ Keep context usage low.
 * For noisy commands, inspect only relevant errors or the final section.
 * Do not repeat architecture or requirements already known.
 * Do not explain obvious code.
-* Keep final responses short.
 * Load additional documentation or references only when required.
 
 ## Final Response
 
-After completing work, respond in Russian using at most a few short bullets:
+For a trivial change (roughly 1-2 lines, no architectural impact), reply with a short one-line confirmation instead of the full template below.
+
+For any other change, respond in Russian using at most a few short bullets:
 
 ```text
 Сделано:

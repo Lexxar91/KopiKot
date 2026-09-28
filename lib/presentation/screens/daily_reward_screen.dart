@@ -144,15 +144,31 @@ class _DailyRewardScreenState extends ConsumerState<DailyRewardScreen> {
                       ),
                       if (_message != null)
                         Padding(
-                          padding: const EdgeInsets.only(top: 6),
+                          padding: const EdgeInsets.only(top: 8),
                           child: Semantics(
                             liveRegion: true,
-                            child: Text(
-                              _message!,
-                              textAlign: TextAlign.center,
-                              style: const TextStyle(
-                                color: _brown,
-                                fontWeight: FontWeight.w800,
+                            child: Container(
+                              width: double.infinity,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 10,
+                              ),
+                              decoration: BoxDecoration(
+                                color: _cream,
+                                borderRadius: BorderRadius.circular(20),
+                                border: Border.all(
+                                  color: const Color(0xFFFFC857),
+                                  width: 2,
+                                ),
+                              ),
+                              child: Text(
+                                _message!,
+                                textAlign: TextAlign.center,
+                                style: const TextStyle(
+                                  color: _brown,
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w900,
+                                ),
                               ),
                             ),
                           ),

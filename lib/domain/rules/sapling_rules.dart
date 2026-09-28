@@ -38,7 +38,7 @@ abstract final class SaplingRules {
       feedback:
           'Саженец «${sapling.title}» посажен: −${sapling.price} монет. '
           'Через ${sapling.term} игровых дней он подарит ${sapling.reward} монет. '
-          'Собрать раньше тоже можно — просто меньше. Сытость и настроение не изменились.',
+          'Собрать раньше тоже можно — просто меньше. Сытость и радость не изменились.',
     );
     return planted.copyWith(
       transactions: [

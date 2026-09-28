@@ -19,10 +19,15 @@ void main() {
     GameRules.confirmBudget(initialProfile, needs: 50, wants: 20, savings: 30),
   );
 
-  test('Каталог содержит три обычных саженца с одинаковым вкладом', () {
+  test('Каталог содержит новое деревце и прежние варианты', () {
     expect(catalog.saplings.length, 3);
-    expect(catalog.saplings.map((sapling) => sapling.price).toSet().length, 1);
-    expect(catalog.saplings.map((sapling) => sapling.term).toSet(), {5, 10, 15});
+    expect(catalog.sapling('sapling_5').price, 30);
+    expect(catalog.sapling('sapling_5').reward, 50);
+    expect(catalog.saplings.map((sapling) => sapling.term).toSet(), {
+      5,
+      10,
+      15,
+    });
     for (final sapling in catalog.saplings) {
       expect(sapling.reward, greaterThan(sapling.price));
     }
@@ -43,16 +48,13 @@ void main() {
       catalog.sapling('sapling_5'),
       'seed-1',
     );
-    expect(planted.balance, 80);
+    expect(planted.balance, 70);
     expect(planted.saplings.single.definitionId, 'sapling_5');
     expect(planted.saplings.single.plantedPeriod, 1);
-    expect(
-      planted.transactions.single.kind,
-      TransactionKind.saplingPurchase,
-    );
-    expect(planted.transactions.single.amount, 20);
+    expect(planted.transactions.single.kind, TransactionKind.saplingPurchase);
+    expect(planted.transactions.single.amount, 30);
     expect(planted.feedback, contains('5 игровых дней'));
-    expect(planted.feedback, contains('30 монет'));
+    expect(planted.feedback, contains('50 монет'));
     // Сытость и настроение не меняются: саженец не тратит заботу.
     expect(planted.satiety, 70);
     expect(planted.mood, 70);
@@ -95,41 +97,44 @@ void main() {
       catalog.sapling('sapling_5'),
       'take-1',
     );
-    // 80 после посадки + 500 дохода + 30 урожая. Награда за вход отдельна.
-    expect(harvested.balance, 610);
+    // 70 после посадки + 500 дохода + 50 урожая. Награда за вход отдельна.
+    expect(harvested.balance, 620);
     expect(harvested.saplings, isEmpty);
-    expect(harvested.transactions.last.label, 'Урожай: Саженец на 5 дней');
-    expect(harvested.transactions.last.amount, 30);
+    expect(harvested.transactions.last.label, 'Урожай: Деревце');
+    expect(harvested.transactions.last.amount, 50);
     expect(harvested.feedback, contains('Котодерево созрело'));
     expect(harvested.feedback, contains('пассивного дохода'));
   });
 
-  test('Досрочный сбор даёт меньше полной награды и объясняет оба варианта', () {
-    var profile = SaplingRules.plant(
-      planned(),
-      catalog.sapling('sapling_10'),
-      'seed-3',
-    );
-    for (var period = 1; period <= 2; period++) {
-      if (profile.plan == null) {
-        profile = profile.withPlan(
-          GameRules.confirmBudget(profile, needs: 0, wants: 0, savings: 0),
-        );
+  test(
+    'Досрочный сбор даёт меньше полной награды и объясняет оба варианта',
+    () {
+      var profile = SaplingRules.plant(
+        planned(),
+        catalog.sapling('sapling_10'),
+        'seed-3',
+      );
+      for (var period = 1; period <= 2; period++) {
+        if (profile.plan == null) {
+          profile = profile.withPlan(
+            GameRules.confirmBudget(profile, needs: 0, wants: 0, savings: 0),
+          );
+        }
+        profile = PeriodRules.finish(profile, period);
       }
-      profile = PeriodRules.finish(profile, period);
-    }
-    final state = profile.saplings.single;
-    final harvested = SaplingRules.harvest(
-      profile,
-      state,
-      catalog.sapling('sapling_10'),
-      'early-take',
-    );
-    // elapsed = 2, payout = 20 + 30 * 2 / 10 = 26.
-    expect(harvested.transactions.last.amount, 26);
-    expect(harvested.feedback, contains('Собрали раньше срока'));
-    expect(harvested.feedback, contains('50'));
-  });
+      final state = profile.saplings.single;
+      final harvested = SaplingRules.harvest(
+        profile,
+        state,
+        catalog.sapling('sapling_10'),
+        'early-take',
+      );
+      // elapsed = 2, payout = 20 + 30 * 2 / 10 = 26.
+      expect(harvested.transactions.last.amount, 26);
+      expect(harvested.feedback, contains('Собрали раньше срока'));
+      expect(harvested.feedback, contains('50'));
+    },
+  );
 
   test('Повторная посадка и сбор безопасны, сбор чужой команды ошибается', () {
     var profile = SaplingRules.plant(
@@ -144,7 +149,12 @@ void main() {
     );
     expect(identical(profile, replay), isTrue);
     final state = profile.saplings.single;
-    profile = SaplingRules.harvest(profile, state, catalog.sapling('sapling_5'), 'take-1');
+    profile = SaplingRules.harvest(
+      profile,
+      state,
+      catalog.sapling('sapling_5'),
+      'take-1',
+    );
     expect(
       identical(
         profile,

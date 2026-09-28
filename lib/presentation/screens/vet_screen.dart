@@ -14,11 +14,41 @@ const _brown = Color(0xFF642818);
 const _cream = Color(0xFFFFF9EA);
 
 /// Показывает плановый осмотр и его реальную стоимость из каталога.
-class VetScreen extends ConsumerWidget {
+class VetScreen extends ConsumerStatefulWidget {
   const VetScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<VetScreen> createState() => _VetScreenState();
+}
+
+class _VetScreenState extends ConsumerState<VetScreen> {
+  bool _checkupCompleted = false;
+
+  Future<void> _scheduleCheckup(
+    GameProfile profile,
+    ShopProduct checkup,
+  ) async {
+    final completed = await showAccessibleDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => GameActionDialog(
+        title: 'Запланировать осмотр?',
+        description:
+            'Стоимость: ${checkup.price} коткоинов. '
+            'После визита останется ${profile.balance - checkup.price}.\n\n'
+            '${checkup.description.replaceFirst('котика', profile.petName)}',
+        confirmLabel: 'Запланировать',
+        action: (id) =>
+            ref.read(gameControllerProvider.notifier).purchase(checkup.id, id),
+      ),
+    );
+    if (mounted && completed == true) {
+      setState(() => _checkupCompleted = true);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final profile = ref.watch(gameControllerProvider).asData?.value;
     if (profile == null) {
       return const Scaffold(
@@ -72,23 +102,7 @@ class VetScreen extends ConsumerWidget {
                                     profile.plan == null ||
                                         profile.balance < checkup.price
                                     ? null
-                                    : () => showAccessibleDialog<bool>(
-                                        context: context,
-                                        barrierDismissible: false,
-                                        builder: (_) => GameActionDialog(
-                                          title: 'Запланировать осмотр?',
-                                          description:
-                                              'Стоимость: ${checkup.price} коткоинов. '
-                                              'После визита останется ${profile.balance - checkup.price}.\n\n'
-                                              '${checkup.description}',
-                                          confirmLabel: 'Запланировать',
-                                          action: (id) => ref
-                                              .read(
-                                                gameControllerProvider.notifier,
-                                              )
-                                              .purchase(checkup.id, id),
-                                        ),
-                                      ),
+                                    : () => _scheduleCheckup(profile, checkup),
                                 style: FilledButton.styleFrom(
                                   backgroundColor: const Color(0xFFFFCF35),
                                   foregroundColor: _brown,
@@ -237,8 +251,10 @@ class VetScreen extends ConsumerWidget {
               borderRadius: BorderRadius.circular(25),
               border: Border.all(color: Colors.white, width: 2),
             ),
-            child: const Text(
-              'Проверим, всё ли хорошо?',
+            child: Text(
+              _checkupCompleted
+                  ? 'Всё хорошо, котик полностью здоров!'
+                  : 'Проверим, всё ли хорошо?',
               textAlign: TextAlign.center,
               style: TextStyle(
                 color: _brown,
@@ -298,7 +314,7 @@ class VetScreen extends ConsumerWidget {
             const SizedBox(width: 8),
             Expanded(
               child: _InfoTile(
-                label: 'Настроение',
+                label: 'Радость',
                 value: '+${checkup.mood}',
                 icon: 'assets/images/action_care.png',
                 color: const Color(0xFFDBFFF0),

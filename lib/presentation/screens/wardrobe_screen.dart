@@ -10,11 +10,18 @@ const _brown = Color(0xFF642818);
 const _cream = Color(0xFFFFF9EA);
 
 /// Гардероб отделяет покупку вещи от бесплатного выбора внешнего вида.
-class WardrobeScreen extends ConsumerWidget {
+class WardrobeScreen extends ConsumerStatefulWidget {
   const WardrobeScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<WardrobeScreen> createState() => _WardrobeScreenState();
+}
+
+class _WardrobeScreenState extends ConsumerState<WardrobeScreen> {
+  PetAccessory? _selectedAccessory;
+
+  @override
+  Widget build(BuildContext context) {
     final GameProfile? profile = ref
         .watch(gameControllerProvider)
         .asData
@@ -25,6 +32,8 @@ class WardrobeScreen extends ConsumerWidget {
       );
     }
     final compact = MediaQuery.sizeOf(context).height < 700;
+    final selectedAccessory =
+        _selectedAccessory ?? profile.accessory ?? PetAccessory.scarf;
     final accessories = <PetAccessory>[
       PetAccessory.scarf,
       PetAccessory.bow,
@@ -38,7 +47,7 @@ class WardrobeScreen extends ConsumerWidget {
         children: [
           Positioned.fill(
             child: Image.asset(
-              'assets/images/fairytale_background.png',
+              'assets/images/wardrobe_background.png',
               fit: BoxFit.cover,
               alignment: Alignment.topCenter,
             ),
@@ -217,18 +226,58 @@ class WardrobeScreen extends ConsumerWidget {
                             itemBuilder: (context, index) => _AccessoryCard(
                               profile: profile,
                               accessory: accessories[index],
+                              selected: selectedAccessory == accessories[index],
+                              onTap: () => setState(
+                                () => _selectedAccessory = accessories[index],
+                              ),
                             ),
                           ),
-                          if (profile.accessory != null) ...[
-                            const SizedBox(height: 8),
-                            OutlinedButton.icon(
-                              onPressed: () => ref
-                                  .read(gameControllerProvider.notifier)
-                                  .equipAccessory(null),
-                              icon: const Icon(Icons.checkroom_outlined),
-                              label: const Text('Снять — бесплатно'),
-                            ),
-                          ],
+                          const SizedBox(height: 10),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: FilledButton.icon(
+                                  onPressed:
+                                      profile.ownsAccessory(
+                                            selectedAccessory,
+                                          ) &&
+                                          profile.accessory != selectedAccessory
+                                      ? () => ref
+                                            .read(
+                                              gameControllerProvider.notifier,
+                                            )
+                                            .equipAccessory(selectedAccessory)
+                                      : null,
+                                  style: FilledButton.styleFrom(
+                                    backgroundColor: const Color(0xFFFFCF35),
+                                    foregroundColor: _brown,
+                                    minimumSize: const Size(0, 52),
+                                  ),
+                                  icon: const Icon(Icons.pets_rounded),
+                                  label: const Text('Надеть'),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: OutlinedButton(
+                                  onPressed: profile.accessory == null
+                                      ? null
+                                      : () => ref
+                                            .read(
+                                              gameControllerProvider.notifier,
+                                            )
+                                            .equipAccessory(null),
+                                  style: OutlinedButton.styleFrom(
+                                    backgroundColor: Colors.white,
+                                    foregroundColor: _brown,
+                                    minimumSize: const Size(0, 52),
+                                  ),
+                                  child: const Text('Снять'),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const Text('Снять — бесплатно'),
                         ],
                       ),
                     ),
@@ -243,14 +292,21 @@ class WardrobeScreen extends ConsumerWidget {
   }
 }
 
-class _AccessoryCard extends ConsumerWidget {
-  const _AccessoryCard({required this.profile, required this.accessory});
+class _AccessoryCard extends StatelessWidget {
+  const _AccessoryCard({
+    required this.profile,
+    required this.accessory,
+    required this.selected,
+    required this.onTap,
+  });
 
   final GameProfile profile;
   final PetAccessory accessory;
+  final bool selected;
+  final VoidCallback onTap;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final bool owned = profile.ownsAccessory(accessory);
     final bool equipped = profile.accessory == accessory;
     final String? artwork = switch (accessory) {
@@ -260,92 +316,87 @@ class _AccessoryCard extends ConsumerWidget {
       PetAccessory.headband => 'assets/images/wardrobe_headband.png',
       PetAccessory.wristbands => 'assets/images/wardrobe_wristbands.png',
     };
-    return Container(
+    return InkWell(
       key: Key('wardrobe-${accessory.name}'),
-      padding: const EdgeInsets.all(6),
-      decoration: BoxDecoration(
-        color: switch (accessory) {
-          PetAccessory.scarf => const Color(0xFFE7FFEF),
-          PetAccessory.bow => const Color(0xFFFFE7EC),
-          PetAccessory.cap => const Color(0xFFFFF3CF),
-          PetAccessory.headband => const Color(0xFFFFF3CF),
-          PetAccessory.wristbands => const Color(0xFFE2F4FF),
-        },
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: equipped ? const Color(0xFF28C444) : Colors.white,
-          width: equipped ? 3 : 2,
+      onTap: owned ? onTap : null,
+      borderRadius: BorderRadius.circular(20),
+      child: Container(
+        padding: const EdgeInsets.all(6),
+        decoration: BoxDecoration(
+          color: switch (accessory) {
+            PetAccessory.scarf => const Color(0xFFE7FFEF),
+            PetAccessory.bow => const Color(0xFFFFE7EC),
+            PetAccessory.cap => const Color(0xFFFFF3CF),
+            PetAccessory.headband => const Color(0xFFFFF3CF),
+            PetAccessory.wristbands => const Color(0xFFE2F4FF),
+          },
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: equipped
+                ? const Color(0xFF28C444)
+                : selected
+                ? const Color(0xFFFFC342)
+                : Colors.white,
+            width: equipped || selected ? 3 : 2,
+          ),
         ),
-      ),
-      child: Column(
-        children: [
-          FittedBox(
-            fit: BoxFit.scaleDown,
-            child: Text(
-              accessoryLabels[accessory]!,
-              style: const TextStyle(
-                color: _brown,
-                fontSize: 18,
-                fontWeight: FontWeight.w900,
-              ),
-            ),
-          ),
-          Expanded(
-            child: Stack(
-              children: [
-                Positioned.fill(
-                  child: Opacity(
-                    opacity: owned ? 1 : 0.55,
-                    child: artwork == null
-                        ? const Icon(
-                            Icons.sports_baseball_rounded,
-                            color: Color(0xFF168F9A),
-                            size: 48,
-                          )
-                        : Image.asset(
-                            artwork,
-                            fit: BoxFit.contain,
-                            semanticLabel: accessoryLabels[accessory],
-                          ),
-                  ),
-                ),
-                if (!owned)
-                  const Align(
-                    alignment: Alignment.bottomRight,
-                    child: Icon(Icons.lock_outline, color: _brown, size: 20),
-                  ),
-              ],
-            ),
-          ),
-          if (!owned)
-            const Text(
-              'Купить в магазине',
-              maxLines: 1,
-              style: TextStyle(color: _brown, fontSize: 11),
-            ),
-          SizedBox(
-            width: double.infinity,
-            child: FilledButton.tonal(
-              onPressed: !owned || equipped
-                  ? null
-                  : () => ref
-                        .read(gameControllerProvider.notifier)
-                        .equipAccessory(accessory),
-              style: FilledButton.styleFrom(
-                minimumSize: const Size(0, 36),
-                padding: const EdgeInsets.symmetric(horizontal: 4),
-                visualDensity: VisualDensity.compact,
-              ),
+        child: Column(
+          children: [
+            FittedBox(
+              fit: BoxFit.scaleDown,
               child: Text(
-                equipped
-                    ? 'Надет'
-                    : owned
-                    ? 'Надеть'
-                    : 'Не куплен',
+                accessoryLabels[accessory]!,
+                style: const TextStyle(
+                  color: _brown,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w900,
+                ),
               ),
             ),
-          ),
-        ],
+            Expanded(
+              child: Stack(
+                children: [
+                  Positioned.fill(
+                    child: Opacity(
+                      opacity: owned ? 1 : 0.55,
+                      child: artwork == null
+                          ? const Icon(
+                              Icons.sports_baseball_rounded,
+                              color: Color(0xFF168F9A),
+                              size: 48,
+                            )
+                          : Image.asset(
+                              artwork,
+                              fit: BoxFit.contain,
+                              semanticLabel: accessoryLabels[accessory],
+                            ),
+                    ),
+                  ),
+                  if (!owned)
+                    const Align(
+                      alignment: Alignment.bottomRight,
+                      child: Icon(Icons.lock_outline, color: _brown, size: 20),
+                    ),
+                  if (equipped)
+                    const Align(
+                      alignment: Alignment.topRight,
+                      child: Icon(
+                        Icons.check_circle,
+                        color: Color(0xFF28C444),
+                        size: 24,
+                      ),
+                    ),
+                ],
+              ),
+            ),
+            if (!owned)
+              const Text(
+                'Купить в магазине',
+                maxLines: 1,
+                style: TextStyle(color: _brown, fontSize: 11),
+              ),
+          ],
+        ),
       ),
     );
   }

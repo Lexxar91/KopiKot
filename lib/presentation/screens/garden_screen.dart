@@ -31,7 +31,7 @@ class GardenScreen extends ConsumerWidget {
         children: [
           Positioned.fill(
             child: Image.asset(
-              'assets/images/fairytale_background.png',
+              'assets/images/garden_background.png',
               fit: BoxFit.cover,
               alignment: Alignment.topCenter,
             ),
@@ -48,6 +48,7 @@ class GardenScreen extends ConsumerWidget {
                     ),
                   ),
                   data: (catalog) {
+                    final treeDefinition = catalog.sapling('sapling_5');
                     final definitions = {
                       for (final sapling in catalog.saplings)
                         sapling.id: sapling,
@@ -84,6 +85,15 @@ class GardenScreen extends ConsumerWidget {
                                           color: _brown,
                                           fontSize: 19,
                                           fontWeight: FontWeight.w900,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 5),
+                                      const CircleAvatar(
+                                        radius: 15,
+                                        backgroundColor: Color(0xFF00AE79),
+                                        child: Icon(
+                                          Icons.add_rounded,
+                                          color: Colors.white,
                                         ),
                                       ),
                                     ],
@@ -124,9 +134,13 @@ class GardenScreen extends ConsumerWidget {
                                     ),
                                     child: const Row(
                                       children: [
-                                        Icon(
-                                          Icons.eco_rounded,
-                                          color: Color(0xFF30B6F3),
+                                        CircleAvatar(
+                                          radius: 19,
+                                          backgroundColor: Color(0xFF168EF2),
+                                          child: Icon(
+                                            Icons.eco_rounded,
+                                            color: Colors.lightGreenAccent,
+                                          ),
                                         ),
                                         SizedBox(width: 8),
                                         Expanded(
@@ -151,25 +165,9 @@ class GardenScreen extends ConsumerWidget {
                             ),
                             _gardenHero(profile),
                             if (profile != null && profile.saplings.isEmpty)
-                              Container(
-                                padding: const EdgeInsets.all(16),
-                                decoration: BoxDecoration(
-                                  color: _cream,
-                                  borderRadius: BorderRadius.circular(26),
-                                  border: Border.all(
-                                    color: Colors.white,
-                                    width: 3,
-                                  ),
-                                ),
-                                child: const Text(
-                                  'В саду пока пусто. Посади саженец ниже — '
-                                  'и через несколько периодов он подарит монеты.',
-                                  textAlign: TextAlign.center,
-                                  style: TextStyle(
-                                    color: _brown,
-                                    fontWeight: FontWeight.w800,
-                                  ),
-                                ),
+                              _PlantTreeCard(
+                                definition: treeDefinition,
+                                profile: profile,
                               ),
                             for (final sapling
                                 in profile?.saplings ?? const <SaplingState>[])
@@ -177,31 +175,6 @@ class GardenScreen extends ConsumerWidget {
                                 sapling: sapling,
                                 definition: definitions[sapling.definitionId]!,
                                 profile: profile,
-                              ),
-                            const SizedBox(height: 18),
-                            Text(
-                              'Посадить новый',
-                              style: Theme.of(context).textTheme.headlineSmall,
-                            ),
-                            const SizedBox(height: 4),
-                            const Text(
-                              'Все саженцы стоят одинаково: разница только в терпении.',
-                            ),
-                            const SizedBox(height: 12),
-                            for (final definition in catalog.saplings)
-                              _SaplingOfferCard(
-                                definition: definition,
-                                profile: profile,
-                              ),
-                            if (profile != null)
-                              Padding(
-                                padding: const EdgeInsets.symmetric(
-                                  vertical: 14,
-                                ),
-                                child: Semantics(
-                                  liveRegion: true,
-                                  child: Text(profile.feedback),
-                                ),
                               ),
                           ],
                         ),
@@ -216,20 +189,9 @@ class GardenScreen extends ConsumerWidget {
   }
 
   Widget _gardenHero(GameProfile? profile) => SizedBox(
-    height: 220,
+    height: 235,
     child: Stack(
       children: [
-        Positioned(
-          right: 0,
-          bottom: 0,
-          child: Image.asset(
-            'assets/images/home_coin_tree.png',
-            width: 150,
-            height: 175,
-            fit: BoxFit.contain,
-            semanticLabel: 'Дерево с коткоинами',
-          ),
-        ),
         if (profile != null)
           Positioned(
             left: 0,
@@ -239,25 +201,25 @@ class GardenScreen extends ConsumerWidget {
               accessory: profile.accessory,
               emotion: profile.emotion,
               stage: profile.growthStage,
-              size: 165,
+              size: 205,
             ),
           ),
         Positioned(
-          left: 120,
+          right: 38,
           bottom: 0,
           child: Image.asset(
             profile?.saplings.isNotEmpty == true
                 ? 'assets/images/garden_coin_sapling.png'
                 : 'assets/images/home_goal_sapling.png',
-            width: 135,
-            height: 145,
+            width: 145,
+            height: 155,
             fit: BoxFit.contain,
             semanticLabel: 'Саженец-копилка',
           ),
         ),
         Positioned(
-          left: 120,
-          top: 10,
+          right: 0,
+          top: 6,
           child: Container(
             constraints: const BoxConstraints(maxWidth: 175),
             padding: const EdgeInsets.all(9),
@@ -267,9 +229,7 @@ class GardenScreen extends ConsumerWidget {
               border: Border.all(color: Colors.white, width: 2),
             ),
             child: Text(
-              profile?.saplings.isNotEmpty == true
-                  ? 'Подождём — вырастет больше!'
-                  : 'Посадим саженец и подождём!',
+              'Подождём — вырастет больше!',
               textAlign: TextAlign.center,
               style: const TextStyle(
                 color: _brown,
@@ -307,150 +267,191 @@ class _GrowingSaplingCard extends ConsumerWidget {
     final currentStage = ripe
         ? 5
         : ((elapsed * 5) ~/ definition.term).clamp(0, 4) + 1;
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: _cream,
-        borderRadius: BorderRadius.circular(26),
-        border: Border.all(color: Colors.white, width: 3),
-      ),
-      child: Column(
-        children: [
-          const Text(
-            'Моё деревце',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              color: _brown,
-              fontSize: 24,
-              fontWeight: FontWeight.w900,
-            ),
+    return Column(
+      children: [
+        Container(
+          margin: const EdgeInsets.only(bottom: 10),
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: _cream,
+            borderRadius: BorderRadius.circular(26),
+            border: Border.all(color: Colors.white, width: 3),
           ),
-          const SizedBox(height: 8),
-          SizedBox(
-            height: 39,
-            child: Stack(
-              alignment: Alignment.center,
-              children: [
-                Positioned(
-                  left: 32,
-                  right: 32,
-                  child: Container(
-                    height: 5,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFE7D0AC),
-                      borderRadius: BorderRadius.circular(3),
+          child: Column(
+            children: [
+              const Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.eco_rounded, color: Color(0xFF21B75B)),
+                  SizedBox(width: 8),
+                  Text(
+                    'Моё деревце',
+                    style: TextStyle(
+                      color: _brown,
+                      fontSize: 24,
+                      fontWeight: FontWeight.w900,
                     ),
                   ),
-                ),
-                Row(
-                  children: List.generate(
-                    5,
-                    (index) => Expanded(
+                ],
+              ),
+              const SizedBox(height: 8),
+              SizedBox(
+                height: 39,
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    Positioned(
+                      left: 32,
+                      right: 32,
                       child: Container(
-                        margin: const EdgeInsets.symmetric(horizontal: 2),
-                        height: 39,
+                        height: 5,
                         decoration: BoxDecoration(
-                          color: index + 1 == currentStage
-                              ? const Color(0xFF21C765)
-                              : const Color(0xFFFFF0D6),
-                          shape: BoxShape.circle,
-                          border: Border.all(color: Colors.white, width: 2),
+                          color: const Color(0xFFE7D0AC),
+                          borderRadius: BorderRadius.circular(3),
                         ),
-                        child: Center(
-                          child: Text(
-                            '${index + 1}',
-                            style: TextStyle(
+                      ),
+                    ),
+                    Row(
+                      children: List.generate(
+                        5,
+                        (index) => Expanded(
+                          child: Container(
+                            margin: const EdgeInsets.symmetric(horizontal: 2),
+                            height: 39,
+                            decoration: BoxDecoration(
                               color: index + 1 == currentStage
-                                  ? Colors.white
-                                  : _brown,
-                              fontSize: 19,
-                              fontWeight: FontWeight.w900,
+                                  ? const Color(0xFF21C765)
+                                  : const Color(0xFFFFF0D6),
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: index + 1 == currentStage
+                                    ? const Color(0xFFFFD73D)
+                                    : Colors.white,
+                                width: 3,
+                              ),
+                              boxShadow: index + 1 == currentStage
+                                  ? const [
+                                      BoxShadow(
+                                        color: Color(0x99FFE129),
+                                        blurRadius: 12,
+                                        spreadRadius: 3,
+                                      ),
+                                    ]
+                                  : null,
+                            ),
+                            child: Center(
+                              child: Text(
+                                '${index + 1}',
+                                style: TextStyle(
+                                  color: index + 1 == currentStage
+                                      ? Colors.white
+                                      : _brown,
+                                  fontSize: 19,
+                                  fontWeight: FontWeight.w900,
+                                ),
+                              ),
                             ),
                           ),
                         ),
                       ),
                     ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 7),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 5,
+                ),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: const Color(0xFFF1DCB7)),
+                ),
+                child: Text(
+                  ripe ? 'Урожай созрел!' : 'До урожая: $remaining дней',
+                  style: const TextStyle(
+                    color: _brown,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w900,
                   ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 7),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 5),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: const Color(0xFFF1DCB7)),
-            ),
-            child: Text(
-              ripe ? 'Урожай созрел!' : 'До урожая: $remaining дней',
-              style: const TextStyle(
-                color: _brown,
-                fontSize: 18,
-                fontWeight: FontWeight.w900,
-              ),
-            ),
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(
-                child: _HarvestChoice(
-                  label: 'Собрать сейчас',
-                  amount: payout,
-                  color: const Color(0xFFFFC5C1),
-                  onTap: profile == null
-                      ? null
-                      : () => showAccessibleDialog<bool>(
-                          context: context,
-                          barrierDismissible: false,
-                          builder: (_) => GameActionDialog(
-                            title: ripe
-                                ? 'Собрать ${definition.reward} монет?'
-                                : 'Собрать сейчас или подождать?',
-                            description: ripe
-                                ? '${definition.title} созрело!\n\n'
-                                      'Собрать сейчас: +${definition.reward} монет.'
-                                : '${definition.title} растёт $elapsed из ${definition.term} дней.\n\n'
-                                      'Собрать сейчас: +$payout монет.\n'
-                                      'Подождать ещё $remaining дней: +${definition.reward} монет.\n\n'
-                                      'Оба варианта — не ошибка. Решай сам!',
-                            confirmLabel: 'Собрать сейчас',
-                            action: (id) => ref
-                                .read(gameControllerProvider.notifier)
-                                .harvestSapling(sapling.id, id),
-                          ),
-                        ),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: _HarvestChoice(
-                  label: ripe ? 'Урожай готов' : 'Подождать $remaining дней',
-                  amount: definition.reward,
-                  color: const Color(0xFFC2F6CA),
-                  onTap: ripe
-                      ? null
-                      : () => ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text(
-                              'Отлично! Саженец продолжит расти в следующих игровых днях.',
-                            ),
-                          ),
-                        ),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 8),
-          const Text(
-            'Оба выбора доступны',
-            style: TextStyle(color: _brown, fontWeight: FontWeight.w800),
+        ),
+        Row(
+          children: [
+            Expanded(
+              child: _HarvestChoice(
+                label: 'Собрать сейчас',
+                amount: payout,
+                color: const Color(0xFFFFAAA3),
+                onTap: profile == null
+                    ? null
+                    : () => showAccessibleDialog<bool>(
+                        context: context,
+                        barrierDismissible: false,
+                        builder: (_) => GameActionDialog(
+                          title: ripe
+                              ? 'Собрать ${definition.reward} монет?'
+                              : 'Собрать сейчас или подождать?',
+                          description: ripe
+                              ? 'Деревце созрело!\n\n'
+                                    'Собрать сейчас: +${definition.reward} монет.'
+                              : 'Деревце растёт $elapsed из ${definition.term} дней.\n\n'
+                                    'Собрать сейчас: +$payout монет.\n'
+                                    'Подождать ещё $remaining дней: +${definition.reward} монет.\n\n'
+                                    'Оба варианта — не ошибка. Решай сам!',
+                          confirmLabel: 'Собрать сейчас',
+                          action: (id) => ref
+                              .read(gameControllerProvider.notifier)
+                              .harvestSapling(sapling.id, id),
+                        ),
+                      ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: _HarvestChoice(
+                label: ripe ? 'Урожай готов' : 'Подождать $remaining дней',
+                amount: definition.reward,
+                color: const Color(0xFF91F4A8),
+                onTap: ripe
+                    ? null
+                    : () => ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Подождём — вырастет больше!'),
+                        ),
+                      ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Container(
+          width: double.infinity,
+          margin: const EdgeInsets.only(bottom: 12),
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          decoration: BoxDecoration(
+            color: _cream,
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(color: Colors.white, width: 2),
           ),
-        ],
-      ),
+          child: const Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.info_rounded, color: Color(0xFFAB7836)),
+              SizedBox(width: 8),
+              Text(
+                'Оба выбора доступны',
+                style: TextStyle(color: _brown, fontWeight: FontWeight.w800),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }
@@ -470,45 +471,82 @@ class _HarvestChoice extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Material(
-    color: color,
-    borderRadius: BorderRadius.circular(20),
+    color: Colors.transparent,
+    borderRadius: BorderRadius.circular(28),
     child: InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(20),
+      borderRadius: BorderRadius.circular(28),
       child: Container(
-        padding: const EdgeInsets.all(8),
+        padding: const EdgeInsets.fromLTRB(7, 10, 7, 12),
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: Colors.white, width: 2),
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Color.lerp(color, Colors.white, 0.35)!, color],
+          ),
+          borderRadius: BorderRadius.circular(28),
+          border: Border.all(color: Colors.white, width: 3),
         ),
         child: Column(
           children: [
+            SizedBox(
+              width: 105,
+              height: 45,
+              child: Stack(
+                children: [
+                  Positioned(
+                    left: 8,
+                    top: 9,
+                    child: Image.asset('assets/images/cat_coin.png', width: 36),
+                  ),
+                  Positioned(
+                    right: 8,
+                    top: 9,
+                    child: Image.asset('assets/images/cat_coin.png', width: 36),
+                  ),
+                  Positioned(
+                    left: 34,
+                    top: 0,
+                    child: Image.asset('assets/images/cat_coin.png', width: 39),
+                  ),
+                ],
+              ),
+            ),
             FittedBox(
               fit: BoxFit.scaleDown,
               child: Text(
                 label,
                 style: const TextStyle(
                   color: _brown,
-                  fontSize: 16,
+                  fontSize: 19,
                   fontWeight: FontWeight.w900,
                 ),
               ),
             ),
-            const SizedBox(height: 4),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Image.asset('assets/images/cat_coin.png', width: 25),
-                const SizedBox(width: 4),
-                Text(
-                  '$amount',
-                  style: const TextStyle(
-                    color: _brown,
-                    fontSize: 25,
-                    fontWeight: FontWeight.w900,
+            const SizedBox(height: 6),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(vertical: 4),
+              decoration: BoxDecoration(
+                color: _cream,
+                borderRadius: BorderRadius.circular(24),
+                border: Border.all(color: Colors.white, width: 2),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Image.asset('assets/images/cat_coin.png', width: 27),
+                  const SizedBox(width: 4),
+                  Text(
+                    '$amount',
+                    style: const TextStyle(
+                      color: _brown,
+                      fontSize: 27,
+                      fontWeight: FontWeight.w900,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ],
         ),
@@ -517,78 +555,70 @@ class _HarvestChoice extends StatelessWidget {
   );
 }
 
-class _SaplingOfferCard extends ConsumerWidget {
-  const _SaplingOfferCard({required this.definition, required this.profile});
+class _PlantTreeCard extends ConsumerWidget {
+  const _PlantTreeCard({required this.definition, required this.profile});
 
   final SaplingDefinition definition;
-  final GameProfile? profile;
+  final GameProfile profile;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final bool canPlant = profile != null && profile!.plan != null;
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                const CircleAvatar(child: Icon(Icons.eco_outlined)),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        definition.title,
-                        style: Theme.of(context).textTheme.titleMedium,
-                      ),
-                      Text(
-                        'Цена ${definition.price} · награда ${definition.reward} монет',
-                      ),
-                    ],
-                  ),
-                ),
-              ],
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: _cream,
+        borderRadius: BorderRadius.circular(26),
+        border: Border.all(color: Colors.white, width: 3),
+      ),
+      child: Column(
+        children: [
+          const Text(
+            'Моё деревце',
+            style: TextStyle(
+              color: _brown,
+              fontSize: 24,
+              fontWeight: FontWeight.w900,
             ),
-            const SizedBox(height: 10),
-            Text(definition.description),
-            const SizedBox(height: 12),
-            SizedBox(
-              width: double.infinity,
-              child: FilledButton.tonal(
-                onPressed: !canPlant
-                    ? null
-                    : () => showAccessibleDialog<bool>(
-                        context: context,
-                        barrierDismissible: false,
-                        builder: (_) => GameActionDialog(
-                          title: 'Посадить ${definition.title.toLowerCase()}?',
-                          description:
-                              'Накопление · ${definition.price} монет.\n'
-                              '${definition.description}\n\n'
-                              'Сейчас на балансе ${profile!.balance} монет. '
-                              '${profile!.balance >= definition.price ? 'После посадки останется ${profile!.balance - definition.price}.' : 'Не хватает ${definition.price - profile!.balance}. Заработай монеты в заданиях или выбери покупку позже.'}',
-                          confirmLabel: 'Посадить',
-                          action: (id) => ref
-                              .read(gameControllerProvider.notifier)
-                              .plantSapling(definition.id, id),
-                        ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Посади деревце. До урожая: ${definition.term} дней',
+            textAlign: TextAlign.center,
+            style: const TextStyle(color: _brown, fontSize: 17),
+          ),
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton.icon(
+              onPressed: profile.plan == null
+                  ? null
+                  : () => showAccessibleDialog<bool>(
+                      context: context,
+                      barrierDismissible: false,
+                      builder: (_) => GameActionDialog(
+                        title: 'Посадить деревце?',
+                        description:
+                            'Стоимость: ${definition.price} коткоинов. '
+                            'После посадки останется ${profile.balance - definition.price}.\n\n'
+                            'Собрать сейчас: ${definition.earlyReward(0)} коткоинов. '
+                            'Подождать ${definition.term} дней: ${definition.reward} коткоинов.',
+                        confirmLabel: 'Посадить',
+                        action: (id) => ref
+                            .read(gameControllerProvider.notifier)
+                            .plantSapling(definition.id, id),
                       ),
-                child: const Text('Посадить'),
+                    ),
+              style: FilledButton.styleFrom(
+                backgroundColor: const Color(0xFFFFD23F),
+                foregroundColor: _brown,
+                minimumSize: const Size(0, 54),
               ),
+              icon: const Icon(Icons.eco_rounded),
+              label: const Text('Посадить деревце'),
             ),
-            if (!canPlant)
-              const Padding(
-                padding: EdgeInsets.only(top: 8),
-                child: Text(
-                  'Сначала подтверди бюджет — саженец это накопление.',
-                ),
-              ),
-          ],
-        ),
+          ),
+          if (profile.plan == null) const Text('Сначала сохрани бюджет.'),
+        ],
       ),
     );
   }

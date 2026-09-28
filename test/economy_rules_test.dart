@@ -40,6 +40,12 @@ void main() {
     expect(catalog.products.length, greaterThanOrEqualTo(8));
     expect(catalog.products.map((item) => item.category).toSet().length, 3);
     expect(catalog.goals.length, greaterThanOrEqualTo(3));
+    expect(catalog.goal('tent').title, 'Беговая дорожка');
+    expect(catalog.goal('tent').price, 400);
+    expect(catalog.goal('telescope').title, 'Лежанка');
+    expect(catalog.goal('telescope').price, 300);
+    expect(catalog.goal('garden').title, 'Редкий саженец');
+    expect(catalog.goal('garden').price, 500);
     expect(
       catalog.products.fold<int>(0, (sum, product) => sum + product.price),
       greaterThan(initialProfile.balance),
@@ -289,11 +295,11 @@ void main() {
 
   test('Цель нельзя переполнить; повтор пополнения и снятия идемпотентен', () {
     final goal = catalog.goal('tent');
-    profile = EconomyRules.selectGoal(profile.copyWith(balance: 200), goal);
+    profile = EconomyRules.selectGoal(profile.copyWith(balance: 500), goal);
     profile = EconomyRules.transfer(
       profile,
       goal,
-      120,
+      400,
       commandId: 'full',
       withdraw: false,
     );
@@ -304,7 +310,7 @@ void main() {
         EconomyRules.transfer(
           profile,
           goal,
-          120,
+          400,
           commandId: 'full',
           withdraw: false,
         ),
@@ -336,7 +342,7 @@ void main() {
       withdraw: true,
     );
     expect(identical(profile, repeat), isTrue);
-    expect(repeat.savedFor(goal.id), 100);
-    expect(repeat.balance + repeat.savings, 200);
+    expect(repeat.savedFor(goal.id), 380);
+    expect(repeat.balance + repeat.savings, 500);
   });
 }

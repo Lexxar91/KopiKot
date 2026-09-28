@@ -33,7 +33,7 @@ class HomeScreen extends ConsumerWidget {
     final selectedGoal = profile.selectedGoalId == null || catalog == null
         ? null
         : catalog.goal(profile.selectedGoalId!);
-    final suggestedGoal = catalog?.goal('tree_bank');
+    final suggestedGoal = catalog?.goal('tent');
     final goal = selectedGoal ?? suggestedGoal;
     final vetVisits = profile.transactions
         .where((entry) => entry.referenceId == 'vet_checkup')
@@ -163,7 +163,7 @@ class HomeScreen extends ConsumerWidget {
     return HomeScene(
       profile: profile,
       sections: sections,
-      goalTitle: goal?.title ?? 'Дерево-копилка',
+      goalTitle: goal?.title ?? 'Беговая дорожка',
       goalSaved: goal == null ? 0 : profile.savedFor(goal.id),
       goalPrice: goal?.price ?? 400,
       needsVetVisit: needsVetVisit,

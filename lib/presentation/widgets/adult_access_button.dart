@@ -2,7 +2,7 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 
-import '../screens/adult_screen.dart';
+import '../screens/parent_menu_screen.dart';
 import 'accessible_motion.dart';
 
 /// Простой барьер от случайного входа; не аутентификация и не проверка возраста.
@@ -27,7 +27,7 @@ Future<void> openAdultSection(BuildContext context) async {
   if (unlocked == true && context.mounted) {
     await Navigator.of(
       context,
-    ).push(MaterialPageRoute<void>(builder: (_) => const AdultScreen()));
+    ).push(MaterialPageRoute<void>(builder: (_) => const ParentMenuScreen()));
   }
 }
 

@@ -85,7 +85,7 @@ class _AccountantScreenState extends ConsumerState<AccountantScreen> {
         children: [
           Positioned.fill(
             child: Image.asset(
-              'assets/images/fairytale_background.png',
+              'assets/images/quest_market_background.png',
               fit: BoxFit.cover,
               alignment: Alignment.topCenter,
             ),
@@ -94,22 +94,29 @@ class _AccountantScreenState extends ConsumerState<AccountantScreen> {
             child: Center(
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 520),
-                child: ListView(
-                  padding: const EdgeInsets.fromLTRB(12, 5, 12, 24),
+                child: Column(
                   children: [
-                    _topBar(profile),
-                    const SizedBox(height: 7),
-                    _titleBar(context),
-                    _hero(profile),
-                    if (_claimed)
-                      _resultCard(context)
-                    else ...[
-                      _questionCard(),
-                      const SizedBox(height: 10),
-                      _answersCard(),
-                      const SizedBox(height: 10),
-                      _actions(),
-                    ],
+                    Expanded(
+                      child: ListView(
+                        padding: const EdgeInsets.fromLTRB(12, 5, 12, 24),
+                        children: [
+                          _topBar(profile),
+                          const SizedBox(height: 5),
+                          _titleBar(context),
+                          _hero(profile),
+                          if (_claimed)
+                            _resultCard(context)
+                          else ...[
+                            _questionCard(),
+                            const SizedBox(height: 10),
+                            _answersCard(),
+                            const SizedBox(height: 10),
+                            _actions(),
+                          ],
+                        ],
+                      ),
+                    ),
+                    if (!_claimed) _hintFooter(),
                   ],
                 ),
               ),
@@ -133,15 +140,21 @@ class _AccountantScreenState extends ConsumerState<AccountantScreen> {
         ),
         child: Row(
           children: [
-            Image.asset('assets/images/cat_coin.png', width: 27),
+            Image.asset('assets/images/cat_coin.png', width: 30),
             const SizedBox(width: 5),
             Text(
               '${profile.balance}',
               style: const TextStyle(
                 color: _brown,
-                fontSize: 19,
+                fontSize: 21,
                 fontWeight: FontWeight.w900,
               ),
+            ),
+            const SizedBox(width: 5),
+            const CircleAvatar(
+              radius: 14,
+              backgroundColor: Color(0xFF00A979),
+              child: Icon(Icons.add_rounded, color: Colors.white),
             ),
           ],
         ),
@@ -166,7 +179,11 @@ class _AccountantScreenState extends ConsumerState<AccountantScreen> {
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
           child: const Row(
             children: [
-              Icon(Icons.calculate_rounded, color: Color(0xFF9B35DF)),
+              CircleAvatar(
+                radius: 18,
+                backgroundColor: Color(0xFF9B35DF),
+                child: Icon(Icons.calculate_rounded, color: Colors.white),
+              ),
               SizedBox(width: 8),
               Expanded(
                 child: FittedBox(
@@ -176,7 +193,7 @@ class _AccountantScreenState extends ConsumerState<AccountantScreen> {
                     'Бухгалтер',
                     style: TextStyle(
                       color: _brown,
-                      fontSize: 22,
+                      fontSize: 25,
                       fontWeight: FontWeight.w900,
                     ),
                   ),
@@ -189,20 +206,36 @@ class _AccountantScreenState extends ConsumerState<AccountantScreen> {
       const SizedBox(width: 5),
       _panel(
         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
-        child: Text(
-          'Задание ${_index + 1} из ${AccountantRules.questions.length}',
-          style: const TextStyle(
-            color: _brown,
-            fontSize: 11,
-            fontWeight: FontWeight.w800,
-          ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              'Задание ${_index + 1} из ${AccountantRules.questions.length}',
+              style: const TextStyle(
+                color: _brown,
+                fontSize: 11,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                for (var i = 0; i < AccountantRules.questions.length; i++)
+                  Icon(
+                    i < _index ? Icons.star_rounded : Icons.star_border_rounded,
+                    size: 16,
+                    color: const Color(0xFF9A9A9A),
+                  ),
+              ],
+            ),
+          ],
         ),
       ),
     ],
   );
 
   Widget _hero(GameProfile profile) => SizedBox(
-    height: 115,
+    height: 137,
     child: Stack(
       children: [
         Positioned(
@@ -210,25 +243,25 @@ class _AccountantScreenState extends ConsumerState<AccountantScreen> {
           bottom: 0,
           child: PetPortrait(
             coat: profile.coat,
-            accessory: profile.accessory,
+            accessory: profile.accessory ?? PetAccessory.scarf,
             emotion: profile.emotion,
             stage: profile.growthStage,
-            size: 112,
+            size: 136,
           ),
         ),
         Positioned(
-          right: 69,
-          top: 5,
+          right: 70,
+          top: 9,
           child: _panel(
-            padding: const EdgeInsets.all(7),
+            padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 8),
             child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 145),
+              constraints: const BoxConstraints(maxWidth: 118),
               child: Text(
                 _claimed ? 'Мяу! Отличная работа!' : 'Помоги посчитать сдачу!',
                 textAlign: TextAlign.center,
                 style: const TextStyle(
                   color: _brown,
-                  fontSize: 15,
+                  fontSize: 17,
                   fontWeight: FontWeight.w900,
                 ),
               ),
@@ -236,14 +269,14 @@ class _AccountantScreenState extends ConsumerState<AccountantScreen> {
           ),
         ),
         Positioned(
-          right: 7,
+          right: 0,
           bottom: 0,
           child: Image.asset(
             _index == 0
                 ? 'assets/images/quest_cat_food.png'
                 : 'assets/images/budget_joy.png',
-            width: 75,
-            height: 75,
+            width: 105,
+            height: 105,
             fit: BoxFit.contain,
           ),
         ),
@@ -277,7 +310,8 @@ class _AccountantScreenState extends ConsumerState<AccountantScreen> {
   );
 
   Widget _amountTile(String label, int amount) => Container(
-    padding: const EdgeInsets.all(6),
+    height: 58,
+    padding: const EdgeInsets.all(5),
     decoration: BoxDecoration(
       color: label == 'Цена'
           ? const Color(0xFFDCF4FF)
@@ -285,21 +319,45 @@ class _AccountantScreenState extends ConsumerState<AccountantScreen> {
       borderRadius: BorderRadius.circular(18),
     ),
     child: Row(
-      mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        Flexible(
-          child: Text(
-            '$label: ',
-            style: const TextStyle(color: _brown, fontWeight: FontWeight.w800),
-          ),
+        Image.asset(
+          label == 'Цена'
+              ? _index == 0
+                    ? 'assets/images/action_feed.png'
+                    : 'assets/images/budget_joy.png'
+              : 'assets/images/cat_coin.png',
+          width: 47,
+          height: 48,
+          fit: BoxFit.contain,
         ),
-        Image.asset('assets/images/cat_coin.png', width: 22),
-        Text(
-          '$amount',
-          style: const TextStyle(
-            color: _brown,
-            fontSize: 18,
-            fontWeight: FontWeight.w900,
+        const SizedBox(width: 3),
+        Expanded(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                '$label:',
+                style: const TextStyle(
+                  color: _brown,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+              Row(
+                children: [
+                  Image.asset('assets/images/cat_coin.png', width: 20),
+                  Text(
+                    '$amount',
+                    style: const TextStyle(
+                      color: _brown,
+                      fontSize: 19,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                ],
+              ),
+            ],
           ),
         ),
       ],
@@ -323,7 +381,7 @@ class _AccountantScreenState extends ConsumerState<AccountantScreen> {
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
           crossAxisCount: 2,
-          childAspectRatio: 2.6,
+          childAspectRatio: 2.7,
           mainAxisSpacing: 8,
           crossAxisSpacing: 8,
           children: [
@@ -374,12 +432,12 @@ class _AccountantScreenState extends ConsumerState<AccountantScreen> {
                   '$answer',
                   style: const TextStyle(
                     color: _brown,
-                    fontSize: 27,
+                    fontSize: 30,
                     fontWeight: FontWeight.w900,
                   ),
                 ),
                 const SizedBox(width: 5),
-                Image.asset('assets/images/cat_coin.png', width: 27),
+                Image.asset('assets/images/cat_coin.png', width: 30),
               ],
             ),
           ),
@@ -402,14 +460,6 @@ class _AccountantScreenState extends ConsumerState<AccountantScreen> {
             style: const TextStyle(color: _brown, fontWeight: FontWeight.w800),
           ),
         ),
-      if (_hintVisible) ...[
-        const SizedBox(height: 6),
-        Text(
-          'Подсказка: ${_question.paid} − ${_question.price} = ?',
-          textAlign: TextAlign.center,
-          style: const TextStyle(color: _brown, fontWeight: FontWeight.w800),
-        ),
-      ],
       if (_error != null) ...[
         const SizedBox(height: 6),
         Text(_error!, style: const TextStyle(color: _brown)),
@@ -437,12 +487,66 @@ class _AccountantScreenState extends ConsumerState<AccountantScreen> {
           ),
         ),
       ],
-      TextButton.icon(
-        onPressed: () => setState(() => _hintVisible = true),
-        icon: const Icon(Icons.lightbulb_outline_rounded),
-        label: const Text('Подсказка'),
-      ),
     ],
+  );
+
+  Widget _hintFooter() => Padding(
+    padding: const EdgeInsets.fromLTRB(12, 5, 12, 8),
+    child: Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (_hintVisible)
+          _panel(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            child: Text(
+              'Подсказка: ${_question.paid} − ${_question.price} = ?',
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                color: _brown,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+          ),
+        SizedBox(
+          width: 205,
+          height: 50,
+          child: FilledButton.icon(
+            key: const Key('accountant-hint'),
+            onPressed: () => setState(() => _hintVisible = true),
+            style: FilledButton.styleFrom(
+              backgroundColor: const Color(0xFFF2E6FF),
+              foregroundColor: _brown,
+              side: const BorderSide(color: Colors.white, width: 2),
+            ),
+            icon: const Icon(
+              Icons.lightbulb_rounded,
+              color: Color(0xFFE6A100),
+              size: 27,
+            ),
+            label: const Text(
+              'Подсказка',
+              style: TextStyle(fontSize: 17, fontWeight: FontWeight.w900),
+            ),
+          ),
+        ),
+        const Padding(
+          padding: EdgeInsets.only(top: 5),
+          child: Text(
+            'Можно попробовать ещё раз',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: _brown,
+              fontSize: 13,
+              fontWeight: FontWeight.w800,
+              shadows: [
+                Shadow(color: _cream, blurRadius: 5),
+                Shadow(color: _cream, offset: Offset(1, 1), blurRadius: 5),
+              ],
+            ),
+          ),
+        ),
+      ],
+    ),
   );
 
   Widget _resultCard(BuildContext context) => _panel(

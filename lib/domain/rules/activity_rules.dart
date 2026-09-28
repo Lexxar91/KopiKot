@@ -18,7 +18,7 @@ abstract final class ActivityRules {
       walkPeriod: profile.period,
       feedback:
           'Прогулка бесплатная: энергия ${profile.energy} → $energy, '
-          'настроение ${profile.mood} → $mood. '
+          'радость ${profile.mood} → $mood. '
           'Заботиться о питомце можно и без монет.',
     );
   }

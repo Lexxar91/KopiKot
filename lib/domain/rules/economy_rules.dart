@@ -39,7 +39,7 @@ abstract final class EconomyRules {
     final int energy = (profile.energy + product.energy).clamp(0, 100);
     final String effect =
         'Сытость: ${profile.satiety} → $satiety. '
-        'Настроение: ${profile.mood} → $mood. '
+        'Радость: ${profile.mood} → $mood. '
         'Энергия: ${profile.energy} → $energy.';
     final int spent = switch (product.category) {
       ExpenseCategory.needs => profile.actualNeeds,
@@ -174,9 +174,9 @@ abstract final class EconomyRules {
     final String feedback = withdraw
         ? 'Взяли $amount монет с цели «${goal.title}». Осталось $after из ${goal.price}. '
               'Баланс вырос на $amount; до цели теперь ${goal.price - after} монет. '
-              'Настроение и сытость не изменились.'
+              'Радость и сытость не изменились.'
         : 'Отложили $amount монет на «${goal.title}». Теперь $after из ${goal.price}. '
-              'На балансе стало на $amount меньше. Настроение и сытость не изменились. '
+              'На балансе стало на $amount меньше. Радость и сытость не изменились. '
               '${after == goal.price ? 'Цель достигнута!' : 'Даже небольшие переводы приближают мечту.'}';
     return _record(
       profile,

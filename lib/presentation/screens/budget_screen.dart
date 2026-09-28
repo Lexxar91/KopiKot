@@ -10,6 +10,7 @@ import '../providers/game_controller.dart';
 import '../widgets/accessible_motion.dart';
 import '../widgets/budget_draft.dart';
 import '../widgets/game_action_dialog.dart';
+import '../widgets/pet_portrait.dart';
 import '../widgets/story_logo.dart';
 import 'tasks_screen.dart';
 
@@ -312,54 +313,236 @@ class _BudgetScreenState extends ConsumerState<BudgetScreen> {
     ],
   );
 
-  Widget _confirmedPlan(GameProfile profile, BudgetPlan plan) => Container(
-    margin: const EdgeInsets.only(top: 12),
-    padding: const EdgeInsets.all(16),
-    decoration: BoxDecoration(
-      color: const Color(0xFFFFF9EA),
-      borderRadius: BorderRadius.circular(25),
-      border: Border.all(color: Colors.white, width: 2),
-    ),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text('План подтверждён. Сравни его с тратами.'),
-        const SizedBox(height: 16),
-        _PlanLine(
-          label: 'Нужно',
-          amount: plan.needs,
-          actual: profile.actualNeeds,
+  Widget _confirmedPlan(GameProfile profile, BudgetPlan plan) => Column(
+    children: [
+      SizedBox(
+        height: 158,
+        child: Stack(
+          children: [
+            Positioned(
+              left: 0,
+              bottom: 0,
+              child:
+                  profile.coat == PetCoat.ginger &&
+                      profile.accessory == PetAccessory.scarf
+                  ? Image.asset(
+                      'assets/images/budget_hero_ginger.png',
+                      width: 195,
+                      height: 158,
+                      fit: BoxFit.contain,
+                    )
+                  : PetPortrait(
+                      coat: profile.coat,
+                      accessory: profile.accessory,
+                      size: 150,
+                    ),
+            ),
+            Positioned(
+              top: 13,
+              right: 0,
+              child: Container(
+                width: 172,
+                padding: const EdgeInsets.all(11),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFFF9EA),
+                  borderRadius: BorderRadius.circular(30),
+                  border: Border.all(color: Colors.white, width: 2),
+                ),
+                child: const Text(
+                  'План готов!\nСмотрим,\nкак идут дела.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: Color(0xFF642818),
+                    fontSize: 18,
+                    height: 1.05,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
-        _PlanLine(
-          label: 'Хочется',
-          amount: plan.wants,
-          actual: profile.actualWants,
+      ),
+      Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: const Color(0xFFFFF9EA),
+          borderRadius: BorderRadius.circular(28),
+          border: Border.all(color: Colors.white, width: 3),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x554B330F),
+              blurRadius: 8,
+              offset: Offset(0, 3),
+            ),
+          ],
         ),
-        if (plan.gifts > 0)
-          _PlanLine(
-            label: 'Подарки',
-            amount: plan.gifts,
-            actual: profile.actualGifts,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const Row(
+              children: [
+                Icon(
+                  Icons.check_circle_rounded,
+                  color: Color(0xFF1FC566),
+                  size: 38,
+                ),
+                SizedBox(width: 7),
+                Expanded(
+                  child: Text(
+                    'План подтверждён',
+                    style: TextStyle(
+                      color: Color(0xFF642818),
+                      fontSize: 24,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const Padding(
+              padding: EdgeInsets.only(left: 45, bottom: 7),
+              child: Text(
+                'Сравни план с тратами.',
+                style: TextStyle(color: Color(0xFF642818), fontSize: 15),
+              ),
+            ),
+            const Row(
+              children: [
+                Spacer(),
+                SizedBox(
+                  width: 69,
+                  child: Center(
+                    child: Text(
+                      'План',
+                      style: TextStyle(fontWeight: FontWeight.w900),
+                    ),
+                  ),
+                ),
+                SizedBox(width: 5),
+                SizedBox(
+                  width: 69,
+                  child: Center(
+                    child: Text(
+                      'Факт',
+                      style: TextStyle(fontWeight: FontWeight.w900),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            _BudgetComparisonRow(
+              label: 'Нужно',
+              assetPath: 'assets/images/budget_needs.png',
+              background: const Color(0xFFFFDFE1),
+              accent: const Color(0xFFFF5C71),
+              planned: plan.needs,
+              actual: profile.actualNeeds,
+              available: plan.availableAtConfirmation,
+            ),
+            const SizedBox(height: 6),
+            _BudgetComparisonRow(
+              label: 'Хочется',
+              assetPath: 'assets/images/budget_joy.png',
+              background: const Color(0xFFDAFCE8),
+              accent: const Color(0xFF16C869),
+              planned: plan.wants,
+              actual: profile.actualWants,
+              available: plan.availableAtConfirmation,
+            ),
+            if (plan.gifts > 0) ...[
+              const SizedBox(height: 6),
+              _BudgetComparisonRow(
+                label: 'Подарки',
+                assetPath: 'assets/images/budget_joy.png',
+                background: const Color(0xFFFFECF6),
+                accent: const Color(0xFFE879B3),
+                planned: plan.gifts,
+                actual: profile.actualGifts,
+                available: plan.availableAtConfirmation,
+              ),
+            ],
+            const SizedBox(height: 6),
+            _BudgetComparisonRow(
+              label: 'На мечту',
+              assetPath: 'assets/images/budget_savings.png',
+              background: const Color(0xFFDDF3FF),
+              accent: const Color(0xFF24A8F1),
+              planned: plan.savings,
+              actual: profile.netSaved,
+              available: plan.availableAtConfirmation,
+            ),
+            const SizedBox(height: 8),
+            _BudgetSummaryLine(
+              assetPath: 'assets/images/cat_coin.png',
+              background: const Color(0xFFFFF2CF),
+              title: 'Не распределено:',
+              value: '${plan.remaining}',
+            ),
+            const SizedBox(height: 7),
+            Container(
+              padding: const EdgeInsets.all(9),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF1EDFF),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Row(
+                children: [
+                  const Icon(
+                    Icons.track_changes_rounded,
+                    size: 45,
+                    color: Color(0xFFEF4B4B),
+                  ),
+                  const SizedBox(width: 7),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'На цели:',
+                          style: TextStyle(
+                            color: Color(0xFF642818),
+                            fontSize: 17,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                        Text(
+                          '+${profile.totalFor(TransactionKind.deposit)} переведено, '
+                          '−${profile.totalFor(TransactionKind.withdrawal)} снято.',
+                          style: const TextStyle(
+                            color: Color(0xFF642818),
+                            fontSize: 14,
+                          ),
+                        ),
+                        const Text(
+                          'Факт «На мечту» — переводы минус снятия.',
+                          style: TextStyle(
+                            color: Color(0xFF805D7E),
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+      const SizedBox(height: 9),
+      SizedBox(
+        width: double.infinity,
+        height: 60,
+        child: FilledButton(
+          style: FilledButton.styleFrom(
+            backgroundColor: const Color(0xFFFFC727),
+            foregroundColor: const Color(0xFF642818),
+            side: const BorderSide(color: Colors.white, width: 3),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(32),
+            ),
           ),
-        _PlanLine(
-          label: 'На мечту',
-          amount: plan.savings,
-          actual: profile.netSaved,
-        ),
-        _PlanLine(label: 'Не распределено', amount: plan.remaining),
-        const SizedBox(height: 20),
-        Text(
-          'Переведено на цели: ${profile.totalFor(TransactionKind.deposit)}. '
-          'Снято с целей: ${profile.totalFor(TransactionKind.withdrawal)}.',
-        ),
-        const SizedBox(height: 12),
-        const Text(
-          'Факт «На мечту» — переводы минус снятия за период. '
-          'Если он отрицательный, ты взял из накоплений больше, чем отложил. '
-          'Не потратить на желаемое — допустимый выбор.',
-        ),
-        const SizedBox(height: 20),
-        FilledButton(
           onPressed: () => showAccessibleDialog<bool>(
             context: context,
             barrierDismissible: false,
@@ -375,26 +558,178 @@ class _BudgetScreenState extends ConsumerState<BudgetScreen> {
                   .finishPeriod(profile.period),
             ),
           ),
-          child: const Text('Подвести итоги'),
+          child: const Text(
+            'Подвести итоги',
+            style: TextStyle(fontSize: 21, fontWeight: FontWeight.w900),
+          ),
+        ),
+      ),
+    ],
+  );
+}
+
+class _BudgetComparisonRow extends StatelessWidget {
+  const _BudgetComparisonRow({
+    required this.label,
+    required this.assetPath,
+    required this.background,
+    required this.accent,
+    required this.planned,
+    required this.actual,
+    required this.available,
+  });
+  final String label;
+  final String assetPath;
+  final Color background;
+  final Color accent;
+  final int planned;
+  final int actual;
+  final int available;
+
+  @override
+  Widget build(BuildContext context) => Container(
+    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 5),
+    decoration: BoxDecoration(
+      color: background,
+      borderRadius: BorderRadius.circular(19),
+      border: Border.all(color: accent.withValues(alpha: 0.45)),
+    ),
+    child: Row(
+      children: [
+        Image.asset(assetPath, width: 68, height: 76, fit: BoxFit.contain),
+        Expanded(
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              label,
+              style: const TextStyle(
+                color: Color(0xFF642818),
+                fontSize: 17,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(width: 4),
+        _BudgetValue(
+          value: planned,
+          available: available,
+          color: accent,
+          key: ValueKey('budget-plan-$label'),
+        ),
+        const SizedBox(width: 5),
+        _BudgetValue(
+          value: actual,
+          available: available,
+          color: const Color(0xFF17C868),
+          key: ValueKey('budget-actual-$label'),
         ),
       ],
     ),
   );
 }
 
-class _PlanLine extends StatelessWidget {
-  const _PlanLine({required this.label, required this.amount, this.actual});
-  final String label;
-  final int amount;
-  final int? actual;
+class _BudgetValue extends StatelessWidget {
+  const _BudgetValue({
+    required this.value,
+    required this.available,
+    required this.color,
+    super.key,
+  });
+  final int value;
+  final int available;
+  final Color color;
 
   @override
-  Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.symmetric(vertical: 10),
-    child: Text(
-      actual == null
-          ? '$label: $amount монет'
-          : '$label — план: $amount · факт: $actual',
+  Widget build(BuildContext context) => SizedBox(
+    width: 69,
+    child: Column(
+      children: [
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(vertical: 2),
+          decoration: BoxDecoration(
+            color: const Color(0xFFFFF9EA),
+            borderRadius: BorderRadius.circular(17),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Image.asset('assets/images/cat_coin.png', width: 19),
+              const SizedBox(width: 3),
+              Flexible(
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    '$value',
+                    style: const TextStyle(
+                      color: Color(0xFF642818),
+                      fontSize: 19,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 7),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(8),
+          child: LinearProgressIndicator(
+            minHeight: 8,
+            value: available <= 0 ? 0 : (value / available).clamp(0.0, 1.0),
+            backgroundColor: const Color(0xFFD9D7D5),
+            valueColor: AlwaysStoppedAnimation(color),
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
+class _BudgetSummaryLine extends StatelessWidget {
+  const _BudgetSummaryLine({
+    required this.assetPath,
+    required this.background,
+    required this.title,
+    required this.value,
+  });
+  final String assetPath;
+  final Color background;
+  final String title;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) => Container(
+    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+    decoration: BoxDecoration(
+      color: background,
+      borderRadius: BorderRadius.circular(19),
+    ),
+    child: Row(
+      children: [
+        Image.asset(assetPath, width: 42, height: 42),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            title,
+            style: const TextStyle(
+              color: Color(0xFF642818),
+              fontSize: 16,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+        ),
+        Text(
+          value,
+          style: const TextStyle(
+            color: Color(0xFF642818),
+            fontSize: 23,
+            fontWeight: FontWeight.w900,
+          ),
+        ),
+      ],
     ),
   );
 }
