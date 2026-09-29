@@ -58,6 +58,11 @@ class GardenScreen extends ConsumerWidget {
                     final definitions = {
                       for (final sapling in catalog.saplings)
                         sapling.id: sapling,
+                      for (final planted
+                          in profile?.saplings ?? <SaplingState>[])
+                        planted.definitionId: catalog.sapling(
+                          planted.definitionId,
+                        ),
                     };
                     return Center(
                       child: ConstrainedBox(

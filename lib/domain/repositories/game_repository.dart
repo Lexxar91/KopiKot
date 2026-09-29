@@ -11,6 +11,9 @@ abstract interface class GameRepository {
 
   /// Тестовый профиль создаётся один раз; обычный может ещё отсутствовать.
   Future<GameProfile?> switchProfile({required bool testProfile});
+
+  /// Начинает демонстрацию с чистого отдельного профиля.
+  Future<GameProfile> startDemo();
   Future<GameProfile> resetTestProfile();
   Future<void> deleteRegularProfile();
 

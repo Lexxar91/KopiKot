@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -22,6 +24,154 @@ class BudgetScreen extends ConsumerStatefulWidget {
 
   @override
   ConsumerState<BudgetScreen> createState() => _BudgetScreenState();
+}
+
+/// Показывает время до календарного перехода, не меняя правила игрового дня.
+class _DayTransitionCard extends StatefulWidget {
+  const _DayTransitionCard({
+    required this.period,
+    required this.dayKey,
+    required this.isDemo,
+  });
+
+  final int period;
+  final String? dayKey;
+  final bool isDemo;
+
+  @override
+  State<_DayTransitionCard> createState() => _DayTransitionCardState();
+}
+
+class _DayTransitionCardState extends State<_DayTransitionCard> {
+  Timer? _timer;
+
+  @override
+  void initState() {
+    super.initState();
+    if (!widget.isDemo) _startTimer();
+  }
+
+  @override
+  void didUpdateWidget(covariant _DayTransitionCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.isDemo == widget.isDemo) return;
+    _timer?.cancel();
+    if (!widget.isDemo) _startTimer();
+  }
+
+  void _startTimer() {
+    _timer = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (mounted) setState(() {});
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final now = DateTime.now();
+    final dayChanged =
+        widget.dayKey != null && widget.dayKey != PeriodRules.dayKey(now);
+    final midnight = DateTime(now.year, now.month, now.day + 1);
+    final remaining = midnight.difference(now);
+    final hours = remaining.inHours.toString().padLeft(2, '0');
+    final minutes = (remaining.inMinutes % 60).toString().padLeft(2, '0');
+    final seconds = (remaining.inSeconds % 60).toString().padLeft(2, '0');
+    final value = widget.isDemo
+        ? 'Когда решишь ты'
+        : dayChanged
+        ? 'Новый день наступил'
+        : '$hours:$minutes:$seconds';
+    final explanation = widget.isDemo
+        ? 'Нажми «Завершить день» ниже, чтобы открыть новый план.'
+        : dayChanged
+        ? 'План следующего дня откроется автоматически.'
+        : 'После полуночи новый план откроется автоматически.';
+
+    return Semantics(
+      label: 'Игровой день ${widget.period}. $value. $explanation',
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            colors: [Color(0xFFFFFBE9), Color(0xFFFFE59C)],
+          ),
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(color: Colors.white, width: 3),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x554B330F),
+              blurRadius: 8,
+              offset: Offset(0, 3),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 51,
+              height: 51,
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [Color(0xFFFFC840), Color(0xFFFF8E15)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                shape: BoxShape.circle,
+                border: Border.all(color: Colors.white, width: 2),
+              ),
+              child: const Icon(
+                Icons.access_time_filled_rounded,
+                color: Colors.white,
+                size: 30,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    widget.isDemo
+                        ? 'Переход к новому дню'
+                        : 'До нового игрового дня',
+                    style: const TextStyle(
+                      color: Color(0xFF642818),
+                      fontSize: 16,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                  Text(
+                    value,
+                    style: const TextStyle(
+                      color: Color(0xFF008C55),
+                      fontSize: 25,
+                      height: 1.15,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                  Text(
+                    explanation,
+                    style: const TextStyle(
+                      color: Color(0xFF6B4734),
+                      fontSize: 12,
+                      height: 1.2,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
 class _BudgetScreenState extends ConsumerState<BudgetScreen> {
@@ -339,6 +489,13 @@ class _BudgetScreenState extends ConsumerState<BudgetScreen> {
                       _topBar(profile),
                       const SizedBox(height: 5),
                       _titleBar(),
+                      const SizedBox(height: 9),
+                      _DayTransitionCard(
+                        period: profile.period,
+                        dayKey: profile.dayKey,
+                        isDemo: profile.isTest,
+                      ),
+                      const SizedBox(height: 9),
                       if (plan == null &&
                           profile.periodSummaries.isNotEmpty &&
                           profile.periodSummaries.last.period ==
@@ -757,13 +914,6 @@ class _BudgetScreenState extends ConsumerState<BudgetScreen> {
                           style: const TextStyle(
                             color: Color(0xFF642818),
                             fontSize: 14,
-                          ),
-                        ),
-                        const Text(
-                          'Факт «На мечту» — переводы минус снятия.',
-                          style: TextStyle(
-                            color: Color(0xFF805D7E),
-                            fontSize: 12,
                           ),
                         ),
                       ],

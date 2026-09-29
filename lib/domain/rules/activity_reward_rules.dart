@@ -36,13 +36,6 @@ class ActivityRewardSnapshot {
         : '${low.join(' и ')} ниже 50: ожидается 11 вместо 12.';
   }
 
-  String get gamePreview {
-    final low = [if (energy < 50) 'энергия', if (mood < 50) 'радость'];
-    return low.isEmpty
-        ? 'Энергия и радость не ниже 50: ожидается 6 коткоинов.'
-        : '${low.join(' и ')} ниже 50: ожидается 5 вместо 6.';
-  }
-
   void requireCurrentDay(GameProfile profile) {
     if (period != profile.period || dayKey != profile.dayKey) {
       throw const GameRuleException(
@@ -62,11 +55,5 @@ class ActivityRewardSnapshot {
               'Уменьшение только на 1 коткоин.';
   }
 
-  String get gameExplanation {
-    final low = [if (energy < 50) 'энергия', if (mood < 50) 'радость'];
-    return low.isEmpty
-        ? 'Энергия и радость не ниже 50: начислено 6 коткоинов.'
-        : '${low.join(' и ')} ниже 50: начислено 5 вместо 6. '
-              'Уменьшение только на 1 коткоин.';
-  }
+  String get gameExplanation => 'За игру начислено $gameReward коткоинов.';
 }

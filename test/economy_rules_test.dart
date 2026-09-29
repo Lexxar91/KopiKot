@@ -39,13 +39,22 @@ void main() {
   test('Каталог содержит покупки трёх типов и три цели', () {
     expect(catalog.products.length, greaterThanOrEqualTo(8));
     expect(catalog.products.map((item) => item.category).toSet().length, 3);
-    expect(catalog.goals.length, greaterThanOrEqualTo(3));
+    expect(catalog.goals, hasLength(3));
+    expect(catalog.saplings, hasLength(1));
     expect(catalog.goal('tent').title, 'Беговая дорожка');
     expect(catalog.goal('tent').price, 400);
     expect(catalog.goal('telescope').title, 'Лежанка');
     expect(catalog.goal('telescope').price, 300);
     expect(catalog.goal('garden').title, 'Редкий саженец');
     expect(catalog.goal('garden').price, 500);
+    expect(catalog.goal('tree_bank').price, 400);
+    expect(
+      () => EconomyRules.selectGoal(
+        profile.copyWith(goalChoicesUnlocked: true),
+        catalog.goal('tree_bank'),
+      ),
+      throwsA(isA<GameRuleException>()),
+    );
     expect(
       catalog.products.fold<int>(0, (sum, product) => sum + product.price),
       greaterThan(initialProfile.balance),

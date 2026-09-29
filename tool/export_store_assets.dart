@@ -60,40 +60,38 @@ void main() {
     });
   }
 
-  testWidgets(
-    'Экспорт иконок Android и RuStore из исходной векторной графики',
-    (tester) async {
-      for (final output in {
-        'docs/store/icon_512.png': 512,
-        'android/app/src/main/res/mipmap-mdpi/ic_launcher.png': 48,
-        'android/app/src/main/res/mipmap-hdpi/ic_launcher.png': 72,
-        'android/app/src/main/res/mipmap-xhdpi/ic_launcher.png': 96,
-        'android/app/src/main/res/mipmap-xxhdpi/ic_launcher.png': 144,
-        'android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png': 192,
-        'android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_foreground.png':
-            432,
-      }.entries) {
-        final size = output.value.toDouble();
-        tester.view.physicalSize = Size.square(size);
-        tester.view.devicePixelRatio = 1;
-        final key = GlobalKey();
-        await tester.pumpWidget(
-          Directionality(
-            textDirection: TextDirection.ltr,
-            child: RepaintBoundary(
-              key: key,
-              child: FinnyIcon(
-                adaptiveForeground: output.key.endsWith('foreground.png'),
-              ),
+  testWidgets('Экспорт иконок Android и RuStore из изображения котика', (
+    tester,
+  ) async {
+    for (final output in {
+      'docs/store/icon_512.png': 512,
+      'android/app/src/main/res/mipmap-mdpi/ic_launcher.png': 48,
+      'android/app/src/main/res/mipmap-hdpi/ic_launcher.png': 72,
+      'android/app/src/main/res/mipmap-xhdpi/ic_launcher.png': 96,
+      'android/app/src/main/res/mipmap-xxhdpi/ic_launcher.png': 144,
+      'android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png': 192,
+      'android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_foreground.png': 432,
+    }.entries) {
+      final size = output.value.toDouble();
+      tester.view.physicalSize = Size.square(size);
+      tester.view.devicePixelRatio = 1;
+      final key = GlobalKey();
+      await tester.pumpWidget(
+        Directionality(
+          textDirection: TextDirection.ltr,
+          child: RepaintBoundary(
+            key: key,
+            child: FinnyIcon(
+              adaptiveForeground: output.key.endsWith('foreground.png'),
             ),
           ),
-        );
-        await capture(tester, key, output.key);
-      }
-      tester.view.resetPhysicalSize();
-      tester.view.resetDevicePixelRatio();
-    },
-  );
+        ),
+      );
+      await capture(tester, key, output.key);
+    }
+    tester.view.resetPhysicalSize();
+    tester.view.resetDevicePixelRatio();
+  });
 
   testWidgets('Четыре изображения настоящих экранов на воспроизводимом профиле', (
     tester,

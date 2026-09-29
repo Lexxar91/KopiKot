@@ -18,6 +18,7 @@ import '../../domain/rules/game_rules.dart';
 import '../../domain/rules/budget_income_rules.dart';
 import '../../domain/rules/economy_rules.dart';
 import '../../domain/rules/growth_rules.dart';
+import '../../domain/rules/vital_decay_rules.dart';
 import '../local/local_game_store.dart';
 import '../local/accountant_session_codec.dart';
 import '../local/market_session_codec.dart';
@@ -58,6 +59,15 @@ class LocalGameRepository implements GameRepository {
   }
 
   @override
+  Future<GameProfile> startDemo() async {
+    await _store.switchProfile(
+      testProfile: true,
+      prepare: (_) => _initialTestProfile(),
+    );
+    return (await loadProfile())!;
+  }
+
+  @override
   Future<GameProfile> resetTestProfile() async {
     await _store.resetTestProfile(_initialTestProfile());
     return (await loadProfile())!;
@@ -73,11 +83,20 @@ class LocalGameRepository implements GameRepository {
       ..coat = PetCoat.ginger.name
       ..accessory = PetAccessory.scarf.name
       ..ownedAccessories = [PetAccessory.scarf.name]
-      ..balance = GameRules.startingBalance
-      ..incomeAmount = GameRules.startingBalance
+      ..balance = 9990
+      ..incomeAmount = 9990
       ..incomeSource = 'Подарок на знакомство'
       ..selectedGoalId = 'tent'
-      ..goalChoicesUnlocked = false,
+      ..goalChoicesUnlocked = true
+      ..budgetConfirmed = true
+      ..plannedBalance = 10000
+      ..budgetOpeningBalance = 9990
+      ..budgetExpectedIncome = 10
+      ..budgetSourceIds = ['daily']
+      ..plannedNeeds = 5000
+      ..plannedWants = 3000
+      ..plannedGifts = 1000
+      ..plannedSavings = 1000,
   );
 
   @override
@@ -192,7 +211,7 @@ class LocalGameRepository implements GameRepository {
   });
 
   GameProfile _toDomain(ProfileRecord record) {
-    if (record.schemaVersion != 8) {
+    if (record.schemaVersion != 9) {
       throw StateError('Unsupported profile schema: ${record.schemaVersion}');
     }
     final balances = record.goalBalances ?? <GoalBalanceRecord>[];
@@ -257,6 +276,7 @@ class LocalGameRepository implements GameRepository {
         (record.taskProgress ?? <TaskProgressRecord>[]).map(
           (entry) => TaskProgress(
             taskId: entry.taskId,
+            period: entry.period,
             attempts: entry.attempts,
             completed: entry.completed,
             feedback: entry.feedback,
@@ -466,10 +486,22 @@ class LocalGameRepository implements GameRepository {
         throw const GameRuleException('Сначала создай питомца.');
       }
       _migrate(current);
-      final profile = GrowthRules.refresh(
-        action(PeriodRules.openToday(_toDomain(current), clock())),
+      final now = clock();
+      final lastCheckupAt = current.lastVetCheckupAt ?? now;
+      final decay = VitalDecayRules.advance(
+        _toDomain(current),
+        updatedAt: current.vitalsUpdatedAt ?? now,
+        lastCheckupAt: lastCheckupAt,
+        now: now,
       );
+      final beforeAction = PeriodRules.openToday(decay.profile, now);
+      final profile = GrowthRules.refresh(action(beforeAction));
+      final completedCheckup =
+          profile.transactions.length > beforeAction.transactions.length &&
+          profile.transactions.last.referenceId == 'vet_checkup';
       return current
+        ..vitalsUpdatedAt = decay.updatedAt
+        ..lastVetCheckupAt = completedCheckup ? now : lastCheckupAt
         ..period = profile.period
         ..dayKey = profile.dayKey
         ..accountantSessionsJson = encodeAccountantSessions(
@@ -519,6 +551,7 @@ class LocalGameRepository implements GameRepository {
           for (final entry in profile.taskProgress)
             TaskProgressRecord()
               ..taskId = entry.taskId
+              ..period = entry.period
               ..attempts = entry.attempts
               ..completed = entry.completed
               ..hintUsed = entry.hintUsed
@@ -648,7 +681,32 @@ class LocalGameRepository implements GameRepository {
       record.marketSessionsJson = '[]';
       record.schemaVersion = 8;
     }
-    if (record.schemaVersion != 8) {
+    if (record.schemaVersion == 8) {
+      for (final entry in record.taskProgress ?? <TaskProgressRecord>[]) {
+        entry.period = record.period;
+      }
+      if (record.id == 2) {
+        record
+          ..balance += 9000
+          ..plannedBalance += 9000
+          ..budgetOpeningBalance += 9000;
+        record.transactions = [
+          ...?record.transactions,
+          TransactionRecord()
+            ..commandId = 'demo-balance-upgrade'
+            ..period = record.period
+            ..kind = TransactionKind.income.name
+            ..amount = 9000
+            ..label = 'Обновление деморежима'
+            ..balanceAfter = record.balance
+            ..savingsAfter = record.savings
+            ..satietyAfter = record.satiety
+            ..moodAfter = record.mood,
+        ];
+      }
+      record.schemaVersion = 9;
+    }
+    if (record.schemaVersion != 9) {
       throw StateError('Unsupported profile schema: ${record.schemaVersion}');
     }
     return record;

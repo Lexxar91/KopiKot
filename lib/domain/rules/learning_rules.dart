@@ -371,9 +371,10 @@ abstract final class LearningRules {
     if (scenarioIds.contains(task.id)) {
       return _submitScenario(profile, task, answer, snapshot: snapshot);
     }
-    if (profile.completedTask(task.id)) {
+    if (profile.completedTaskToday(task.id)) {
       return profile.copyWith(
-        feedback: 'Задание уже выполнено. Награда выдана один раз.',
+        feedback:
+            'Задание уже выполнено сегодня. Завтра его можно пройти снова.',
       );
     }
     if (profile.plan == null) {
@@ -437,9 +438,7 @@ abstract final class LearningRules {
           result = 'Выбери один вариант и проверь снова. ';
       }
     }
-    final old = profile.taskProgress
-        .where((progress) => progress.taskId == task.id)
-        .firstOrNull;
+    final old = profile.taskProgressToday(task.id);
     final reward = started.taskReward;
     final attempts = (old?.attempts ?? 0) + 1;
     final feedback = correct
@@ -452,6 +451,7 @@ abstract final class LearningRules {
               'Награда не уменьшается.';
     final progress = TaskProgress(
       taskId: task.id,
+      period: profile.period,
       attempts: attempts,
       completed: correct,
       feedback: feedback,
@@ -463,14 +463,16 @@ abstract final class LearningRules {
       balance: balance,
       feedback: feedback,
       taskProgress: [
-        ...profile.taskProgress.where((entry) => entry.taskId != task.id),
+        ...profile.taskProgress.where(
+          (entry) => entry.taskId != task.id || entry.period != profile.period,
+        ),
         progress,
       ],
       transactions: [
         ...profile.transactions,
         if (correct)
           GameTransaction(
-            id: 'task-reward-${task.id}',
+            id: 'task-reward-${profile.period}-${task.id}',
             period: profile.period,
             kind: TransactionKind.income,
             amount: reward,
@@ -498,11 +500,9 @@ abstract final class LearningRules {
     if (scenarioIds.contains(task.id)) {
       return _acknowledgeScenario(profile, task, snapshot: snapshot);
     }
-    if (profile.completedTask(task.id)) return profile;
+    if (profile.completedTaskToday(task.id)) return profile;
     GameRules.requirePlan(profile);
-    final old = profile.taskProgress
-        .where((entry) => entry.taskId == task.id)
-        .firstOrNull;
+    final old = profile.taskProgressToday(task.id);
     if (old == null || !old.solutionShown) {
       throw const GameRuleException(
         'Сначала посмотри разбор после двух попыток.',
@@ -519,9 +519,12 @@ abstract final class LearningRules {
       balance: balance,
       feedback: feedback,
       taskProgress: [
-        ...profile.taskProgress.where((entry) => entry.taskId != task.id),
+        ...profile.taskProgress.where(
+          (entry) => entry.taskId != task.id || entry.period != profile.period,
+        ),
         TaskProgress(
           taskId: task.id,
+          period: profile.period,
           attempts: old.attempts,
           completed: true,
           feedback: feedback,
@@ -533,7 +536,7 @@ abstract final class LearningRules {
       transactions: [
         ...profile.transactions,
         GameTransaction(
-          id: 'task-reward-${task.id}',
+          id: 'task-reward-${profile.period}-${task.id}',
           period: profile.period,
           kind: TransactionKind.income,
           amount: reward,
@@ -559,9 +562,7 @@ abstract final class LearningRules {
     ActivityRewardSnapshot? snapshot,
   }) {
     GameRules.requirePlan(profile);
-    final old = profile.taskProgress
-        .where((entry) => entry.taskId == task.id)
-        .firstOrNull;
+    final old = profile.taskProgressToday(task.id);
     final practice = old?.completed == true;
     final scenario = LearningScenario.forTask(
       task.id,
@@ -584,6 +585,7 @@ abstract final class LearningRules {
     final progress = practice
         ? TaskProgress(
             taskId: task.id,
+            period: profile.period,
             attempts: old!.attempts,
             completed: true,
             feedback: feedback,
@@ -594,6 +596,7 @@ abstract final class LearningRules {
           )
         : TaskProgress(
             taskId: task.id,
+            period: profile.period,
             attempts: attempts,
             completed: correct,
             feedback: feedback,
@@ -605,14 +608,16 @@ abstract final class LearningRules {
       balance: balance,
       feedback: feedback,
       taskProgress: [
-        ...profile.taskProgress.where((entry) => entry.taskId != task.id),
+        ...profile.taskProgress.where(
+          (entry) => entry.taskId != task.id || entry.period != profile.period,
+        ),
         progress,
       ],
       transactions: [
         ...profile.transactions,
         if (reward)
           GameTransaction(
-            id: 'task-reward-${task.id}',
+            id: 'task-reward-${profile.period}-${task.id}',
             period: profile.period,
             kind: TransactionKind.income,
             amount: started.taskReward,
@@ -645,9 +650,7 @@ abstract final class LearningRules {
     ActivityRewardSnapshot? snapshot,
   }) {
     GameRules.requirePlan(profile);
-    final old = profile.taskProgress
-        .where((entry) => entry.taskId == task.id)
-        .firstOrNull;
+    final old = profile.taskProgressToday(task.id);
     if (old == null ||
         (old.completed ? old.practiceAttempts < 2 : !old.solutionShown)) {
       throw const GameRuleException(
@@ -659,9 +662,13 @@ abstract final class LearningRules {
         profile.copyWith(
           feedback: 'Разбор понятен. Это тренировка без повторной награды.',
           taskProgress: [
-            ...profile.taskProgress.where((entry) => entry.taskId != task.id),
+            ...profile.taskProgress.where(
+              (entry) =>
+                  entry.taskId != task.id || entry.period != profile.period,
+            ),
             TaskProgress(
               taskId: task.id,
+              period: profile.period,
               attempts: old.attempts,
               completed: true,
               feedback: 'Разбор понятен. Это тренировка без повторной награды.',
@@ -684,9 +691,12 @@ abstract final class LearningRules {
       balance: balance,
       feedback: feedback,
       taskProgress: [
-        ...profile.taskProgress.where((entry) => entry.taskId != task.id),
+        ...profile.taskProgress.where(
+          (entry) => entry.taskId != task.id || entry.period != profile.period,
+        ),
         TaskProgress(
           taskId: task.id,
+          period: profile.period,
           attempts: old.attempts,
           completed: true,
           feedback: feedback,
@@ -698,7 +708,7 @@ abstract final class LearningRules {
       transactions: [
         ...profile.transactions,
         GameTransaction(
-          id: 'task-reward-${task.id}',
+          id: 'task-reward-${profile.period}-${task.id}',
           period: profile.period,
           kind: TransactionKind.income,
           amount: started.taskReward,

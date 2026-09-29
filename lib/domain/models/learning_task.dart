@@ -77,6 +77,7 @@ class TaskProgress {
     required this.attempts,
     required this.completed,
     required this.feedback,
+    this.period = 0,
     this.hintUsed = false,
     this.solutionShown = false,
     this.reviewed = false,
@@ -86,6 +87,7 @@ class TaskProgress {
   final int attempts;
   final bool completed;
   final String feedback;
+  final int period;
   final bool hintUsed;
   final bool solutionShown;
   final bool reviewed;

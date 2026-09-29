@@ -88,6 +88,28 @@ void main() {
     expect(harvested.feedback, contains('Пять игровых дней прошли'));
   });
 
+  test('Старый саженец можно собрать после удаления его из витрины', () {
+    const state = SaplingState(
+      id: 'old-seed',
+      definitionId: 'sapling_10',
+      plantedPeriod: 1,
+      plantedDayKey: '2026-09-18',
+    );
+    final profile = planned().copyWith(
+      period: 2,
+      balance: 80,
+      saplings: const [state],
+    );
+    final harvested = SaplingRules.harvest(
+      profile,
+      state,
+      catalog.sapling(state.definitionId),
+      'legacy-harvest',
+    );
+    expect(harvested.balance, 130);
+    expect(harvested.saplings, isEmpty);
+  });
+
   test(
     'Досрочный сбор даёт меньше полной награды и объясняет оба варианта',
     () {
@@ -148,6 +170,9 @@ void main() {
       () => SaplingRules.plant(profile, catalog.sapling('sapling_10'), 'old'),
       throwsA(isA<GameRuleException>()),
     );
+    expect(catalog.saplings, hasLength(1));
+    expect(catalog.sapling('sapling_10').term, 10);
+    expect(catalog.sapling('sapling_15').term, 15);
     final state = profile.saplings.single;
     profile = SaplingRules.harvest(
       profile,

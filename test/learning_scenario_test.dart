@@ -121,6 +121,28 @@ void main() {
     );
   });
 
+  test(
+    'Варианты не подсказывают вычисленный ответ, формулировки корректны',
+    () {
+      for (final level in LearningDifficulty.values) {
+        final purchase = LearningScenario.forTask('need_first', level);
+        expect(purchase.options.map((option) => option.label), [
+          'Сначала корм',
+          'Сначала мышка',
+        ]);
+        final comparison = LearningScenario.forTask('compare_price', level);
+        expect(comparison.options.map((option) => option.label), [
+          'Киоск А',
+          'Киоск Б',
+        ]);
+        final plan = LearningScenario.forTask('day_plan', level);
+        expect(plan.prompt.toLowerCase(), isNot(contains('резерв')));
+        final saving = LearningScenario.forTask('regular_saving', level);
+        expect(saving.prompt, isNot(contains('3 дней')));
+      }
+    },
+  );
+
   test('Два первых ответа без подсказки повышают только свою тему', () {
     var profile = LearningRules.submit(
       planned,

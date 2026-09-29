@@ -22,11 +22,9 @@ class SavingsScreen extends ConsumerStatefulWidget {
 
 class _SavingsScreenState extends ConsumerState<SavingsScreen> {
   final _amount = TextEditingController(text: '20');
-  final _reserveAmount = TextEditingController(text: '10');
   @override
   void dispose() {
     _amount.dispose();
-    _reserveAmount.dispose();
     super.dispose();
   }
 
@@ -128,42 +126,22 @@ class _SavingsScreenState extends ConsumerState<SavingsScreen> {
     }
   }
 
-  Future<void> _transferReserve(GameProfile profile, bool withdraw) async {
-    final amount = int.tryParse(_reserveAmount.text);
-    if (amount == null || amount <= 0) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Укажи сумму больше нуля.')));
-      return;
-    }
-    final after = profile.reserveSavings + (withdraw ? -amount : amount);
-    final wallet = profile.balance + (withdraw ? amount : -amount);
-    final confirmed = await showAccessibleDialog<bool>(
+  Future<void> _returnOldSavings(GameProfile profile) async {
+    final amount = profile.reserveSavings;
+    if (amount <= 0) return;
+    await showAccessibleDialog<bool>(
       context: context,
       barrierDismissible: false,
       builder: (_) => GameActionDialog(
-        title: withdraw ? 'Снять из резерва?' : 'Отложить в резерв?',
+        title: 'Вернуть старые накопления?',
         description:
-            'Сейчас в резерве ${profile.reserveSavings}, в кошельке ${profile.balance}. '
-            'После операции в резерве будет $after, в кошельке $wallet. '
-            'Накопления на выбранную цель не изменятся.',
-        confirmLabel: withdraw ? 'Снять' : 'Отложить',
+            '$amount коткоинов были отложены отдельно от целей. Вернуть их в кошелёк? Накопления на цели не изменятся.',
+        confirmLabel: 'Вернуть в кошелёк',
         action: (id) => ref
             .read(gameControllerProvider.notifier)
-            .transferReserve(amount, id, withdraw: withdraw),
+            .transferReserve(amount, id, withdraw: true),
       ),
     );
-    if (confirmed == true && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          backgroundColor: _ink,
-          content: Text(
-            'В резерве теперь $after коткоинов.',
-            style: const TextStyle(color: Colors.white),
-          ),
-        ),
-      );
-    }
   }
 
   static String _goalImage(String id) => switch (id) {
@@ -190,9 +168,14 @@ class _SavingsScreenState extends ConsumerState<SavingsScreen> {
     child: child,
   );
 
-  Widget _goalCard(GoalDefinition goal, bool compact, bool locked) => Expanded(
+  Widget _goalCard(
+    GoalDefinition goal,
+    bool compact,
+    bool locked,
+    bool purchased,
+  ) => Expanded(
     child: InkWell(
-      onTap: locked ? null : () => _selectGoal(goal),
+      onTap: locked || purchased ? null : () => _selectGoal(goal),
       borderRadius: BorderRadius.circular(20),
       child: Opacity(
         opacity: locked ? 0.65 : 1,
@@ -229,8 +212,14 @@ class _SavingsScreenState extends ConsumerState<SavingsScreen> {
                 ),
               ),
               Icon(
-                locked ? Icons.lock_rounded : Icons.chevron_right_rounded,
-                color: const Color(0xFFB76A43),
+                purchased
+                    ? Icons.check_circle_rounded
+                    : locked
+                    ? Icons.lock_rounded
+                    : Icons.chevron_right_rounded,
+                color: purchased
+                    ? const Color(0xFF18B65F)
+                    : const Color(0xFFB76A43),
               ),
             ],
           ),
@@ -269,17 +258,20 @@ class _SavingsScreenState extends ConsumerState<SavingsScreen> {
                         ),
                       ),
                       data: (catalog) {
-                        final goals = catalog.goals
-                            .where((goal) => goal.id != 'tree_bank')
-                            .toList();
-                        final goal = catalog.goals.firstWhere(
-                          (item) => item.id == profile?.selectedGoalId,
-                          orElse: () => goals.first,
-                        );
+                        final goals = catalog.goals;
+                        final goal =
+                            profile?.selectedGoalId == GameCatalog.legacyGoal.id
+                            ? GameCatalog.legacyGoal
+                            : goals.firstWhere(
+                                (item) => item.id == profile?.selectedGoalId,
+                                orElse: () => goals.first,
+                              );
                         final others = goals
                             .where((item) => item.id != goal.id)
                             .toList();
                         final saved = profile?.savedFor(goal.id) ?? 0;
+                        final purchased =
+                            profile?.purchasedGoal(goal.id) ?? false;
                         final amount = int.tryParse(_amount.text) ?? 0;
                         final remaining = (goal.price - saved).clamp(
                           0,
@@ -463,10 +455,12 @@ class _SavingsScreenState extends ConsumerState<SavingsScreen> {
                                             20,
                                           ),
                                           child: LinearProgressIndicator(
-                                            value: (saved / goal.price).clamp(
-                                              0.0,
-                                              1.0,
-                                            ),
+                                            value: purchased
+                                                ? 1
+                                                : (saved / goal.price).clamp(
+                                                    0.0,
+                                                    1.0,
+                                                  ),
                                             minHeight: 13,
                                             backgroundColor: const Color(
                                               0xFFEBD8BE,
@@ -476,7 +470,9 @@ class _SavingsScreenState extends ConsumerState<SavingsScreen> {
                                         ),
                                         const SizedBox(height: 2),
                                         Text(
-                                          '$saved / ${goal.price}',
+                                          purchased
+                                              ? 'Цель получена!'
+                                              : '$saved / ${goal.price}',
                                           textAlign: TextAlign.center,
                                           style: const TextStyle(
                                             color: _ink,
@@ -484,26 +480,28 @@ class _SavingsScreenState extends ConsumerState<SavingsScreen> {
                                             fontWeight: FontWeight.w900,
                                           ),
                                         ),
-                                        Text(
-                                          'Осталось накопить: $remaining',
-                                          textAlign: TextAlign.center,
-                                          style: const TextStyle(
-                                            color: _ink,
-                                            fontSize: 15,
-                                            fontWeight: FontWeight.w900,
+                                        if (!purchased)
+                                          Text(
+                                            'Осталось накопить: $remaining',
+                                            textAlign: TextAlign.center,
+                                            style: const TextStyle(
+                                              color: _ink,
+                                              fontSize: 15,
+                                              fontWeight: FontWeight.w900,
+                                            ),
                                           ),
-                                        ),
-                                        Text(
-                                          daysToGoal == null
-                                              ? 'Срок не рассчитан'
-                                              : 'При взносе $plannedDaily в день: $daysToGoal игровых дней',
-                                          textAlign: TextAlign.center,
-                                          style: const TextStyle(
-                                            color: _ink,
-                                            fontSize: 12,
-                                            fontWeight: FontWeight.w700,
+                                        if (!purchased)
+                                          Text(
+                                            daysToGoal == null
+                                                ? 'Срок не рассчитан'
+                                                : 'При взносе $plannedDaily в день: $daysToGoal игровых дней',
+                                            textAlign: TextAlign.center,
+                                            style: const TextStyle(
+                                              color: _ink,
+                                              fontSize: 12,
+                                              fontWeight: FontWeight.w700,
+                                            ),
                                           ),
-                                        ),
                                       ],
                                     ),
                                   ),
@@ -647,6 +645,8 @@ class _SavingsScreenState extends ConsumerState<SavingsScreen> {
                               child: FilledButton.icon(
                                 onPressed: profile == null
                                     ? null
+                                    : purchased
+                                    ? null
                                     : profile.selectedGoalId != goal.id
                                     ? () => _selectGoal(goal)
                                     : profile.plan == null
@@ -660,7 +660,9 @@ class _SavingsScreenState extends ConsumerState<SavingsScreen> {
                                   height: 34,
                                 ),
                                 label: Text(
-                                  profile?.selectedGoalId == goal.id
+                                  purchased
+                                      ? 'Уже получено'
+                                      : profile?.selectedGoalId == goal.id
                                       ? 'Отложить ${_amount.text}'
                                       : 'Выбрать цель',
                                 ),
@@ -679,6 +681,7 @@ class _SavingsScreenState extends ConsumerState<SavingsScreen> {
                               ),
                             ),
                             if (profile != null &&
+                                !purchased &&
                                 profile.selectedGoalId == goal.id &&
                                 saved > 0) ...[
                               const SizedBox(height: 7),
@@ -732,71 +735,23 @@ class _SavingsScreenState extends ConsumerState<SavingsScreen> {
                                   style: TextStyle(color: _ink),
                                 ),
                               ),
-                            const SizedBox(height: 7),
-                            _panel(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.stretch,
-                                children: [
-                                  const Text(
-                                    'Резерв',
-                                    style: TextStyle(
-                                      color: _ink,
-                                      fontSize: 22,
-                                      fontWeight: FontWeight.w900,
-                                    ),
+                            if (profile != null &&
+                                profile.reserveSavings > 0) ...[
+                              const SizedBox(height: 7),
+                              _panel(
+                                child: FilledButton.icon(
+                                  onPressed: () => _returnOldSavings(profile),
+                                  icon: const Icon(Icons.undo_rounded),
+                                  label: Text(
+                                    'Вернуть старые накопления (${profile.reserveSavings})',
                                   ),
-                                  Text(
-                                    'Отложено: ${profile?.reserveSavings ?? 0} коткоинов. '
-                                    'Этот запас не входит в прогресс цели.',
-                                    style: const TextStyle(color: _ink),
+                                  style: FilledButton.styleFrom(
+                                    backgroundColor: const Color(0xFFFFCE31),
+                                    foregroundColor: _ink,
                                   ),
-                                  const SizedBox(height: 8),
-                                  TextField(
-                                    controller: _reserveAmount,
-                                    keyboardType: TextInputType.number,
-                                    decoration: InputDecoration(
-                                      labelText: 'Сумма для резерва',
-                                      filled: true,
-                                      fillColor: Colors.white,
-                                      border: OutlineInputBorder(
-                                        borderRadius: BorderRadius.circular(18),
-                                      ),
-                                    ),
-                                  ),
-                                  const SizedBox(height: 7),
-                                  FilledButton.icon(
-                                    onPressed: profile?.plan == null
-                                        ? null
-                                        : () =>
-                                              _transferReserve(profile!, false),
-                                    icon: const Icon(Icons.savings_rounded),
-                                    label: const Text('Отложить в резерв'),
-                                    style: FilledButton.styleFrom(
-                                      backgroundColor: const Color(0xFFFFCE31),
-                                      foregroundColor: _ink,
-                                      minimumSize: const Size(0, 49),
-                                    ),
-                                  ),
-                                  OutlinedButton.icon(
-                                    onPressed:
-                                        profile?.plan == null ||
-                                            (profile?.reserveSavings ?? 0) == 0
-                                        ? null
-                                        : () =>
-                                              _transferReserve(profile!, true),
-                                    icon: const Icon(
-                                      Icons.arrow_circle_up_rounded,
-                                    ),
-                                    label: const Text('Снять из резерва'),
-                                    style: OutlinedButton.styleFrom(
-                                      foregroundColor: _ink,
-                                      backgroundColor: _cream,
-                                      minimumSize: const Size(0, 49),
-                                    ),
-                                  ),
-                                ],
+                                ),
                               ),
-                            ),
+                            ],
                             const SizedBox(height: 7),
                             _panel(
                               child: Column(
@@ -824,6 +779,10 @@ class _SavingsScreenState extends ConsumerState<SavingsScreen> {
                                           compact,
                                           profile != null &&
                                               !profile.goalChoicesUnlocked,
+                                          profile?.purchasedGoal(
+                                                others[index].id,
+                                              ) ??
+                                              false,
                                         ),
                                       ],
                                     ],

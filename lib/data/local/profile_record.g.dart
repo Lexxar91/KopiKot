@@ -122,99 +122,109 @@ const ProfileRecordSchema = CollectionSchema(
       name: r'lastRewardAt',
       type: IsarType.dateTime,
     ),
-    r'learningTopics': PropertySchema(
+    r'lastVetCheckupAt': PropertySchema(
       id: 23,
+      name: r'lastVetCheckupAt',
+      type: IsarType.dateTime,
+    ),
+    r'learningTopics': PropertySchema(
+      id: 24,
       name: r'learningTopics',
       type: IsarType.objectList,
 
       target: r'LearningTopicRecord',
     ),
     r'marketSessionsJson': PropertySchema(
-      id: 24,
+      id: 25,
       name: r'marketSessionsJson',
       type: IsarType.string,
     ),
-    r'mood': PropertySchema(id: 25, name: r'mood', type: IsarType.long),
+    r'mood': PropertySchema(id: 26, name: r'mood', type: IsarType.long),
     r'ownedAccessories': PropertySchema(
-      id: 26,
+      id: 27,
       name: r'ownedAccessories',
       type: IsarType.stringList,
     ),
-    r'period': PropertySchema(id: 27, name: r'period', type: IsarType.long),
+    r'period': PropertySchema(id: 28, name: r'period', type: IsarType.long),
     r'periodSummaries': PropertySchema(
-      id: 28,
+      id: 29,
       name: r'periodSummaries',
       type: IsarType.objectList,
 
       target: r'PeriodSummaryRecord',
     ),
-    r'petName': PropertySchema(id: 29, name: r'petName', type: IsarType.string),
+    r'petName': PropertySchema(id: 30, name: r'petName', type: IsarType.string),
     r'plannedBalance': PropertySchema(
-      id: 30,
+      id: 31,
       name: r'plannedBalance',
       type: IsarType.long,
     ),
     r'plannedGifts': PropertySchema(
-      id: 31,
+      id: 32,
       name: r'plannedGifts',
       type: IsarType.long,
     ),
     r'plannedNeeds': PropertySchema(
-      id: 32,
+      id: 33,
       name: r'plannedNeeds',
       type: IsarType.long,
     ),
     r'plannedSavings': PropertySchema(
-      id: 33,
+      id: 34,
       name: r'plannedSavings',
       type: IsarType.long,
     ),
     r'plannedWants': PropertySchema(
-      id: 34,
+      id: 35,
       name: r'plannedWants',
       type: IsarType.long,
     ),
     r'saplings': PropertySchema(
-      id: 35,
+      id: 36,
       name: r'saplings',
       type: IsarType.objectList,
 
       target: r'SaplingRecord',
     ),
-    r'satiety': PropertySchema(id: 36, name: r'satiety', type: IsarType.long),
-    r'savings': PropertySchema(id: 37, name: r'savings', type: IsarType.long),
+    r'satiety': PropertySchema(id: 37, name: r'satiety', type: IsarType.long),
+    r'savings': PropertySchema(id: 38, name: r'savings', type: IsarType.long),
     r'schemaVersion': PropertySchema(
-      id: 38,
+      id: 39,
       name: r'schemaVersion',
       type: IsarType.long,
     ),
     r'selectedGoalId': PropertySchema(
-      id: 39,
+      id: 40,
       name: r'selectedGoalId',
       type: IsarType.string,
     ),
-    r'streak': PropertySchema(id: 40, name: r'streak', type: IsarType.long),
+    r'streak': PropertySchema(id: 41, name: r'streak', type: IsarType.long),
     r'taskProgress': PropertySchema(
-      id: 41,
+      id: 42,
       name: r'taskProgress',
       type: IsarType.objectList,
 
       target: r'TaskProgressRecord',
     ),
     r'transactions': PropertySchema(
-      id: 42,
+      id: 43,
       name: r'transactions',
       type: IsarType.objectList,
 
       target: r'TransactionRecord',
     ),
     r'unlockedGrowthStage': PropertySchema(
-      id: 43,
+      id: 44,
       name: r'unlockedGrowthStage',
       type: IsarType.long,
     ),
+    r'vitalsUpdatedAt': PropertySchema(
+      id: 45,
+      name: r'vitalsUpdatedAt',
+      type: IsarType.dateTime,
+    ),
     r'walkPeriod': PropertySchema(
-      id: 44,
+      id: 46,
       name: r'walkPeriod',
       type: IsarType.long,
     ),
@@ -509,53 +519,55 @@ void _profileRecordSerialize(
   writer.writeLong(offsets[20], object.incomeAmount);
   writer.writeString(offsets[21], object.incomeSource);
   writer.writeDateTime(offsets[22], object.lastRewardAt);
+  writer.writeDateTime(offsets[23], object.lastVetCheckupAt);
   writer.writeObjectList<LearningTopicRecord>(
-    offsets[23],
+    offsets[24],
     allOffsets,
     LearningTopicRecordSchema.serialize,
     object.learningTopics,
   );
-  writer.writeString(offsets[24], object.marketSessionsJson);
-  writer.writeLong(offsets[25], object.mood);
-  writer.writeStringList(offsets[26], object.ownedAccessories);
-  writer.writeLong(offsets[27], object.period);
+  writer.writeString(offsets[25], object.marketSessionsJson);
+  writer.writeLong(offsets[26], object.mood);
+  writer.writeStringList(offsets[27], object.ownedAccessories);
+  writer.writeLong(offsets[28], object.period);
   writer.writeObjectList<PeriodSummaryRecord>(
-    offsets[28],
+    offsets[29],
     allOffsets,
     PeriodSummaryRecordSchema.serialize,
     object.periodSummaries,
   );
-  writer.writeString(offsets[29], object.petName);
-  writer.writeLong(offsets[30], object.plannedBalance);
-  writer.writeLong(offsets[31], object.plannedGifts);
-  writer.writeLong(offsets[32], object.plannedNeeds);
-  writer.writeLong(offsets[33], object.plannedSavings);
-  writer.writeLong(offsets[34], object.plannedWants);
+  writer.writeString(offsets[30], object.petName);
+  writer.writeLong(offsets[31], object.plannedBalance);
+  writer.writeLong(offsets[32], object.plannedGifts);
+  writer.writeLong(offsets[33], object.plannedNeeds);
+  writer.writeLong(offsets[34], object.plannedSavings);
+  writer.writeLong(offsets[35], object.plannedWants);
   writer.writeObjectList<SaplingRecord>(
-    offsets[35],
+    offsets[36],
     allOffsets,
     SaplingRecordSchema.serialize,
     object.saplings,
   );
-  writer.writeLong(offsets[36], object.satiety);
-  writer.writeLong(offsets[37], object.savings);
-  writer.writeLong(offsets[38], object.schemaVersion);
-  writer.writeString(offsets[39], object.selectedGoalId);
-  writer.writeLong(offsets[40], object.streak);
+  writer.writeLong(offsets[37], object.satiety);
+  writer.writeLong(offsets[38], object.savings);
+  writer.writeLong(offsets[39], object.schemaVersion);
+  writer.writeString(offsets[40], object.selectedGoalId);
+  writer.writeLong(offsets[41], object.streak);
   writer.writeObjectList<TaskProgressRecord>(
-    offsets[41],
+    offsets[42],
     allOffsets,
     TaskProgressRecordSchema.serialize,
     object.taskProgress,
   );
   writer.writeObjectList<TransactionRecord>(
-    offsets[42],
+    offsets[43],
     allOffsets,
     TransactionRecordSchema.serialize,
     object.transactions,
   );
-  writer.writeLong(offsets[43], object.unlockedGrowthStage);
-  writer.writeLong(offsets[44], object.walkPeriod);
+  writer.writeLong(offsets[44], object.unlockedGrowthStage);
+  writer.writeDateTime(offsets[45], object.vitalsUpdatedAt);
+  writer.writeLong(offsets[46], object.walkPeriod);
 }
 
 ProfileRecord _profileRecordDeserialize(
@@ -604,53 +616,55 @@ ProfileRecord _profileRecordDeserialize(
   object.incomeAmount = reader.readLong(offsets[20]);
   object.incomeSource = reader.readString(offsets[21]);
   object.lastRewardAt = reader.readDateTimeOrNull(offsets[22]);
+  object.lastVetCheckupAt = reader.readDateTimeOrNull(offsets[23]);
   object.learningTopics = reader.readObjectList<LearningTopicRecord>(
-    offsets[23],
+    offsets[24],
     LearningTopicRecordSchema.deserialize,
     allOffsets,
     LearningTopicRecord(),
   );
-  object.marketSessionsJson = reader.readStringOrNull(offsets[24]);
-  object.mood = reader.readLong(offsets[25]);
-  object.ownedAccessories = reader.readStringList(offsets[26]);
-  object.period = reader.readLong(offsets[27]);
+  object.marketSessionsJson = reader.readStringOrNull(offsets[25]);
+  object.mood = reader.readLong(offsets[26]);
+  object.ownedAccessories = reader.readStringList(offsets[27]);
+  object.period = reader.readLong(offsets[28]);
   object.periodSummaries = reader.readObjectList<PeriodSummaryRecord>(
-    offsets[28],
+    offsets[29],
     PeriodSummaryRecordSchema.deserialize,
     allOffsets,
     PeriodSummaryRecord(),
   );
-  object.petName = reader.readString(offsets[29]);
-  object.plannedBalance = reader.readLong(offsets[30]);
-  object.plannedGifts = reader.readLong(offsets[31]);
-  object.plannedNeeds = reader.readLong(offsets[32]);
-  object.plannedSavings = reader.readLong(offsets[33]);
-  object.plannedWants = reader.readLong(offsets[34]);
+  object.petName = reader.readString(offsets[30]);
+  object.plannedBalance = reader.readLong(offsets[31]);
+  object.plannedGifts = reader.readLong(offsets[32]);
+  object.plannedNeeds = reader.readLong(offsets[33]);
+  object.plannedSavings = reader.readLong(offsets[34]);
+  object.plannedWants = reader.readLong(offsets[35]);
   object.saplings = reader.readObjectList<SaplingRecord>(
-    offsets[35],
+    offsets[36],
     SaplingRecordSchema.deserialize,
     allOffsets,
     SaplingRecord(),
   );
-  object.satiety = reader.readLong(offsets[36]);
-  object.savings = reader.readLong(offsets[37]);
-  object.schemaVersion = reader.readLong(offsets[38]);
-  object.selectedGoalId = reader.readStringOrNull(offsets[39]);
-  object.streak = reader.readLong(offsets[40]);
+  object.satiety = reader.readLong(offsets[37]);
+  object.savings = reader.readLong(offsets[38]);
+  object.schemaVersion = reader.readLong(offsets[39]);
+  object.selectedGoalId = reader.readStringOrNull(offsets[40]);
+  object.streak = reader.readLong(offsets[41]);
   object.taskProgress = reader.readObjectList<TaskProgressRecord>(
-    offsets[41],
+    offsets[42],
     TaskProgressRecordSchema.deserialize,
     allOffsets,
     TaskProgressRecord(),
   );
   object.transactions = reader.readObjectList<TransactionRecord>(
-    offsets[42],
+    offsets[43],
     TransactionRecordSchema.deserialize,
     allOffsets,
     TransactionRecord(),
   );
-  object.unlockedGrowthStage = reader.readLong(offsets[43]);
-  object.walkPeriod = reader.readLong(offsets[44]);
+  object.unlockedGrowthStage = reader.readLong(offsets[44]);
+  object.vitalsUpdatedAt = reader.readDateTimeOrNull(offsets[45]);
+  object.walkPeriod = reader.readLong(offsets[46]);
   return object;
 }
 
@@ -726,6 +740,8 @@ P _profileRecordDeserializeProp<P>(
     case 22:
       return (reader.readDateTimeOrNull(offset)) as P;
     case 23:
+      return (reader.readDateTimeOrNull(offset)) as P;
+    case 24:
       return (reader.readObjectList<LearningTopicRecord>(
             offset,
             LearningTopicRecordSchema.deserialize,
@@ -733,15 +749,15 @@ P _profileRecordDeserializeProp<P>(
             LearningTopicRecord(),
           ))
           as P;
-    case 24:
-      return (reader.readStringOrNull(offset)) as P;
     case 25:
-      return (reader.readLong(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 26:
-      return (reader.readStringList(offset)) as P;
-    case 27:
       return (reader.readLong(offset)) as P;
+    case 27:
+      return (reader.readStringList(offset)) as P;
     case 28:
+      return (reader.readLong(offset)) as P;
+    case 29:
       return (reader.readObjectList<PeriodSummaryRecord>(
             offset,
             PeriodSummaryRecordSchema.deserialize,
@@ -749,10 +765,8 @@ P _profileRecordDeserializeProp<P>(
             PeriodSummaryRecord(),
           ))
           as P;
-    case 29:
-      return (reader.readString(offset)) as P;
     case 30:
-      return (reader.readLong(offset)) as P;
+      return (reader.readString(offset)) as P;
     case 31:
       return (reader.readLong(offset)) as P;
     case 32:
@@ -762,6 +776,8 @@ P _profileRecordDeserializeProp<P>(
     case 34:
       return (reader.readLong(offset)) as P;
     case 35:
+      return (reader.readLong(offset)) as P;
+    case 36:
       return (reader.readObjectList<SaplingRecord>(
             offset,
             SaplingRecordSchema.deserialize,
@@ -769,17 +785,17 @@ P _profileRecordDeserializeProp<P>(
             SaplingRecord(),
           ))
           as P;
-    case 36:
-      return (reader.readLong(offset)) as P;
     case 37:
       return (reader.readLong(offset)) as P;
     case 38:
       return (reader.readLong(offset)) as P;
     case 39:
-      return (reader.readStringOrNull(offset)) as P;
-    case 40:
       return (reader.readLong(offset)) as P;
+    case 40:
+      return (reader.readStringOrNull(offset)) as P;
     case 41:
+      return (reader.readLong(offset)) as P;
+    case 42:
       return (reader.readObjectList<TaskProgressRecord>(
             offset,
             TaskProgressRecordSchema.deserialize,
@@ -787,7 +803,7 @@ P _profileRecordDeserializeProp<P>(
             TaskProgressRecord(),
           ))
           as P;
-    case 42:
+    case 43:
       return (reader.readObjectList<TransactionRecord>(
             offset,
             TransactionRecordSchema.deserialize,
@@ -795,9 +811,11 @@ P _profileRecordDeserializeProp<P>(
             TransactionRecord(),
           ))
           as P;
-    case 43:
-      return (reader.readLong(offset)) as P;
     case 44:
+      return (reader.readLong(offset)) as P;
+    case 45:
+      return (reader.readDateTimeOrNull(offset)) as P;
+    case 46:
       return (reader.readLong(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -3278,6 +3296,79 @@ extension ProfileRecordQueryFilter
   }
 
   QueryBuilder<ProfileRecord, ProfileRecord, QAfterFilterCondition>
+  lastVetCheckupAtIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        const FilterCondition.isNull(property: r'lastVetCheckupAt'),
+      );
+    });
+  }
+
+  QueryBuilder<ProfileRecord, ProfileRecord, QAfterFilterCondition>
+  lastVetCheckupAtIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        const FilterCondition.isNotNull(property: r'lastVetCheckupAt'),
+      );
+    });
+  }
+
+  QueryBuilder<ProfileRecord, ProfileRecord, QAfterFilterCondition>
+  lastVetCheckupAtEqualTo(DateTime? value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(property: r'lastVetCheckupAt', value: value),
+      );
+    });
+  }
+
+  QueryBuilder<ProfileRecord, ProfileRecord, QAfterFilterCondition>
+  lastVetCheckupAtGreaterThan(DateTime? value, {bool include = false}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(
+          include: include,
+          property: r'lastVetCheckupAt',
+          value: value,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<ProfileRecord, ProfileRecord, QAfterFilterCondition>
+  lastVetCheckupAtLessThan(DateTime? value, {bool include = false}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.lessThan(
+          include: include,
+          property: r'lastVetCheckupAt',
+          value: value,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<ProfileRecord, ProfileRecord, QAfterFilterCondition>
+  lastVetCheckupAtBetween(
+    DateTime? lower,
+    DateTime? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.between(
+          property: r'lastVetCheckupAt',
+          lower: lower,
+          includeLower: includeLower,
+          upper: upper,
+          includeUpper: includeUpper,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<ProfileRecord, ProfileRecord, QAfterFilterCondition>
   learningTopicsIsNull() {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(
@@ -4976,6 +5067,79 @@ extension ProfileRecordQueryFilter
   }
 
   QueryBuilder<ProfileRecord, ProfileRecord, QAfterFilterCondition>
+  vitalsUpdatedAtIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        const FilterCondition.isNull(property: r'vitalsUpdatedAt'),
+      );
+    });
+  }
+
+  QueryBuilder<ProfileRecord, ProfileRecord, QAfterFilterCondition>
+  vitalsUpdatedAtIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        const FilterCondition.isNotNull(property: r'vitalsUpdatedAt'),
+      );
+    });
+  }
+
+  QueryBuilder<ProfileRecord, ProfileRecord, QAfterFilterCondition>
+  vitalsUpdatedAtEqualTo(DateTime? value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(property: r'vitalsUpdatedAt', value: value),
+      );
+    });
+  }
+
+  QueryBuilder<ProfileRecord, ProfileRecord, QAfterFilterCondition>
+  vitalsUpdatedAtGreaterThan(DateTime? value, {bool include = false}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(
+          include: include,
+          property: r'vitalsUpdatedAt',
+          value: value,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<ProfileRecord, ProfileRecord, QAfterFilterCondition>
+  vitalsUpdatedAtLessThan(DateTime? value, {bool include = false}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.lessThan(
+          include: include,
+          property: r'vitalsUpdatedAt',
+          value: value,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<ProfileRecord, ProfileRecord, QAfterFilterCondition>
+  vitalsUpdatedAtBetween(
+    DateTime? lower,
+    DateTime? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.between(
+          property: r'vitalsUpdatedAt',
+          lower: lower,
+          includeLower: includeLower,
+          upper: upper,
+          includeUpper: includeUpper,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<ProfileRecord, ProfileRecord, QAfterFilterCondition>
   walkPeriodEqualTo(int value) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(
@@ -5322,6 +5486,20 @@ extension ProfileRecordQuerySortBy
   }
 
   QueryBuilder<ProfileRecord, ProfileRecord, QAfterSortBy>
+  sortByLastVetCheckupAt() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'lastVetCheckupAt', Sort.asc);
+    });
+  }
+
+  QueryBuilder<ProfileRecord, ProfileRecord, QAfterSortBy>
+  sortByLastVetCheckupAtDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'lastVetCheckupAt', Sort.desc);
+    });
+  }
+
+  QueryBuilder<ProfileRecord, ProfileRecord, QAfterSortBy>
   sortByMarketSessionsJson() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'marketSessionsJson', Sort.asc);
@@ -5516,6 +5694,20 @@ extension ProfileRecordQuerySortBy
   sortByUnlockedGrowthStageDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'unlockedGrowthStage', Sort.desc);
+    });
+  }
+
+  QueryBuilder<ProfileRecord, ProfileRecord, QAfterSortBy>
+  sortByVitalsUpdatedAt() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'vitalsUpdatedAt', Sort.asc);
+    });
+  }
+
+  QueryBuilder<ProfileRecord, ProfileRecord, QAfterSortBy>
+  sortByVitalsUpdatedAtDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'vitalsUpdatedAt', Sort.desc);
     });
   }
 
@@ -5774,6 +5966,20 @@ extension ProfileRecordQuerySortThenBy
   }
 
   QueryBuilder<ProfileRecord, ProfileRecord, QAfterSortBy>
+  thenByLastVetCheckupAt() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'lastVetCheckupAt', Sort.asc);
+    });
+  }
+
+  QueryBuilder<ProfileRecord, ProfileRecord, QAfterSortBy>
+  thenByLastVetCheckupAtDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'lastVetCheckupAt', Sort.desc);
+    });
+  }
+
+  QueryBuilder<ProfileRecord, ProfileRecord, QAfterSortBy>
   thenByMarketSessionsJson() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'marketSessionsJson', Sort.asc);
@@ -5971,6 +6177,20 @@ extension ProfileRecordQuerySortThenBy
     });
   }
 
+  QueryBuilder<ProfileRecord, ProfileRecord, QAfterSortBy>
+  thenByVitalsUpdatedAt() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'vitalsUpdatedAt', Sort.asc);
+    });
+  }
+
+  QueryBuilder<ProfileRecord, ProfileRecord, QAfterSortBy>
+  thenByVitalsUpdatedAtDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'vitalsUpdatedAt', Sort.desc);
+    });
+  }
+
   QueryBuilder<ProfileRecord, ProfileRecord, QAfterSortBy> thenByWalkPeriod() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'walkPeriod', Sort.asc);
@@ -6134,6 +6354,13 @@ extension ProfileRecordQueryWhereDistinct
   }
 
   QueryBuilder<ProfileRecord, ProfileRecord, QDistinct>
+  distinctByLastVetCheckupAt() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'lastVetCheckupAt');
+    });
+  }
+
+  QueryBuilder<ProfileRecord, ProfileRecord, QDistinct>
   distinctByMarketSessionsJson({bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(
@@ -6244,6 +6471,13 @@ extension ProfileRecordQueryWhereDistinct
   distinctByUnlockedGrowthStage() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'unlockedGrowthStage');
+    });
+  }
+
+  QueryBuilder<ProfileRecord, ProfileRecord, QDistinct>
+  distinctByVitalsUpdatedAt() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'vitalsUpdatedAt');
     });
   }
 
@@ -6412,6 +6646,13 @@ extension ProfileRecordQueryProperty
     });
   }
 
+  QueryBuilder<ProfileRecord, DateTime?, QQueryOperations>
+  lastVetCheckupAtProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'lastVetCheckupAt');
+    });
+  }
+
   QueryBuilder<ProfileRecord, List<LearningTopicRecord>?, QQueryOperations>
   learningTopicsProperty() {
     return QueryBuilder.apply(this, (query) {
@@ -6544,6 +6785,13 @@ extension ProfileRecordQueryProperty
   unlockedGrowthStageProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'unlockedGrowthStage');
+    });
+  }
+
+  QueryBuilder<ProfileRecord, DateTime?, QQueryOperations>
+  vitalsUpdatedAtProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'vitalsUpdatedAt');
     });
   }
 
@@ -9298,18 +9546,19 @@ const TaskProgressRecordSchema = Schema(
       type: IsarType.string,
     ),
     r'hintUsed': PropertySchema(id: 3, name: r'hintUsed', type: IsarType.bool),
+    r'period': PropertySchema(id: 4, name: r'period', type: IsarType.long),
     r'practiceAttempts': PropertySchema(
-      id: 4,
+      id: 5,
       name: r'practiceAttempts',
       type: IsarType.long,
     ),
-    r'reviewed': PropertySchema(id: 5, name: r'reviewed', type: IsarType.bool),
+    r'reviewed': PropertySchema(id: 6, name: r'reviewed', type: IsarType.bool),
     r'solutionShown': PropertySchema(
-      id: 6,
+      id: 7,
       name: r'solutionShown',
       type: IsarType.bool,
     ),
-    r'taskId': PropertySchema(id: 7, name: r'taskId', type: IsarType.string),
+    r'taskId': PropertySchema(id: 8, name: r'taskId', type: IsarType.string),
   },
 
   estimateSize: _taskProgressRecordEstimateSize,
@@ -9339,10 +9588,11 @@ void _taskProgressRecordSerialize(
   writer.writeBool(offsets[1], object.completed);
   writer.writeString(offsets[2], object.feedback);
   writer.writeBool(offsets[3], object.hintUsed);
-  writer.writeLong(offsets[4], object.practiceAttempts);
-  writer.writeBool(offsets[5], object.reviewed);
-  writer.writeBool(offsets[6], object.solutionShown);
-  writer.writeString(offsets[7], object.taskId);
+  writer.writeLong(offsets[4], object.period);
+  writer.writeLong(offsets[5], object.practiceAttempts);
+  writer.writeBool(offsets[6], object.reviewed);
+  writer.writeBool(offsets[7], object.solutionShown);
+  writer.writeString(offsets[8], object.taskId);
 }
 
 TaskProgressRecord _taskProgressRecordDeserialize(
@@ -9356,10 +9606,11 @@ TaskProgressRecord _taskProgressRecordDeserialize(
   object.completed = reader.readBool(offsets[1]);
   object.feedback = reader.readString(offsets[2]);
   object.hintUsed = reader.readBool(offsets[3]);
-  object.practiceAttempts = reader.readLong(offsets[4]);
-  object.reviewed = reader.readBool(offsets[5]);
-  object.solutionShown = reader.readBool(offsets[6]);
-  object.taskId = reader.readString(offsets[7]);
+  object.period = reader.readLong(offsets[4]);
+  object.practiceAttempts = reader.readLong(offsets[5]);
+  object.reviewed = reader.readBool(offsets[6]);
+  object.solutionShown = reader.readBool(offsets[7]);
+  object.taskId = reader.readString(offsets[8]);
   return object;
 }
 
@@ -9381,10 +9632,12 @@ P _taskProgressRecordDeserializeProp<P>(
     case 4:
       return (reader.readLong(offset)) as P;
     case 5:
-      return (reader.readBool(offset)) as P;
+      return (reader.readLong(offset)) as P;
     case 6:
       return (reader.readBool(offset)) as P;
     case 7:
+      return (reader.readBool(offset)) as P;
+    case 8:
       return (reader.readString(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -9603,6 +9856,61 @@ extension TaskProgressRecordQueryFilter
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(
         FilterCondition.equalTo(property: r'hintUsed', value: value),
+      );
+    });
+  }
+
+  QueryBuilder<TaskProgressRecord, TaskProgressRecord, QAfterFilterCondition>
+  periodEqualTo(int value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(property: r'period', value: value),
+      );
+    });
+  }
+
+  QueryBuilder<TaskProgressRecord, TaskProgressRecord, QAfterFilterCondition>
+  periodGreaterThan(int value, {bool include = false}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(
+          include: include,
+          property: r'period',
+          value: value,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<TaskProgressRecord, TaskProgressRecord, QAfterFilterCondition>
+  periodLessThan(int value, {bool include = false}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.lessThan(
+          include: include,
+          property: r'period',
+          value: value,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<TaskProgressRecord, TaskProgressRecord, QAfterFilterCondition>
+  periodBetween(
+    int lower,
+    int upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.between(
+          property: r'period',
+          lower: lower,
+          includeLower: includeLower,
+          upper: upper,
+          includeUpper: includeUpper,
+        ),
       );
     });
   }

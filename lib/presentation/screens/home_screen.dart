@@ -4,12 +4,16 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../domain/models/game_profile.dart';
 import '../../domain/rules/game_rules.dart';
 import '../providers/game_controller.dart';
+import '../widgets/accessible_motion.dart';
 import '../widgets/adult_access_button.dart';
+import '../widgets/game_action_dialog.dart';
 import '../widgets/home_scene.dart';
 import '../widgets/home_section_navigation.dart';
 import 'accountant_screen.dart';
+import 'badges_screen.dart';
 import 'budget_screen.dart';
 import 'daily_reward_screen.dart';
+import 'daily_tip_screen.dart';
 import 'daily_summary_screen.dart';
 import 'garden_screen.dart';
 import 'help_screen.dart';
@@ -18,9 +22,12 @@ import 'market_game_screen.dart';
 import 'progress_screen.dart';
 import 'savings_screen.dart';
 import 'shop_screen.dart';
+import 'story_screen.dart';
 import 'tasks_screen.dart';
 import 'vet_screen.dart';
 import 'wardrobe_screen.dart';
+
+enum _DemoAction { nextDay, exit }
 
 /// Связывает игровую сцену с сохранённым профилем и разделами приложения.
 class HomeScreen extends ConsumerWidget {
@@ -164,17 +171,99 @@ class HomeScreen extends ConsumerWidget {
       profile: profile,
       sections: sections,
       goalTitle: goal?.title ?? 'Беговая дорожка',
-      goalSaved: goal == null ? 0 : profile.savedFor(goal.id),
+      goalSaved: goal == null
+          ? 0
+          : profile.purchasedGoal(goal.id)
+          ? goal.price
+          : profile.savedFor(goal.id),
       goalPrice: goal?.price ?? 400,
       needsVetVisit: needsVetVisit,
       onGarden: () => open(const GardenScreen()),
       onShop: () => open(const ShopScreen()),
       onVet: () => open(const VetScreen()),
       onTasks: () => open(const TasksScreen()),
+      onDemo: () => _demo(context, ref, profile),
       onWalk: () => _walk(context, ref),
+      onBadges: () => open(const BadgesScreen()),
+      onDailyTip: () => open(DailyTipScreen(dayKey: profile.dayKey)),
+      onStory: () => open(const StoryScreen()),
       onSavings: () => open(const SavingsScreen()),
       onReward: () => open(const DailyRewardScreen()),
     );
+  }
+
+  Future<void> _demo(
+    BuildContext context,
+    WidgetRef ref,
+    GameProfile profile,
+  ) async {
+    if (!profile.isTest) {
+      await showAccessibleDialog<bool>(
+        context: context,
+        barrierDismissible: false,
+        builder: (_) => GameActionDialog(
+          title: 'Перейти в демо-режим?',
+          description:
+              'Откроется отдельный тестовый профиль с 1000 коткоинов и доступом ко всем целям. '
+              'Предыдущее демосохранение будет сброшено; обычный профиль останется без изменений. '
+              'Игровые дни можно переключать вручную.',
+          confirmLabel: 'Открыть демо',
+          action: (_) => ref.read(gameControllerProvider.notifier).startDemo(),
+        ),
+      );
+      return;
+    }
+
+    final choice = await showAccessibleDialog<_DemoAction>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Демо-режим'),
+        content: const Text(
+          'Можно сразу перейти к следующему игровому дню или вернуться к обычному питомцу.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Отмена'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, _DemoAction.exit),
+            child: const Text('Обычный профиль'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, _DemoAction.nextDay),
+            child: const Text('Следующий день'),
+          ),
+        ],
+      ),
+    );
+    if (choice == null || !context.mounted) return;
+    try {
+      switch (choice) {
+        case _DemoAction.nextDay:
+          await ref
+              .read(gameControllerProvider.notifier)
+              .finishPeriod(profile.period);
+          break;
+        case _DemoAction.exit:
+          await ref
+              .read(gameControllerProvider.notifier)
+              .switchProfile(testProfile: false);
+          break;
+      }
+    } on GameRuleException catch (error) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(error.message)));
+      }
+    } catch (_) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Не удалось переключить демо-режим.')),
+        );
+      }
+    }
   }
 
   Future<void> _walk(BuildContext context, WidgetRef ref) async {

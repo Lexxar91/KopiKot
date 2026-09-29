@@ -5,7 +5,6 @@ import '../../domain/models/game_profile.dart';
 import '../../domain/models/accountant_session.dart';
 import '../../domain/models/learning_task.dart';
 import '../../domain/rules/accountant_rules.dart';
-import '../../domain/rules/activity_reward_rules.dart';
 import '../../domain/rules/game_rules.dart';
 import '../providers/game_controller.dart';
 import '../widgets/pet_portrait.dart';
@@ -126,18 +125,6 @@ class _AccountantScreenState extends ConsumerState<AccountantScreen> {
                           const SizedBox(height: 5),
                           _titleBar(context),
                           _hero(profile),
-                          if (!_claimed)
-                            _panel(
-                              child: Text(
-                                (_session == null
-                                        ? ActivityRewardSnapshot.fromProfile(
-                                            profile,
-                                          )
-                                        : AccountantRules.snapshot(_session!))
-                                    .gamePreview,
-                                style: const TextStyle(color: _brown),
-                              ),
-                            ),
                           if (_session == null)
                             _startCard(profile)
                           else if (_claimed)

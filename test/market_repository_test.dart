@@ -25,7 +25,7 @@ void main() {
     try {
       var repository = LocalGameRepository(store, catalog, clock: clock);
       await repository.switchProfile(testProfile: true);
-      await repository.confirmBudget(needs: 40, wants: 20, savings: 10);
+      await repository.reviseBudget(needs: 40, wants: 20, savings: 10);
       var profile = await repository.marketAction('saved', MarketAction.start);
       final balance = profile.balance;
       profile = await repository.marketAction(

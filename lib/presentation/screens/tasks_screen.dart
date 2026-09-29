@@ -161,7 +161,7 @@ class _TasksScreenState extends ConsumerState<TasksScreen> {
                   ),
                 ),
               for (final topic in _questTopics)
-                _difficultySelector(profile, catalog, topic),
+                _difficultySelector(profile, topic),
               const SizedBox(height: 6),
               for (final task in tasks) _taskCard(profile, catalog, task),
             ],
@@ -171,17 +171,13 @@ class _TasksScreenState extends ConsumerState<TasksScreen> {
     );
   }
 
-  Widget _difficultySelector(
-    GameProfile profile,
-    GameCatalog catalog,
-    _QuestTopic topic,
-  ) {
+  Widget _difficultySelector(GameProfile profile, _QuestTopic topic) {
     final progress = profile.learningTopic(topic.id);
-    final completed = catalog.tasks
-        .where(
-          (task) => task.topic == topic.id && profile.completedTask(task.id),
-        )
-        .length;
+    final advancementHint = progress.difficulty == LearningDifficulty.hard
+        ? 'Самый сложный уровень уже открыт!'
+        : progress.cleanStreak == 1
+        ? 'Ещё 1 задание с первого раза без подсказок — и новый уровень!'
+        : 'Реши 2 задания подряд с первого раза без подсказок — и откроется новый уровень!';
     return Padding(
       padding: const EdgeInsets.only(top: 5),
       child: Column(
@@ -190,10 +186,11 @@ class _TasksScreenState extends ConsumerState<TasksScreen> {
             children: [
               Expanded(
                 child: Text(
-                  '${topic.shortLabel}: $completed/2 · до повышения ${2 - progress.cleanStreak}',
+                  topic.shortLabel,
                   style: const TextStyle(
                     color: _questBrown,
-                    fontWeight: FontWeight.w700,
+                    fontSize: 17,
+                    fontWeight: FontWeight.w900,
                   ),
                 ),
               ),
@@ -231,6 +228,36 @@ class _TasksScreenState extends ConsumerState<TasksScreen> {
                 },
               ),
             ],
+          ),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [Color(0xFFFFF3CB), Color(0xFFFFE0A3)],
+              ),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: Colors.white, width: 2),
+            ),
+            child: Row(
+              children: [
+                const Icon(
+                  Icons.auto_awesome_rounded,
+                  color: Color(0xFFCF7B0B),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    advancementHint,
+                    style: const TextStyle(
+                      color: _questBrown,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
           if (progress.downgradePending)
             Wrap(
@@ -579,7 +606,7 @@ class _TasksScreenState extends ConsumerState<TasksScreen> {
     LearningTask task,
   ) {
     final topic = _questTopics.firstWhere((item) => item.id == task.topic);
-    final completed = profile.completedTask(task.id);
+    final completed = profile.completedTaskToday(task.id);
     final isScenario = LearningRules.scenarioIds.contains(task.id);
     final scenario = isScenario
         ? LearningScenario.forTask(
@@ -786,7 +813,7 @@ class _TasksScreenState extends ConsumerState<TasksScreen> {
   );
 }
 
-/// Три взаимодействия: распределение, корзина и перевод с сохранением резерва.
+/// Три взаимодействия: распределение, корзина и перевод накоплений.
 class TaskScreen extends ConsumerStatefulWidget {
   const TaskScreen({required this.task, required this.catalog, super.key});
   final LearningTask task;
@@ -876,7 +903,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
     try {
       final answer = _answer;
       final currentProfile = ref.read(gameControllerProvider).asData?.value;
-      if (currentProfile?.completedTask(widget.task.id) == true) {
+      if (currentProfile?.completedTaskToday(widget.task.id) == true) {
         setState(() {
           _questPreview = _evaluateQuest(answer);
           _practiceViewed = true;
@@ -1381,9 +1408,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
     if (profile != null) {
       _startSnapshot ??= ActivityRewardSnapshot.fromProfile(profile);
     }
-    final progress = profile?.taskProgress
-        .where((entry) => entry.taskId == widget.task.id)
-        .firstOrNull;
+    final progress = profile?.taskProgressToday(widget.task.id);
     final enabled = !_busy;
     final answer = _answer;
     final distributed = answer.needs + answer.wants + answer.savings;

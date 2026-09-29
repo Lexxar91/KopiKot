@@ -5,7 +5,6 @@ import '../../domain/models/game_profile.dart';
 import '../../domain/models/learning_task.dart';
 import '../../domain/models/market_session.dart';
 import '../../domain/rules/market_game_rules.dart';
-import '../../domain/rules/activity_reward_rules.dart';
 import '../../domain/rules/game_rules.dart';
 import '../providers/game_controller.dart';
 import '../widgets/pet_portrait.dart';
@@ -120,15 +119,6 @@ class _MarketGameScreenState extends ConsumerState<MarketGameScreen> {
                     const SizedBox(height: 7),
                     _titleBar(context),
                     _hero(profile),
-                    _panel(
-                      child: Text(
-                        (_session == null
-                                ? ActivityRewardSnapshot.fromProfile(profile)
-                                : MarketGameRules.snapshot(_session!))
-                            .gamePreview,
-                        style: const TextStyle(color: _brown),
-                      ),
-                    ),
                     if (_session == null)
                       _startCard(profile)
                     else ...[
@@ -323,7 +313,7 @@ class _MarketGameScreenState extends ConsumerState<MarketGameScreen> {
           ),
         ),
         const Text(
-          'Сначала нужное, потом радость. Не забудь оставить коткоины в копилке!',
+          'Сначала нужное, потом радость. Не забудь оставить коткоины в кошельке!',
         ),
         const SizedBox(height: 8),
         const Text(
@@ -430,8 +420,8 @@ class _MarketGameScreenState extends ConsumerState<MarketGameScreen> {
             'Нужное: ${needs.map((entry) => entry.price).join(' + ')} = $needsTotal',
           ),
           Text(
-            '${_scenario.budget} − $needsTotal − ${_scenario.reserve} = '
-            '${_scenario.budget - needsTotal - _scenario.reserve} на радость',
+            'После нужных покупок останется ${_scenario.budget - needsTotal}. '
+            'Из них ${_scenario.reserve} нужно оставить в кошельке.',
           ),
           Text('Подходит ${desire.title.toLowerCase()} за ${desire.price}.'),
           FilledButton(
@@ -468,7 +458,7 @@ class _MarketGameScreenState extends ConsumerState<MarketGameScreen> {
           ],
         ),
         Text(
-          'Оставить в копилке: ${_scenario.reserve}',
+          'Оставить в кошельке: ${_scenario.reserve}',
           style: const TextStyle(color: _brown, fontWeight: FontWeight.w800),
         ),
         const SizedBox(height: 8),

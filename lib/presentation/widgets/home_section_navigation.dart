@@ -201,19 +201,19 @@ class _HomeSectionNavigationState extends State<HomeSectionNavigation> {
 
   Widget _destinationTile(HomeSection section, HomeDestination destination) {
     final image = switch (destination.title) {
-      'Бухгалтер' => 'assets/images/quest_budget.png',
+      'Бухгалтер' => null,
       'Котомаркет' => 'assets/images/market_basket.png',
-      'Задания' => 'assets/images/quest_purchases.png',
+      'Задания' => 'assets/images/quest_budget.png',
       'Прогресс' => 'assets/images/quest_badge_plan.png',
       'Ветеринар' => 'assets/images/vet_rabbit.png',
       'Еда и уход' => 'assets/images/action_feed.png',
       'Гардероб' => 'assets/images/wardrobe_scarf.png',
       'Котодерево' => 'assets/images/garden_coin_sapling.png',
-      'Бюджет' => 'assets/images/quest_budget.png',
+      'Бюджет' => null,
       'Накопления' => 'assets/images/budget_savings.png',
       'Итог дня' => 'assets/images/daily_reward_chest.png',
-      'История' => 'assets/images/quest_purchases.png',
-      'Как играть' => 'assets/images/quest_savings.png',
+      'История' => null,
+      'Как играть' => null,
       'Для взрослых' => 'assets/images/quest_badge_plan.png',
       _ => null,
     };
@@ -221,7 +221,10 @@ class _HomeSectionNavigationState extends State<HomeSectionNavigation> {
       color: const Color(0xFFFFFDF5),
       borderRadius: BorderRadius.circular(20),
       child: InkWell(
-        onTap: destination.onTap,
+        onTap: () {
+          setState(() => _selectedIndex = null);
+          destination.onTap();
+        },
         borderRadius: BorderRadius.circular(20),
         child: Column(
           children: [
@@ -235,7 +238,36 @@ class _HomeSectionNavigationState extends State<HomeSectionNavigation> {
                 ),
               ),
               child: image == null
-                  ? Icon(destination.icon, size: 47, color: section.color)
+                  ? Center(
+                      child: Container(
+                        width: widget.compact ? 49 : 58,
+                        height: widget.compact ? 49 : 58,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          gradient: LinearGradient(
+                            colors: [
+                              section.color.withValues(alpha: 0.7),
+                              section.color,
+                            ],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                          border: Border.all(color: Colors.white, width: 2),
+                          boxShadow: [
+                            BoxShadow(
+                              color: section.color.withValues(alpha: 0.28),
+                              blurRadius: 6,
+                              offset: const Offset(0, 3),
+                            ),
+                          ],
+                        ),
+                        child: Icon(
+                          destination.icon,
+                          size: widget.compact ? 28 : 34,
+                          color: Colors.white,
+                        ),
+                      ),
+                    )
                   : Image.asset(image, fit: BoxFit.contain),
             ),
             Container(

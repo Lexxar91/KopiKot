@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -21,14 +23,28 @@ class KopiKotApp extends ConsumerStatefulWidget {
 
 class _KopiKotAppState extends ConsumerState<KopiKotApp>
     with WidgetsBindingObserver {
+  Timer? _vitalsTimer;
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    _vitalsTimer = Timer.periodic(const Duration(minutes: 1), (_) {
+      if (!mounted) return;
+      unawaited(
+        ref.read(gameControllerProvider.notifier).refreshVitals().catchError((
+          Object _,
+          StackTrace _,
+        ) {
+          if (mounted) ref.invalidate(gameControllerProvider);
+        }),
+      );
+    });
   }
 
   @override
   void dispose() {
+    _vitalsTimer?.cancel();
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }

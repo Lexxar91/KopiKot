@@ -1,9 +1,12 @@
 import '../models/game_profile.dart';
 
-/// Рост определяется решениями за завершённые игровые периоды по ТЗ.
+/// В обычной игре рост зависит от решений; в демо стадии открываются по дням.
 abstract final class GrowthRules {
-  static int qualifyingPeriods(GameProfile profile) =>
-      profile.periodSummaries.where((summary) => summary.supportsGrowth).length;
+  static int qualifyingPeriods(GameProfile profile) => profile.isTest
+      ? profile.periodSummaries.length
+      : profile.periodSummaries
+            .where((summary) => summary.supportsGrowth)
+            .length;
 
   static GameProfile refresh(GameProfile profile) {
     final count = qualifyingPeriods(profile);
@@ -15,9 +18,10 @@ abstract final class GrowthRules {
     );
     if (stage <= profile.growthStage) return next;
     return next.copyWith(
-      feedback:
-          '${profile.feedback} ${next.growthLabel}: в нескольких игровых днях '
-          'ты позаботился о нужном, сверил траты с планом и откладывал коткоины.',
+      feedback: profile.isTest
+          ? '${profile.feedback} Деморежим: открыта стадия «${next.growthLabel}» после $count игровых дней.'
+          : '${profile.feedback} ${next.growthLabel}: в нескольких игровых днях '
+                'ты позаботился о нужном, сверил траты с планом и откладывал коткоины.',
     );
   }
 
@@ -25,7 +29,9 @@ abstract final class GrowthRules {
     if (profile.growthStage >= 3) return 'Все стадии развития открыты!';
     final required = profile.growthStage == 1 ? 2 : 4;
     final remaining = required - qualifyingPeriods(profile);
-    return 'Осталось дней до следующей стадии: $remaining. '
-        'В каждом позаботься о нужном, придерживайся плана и отложи коткоины.';
+    return profile.isTest
+        ? 'Деморежим: заверши ещё $remaining игровых дней для следующей стадии.'
+        : 'Осталось дней до следующей стадии: $remaining. '
+              'В каждом позаботься о нужном, придерживайся плана и отложи коткоины.';
   }
 }

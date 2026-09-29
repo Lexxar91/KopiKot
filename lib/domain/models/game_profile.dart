@@ -181,11 +181,39 @@ class GameProfile {
     (progress) => progress.taskId == taskId && progress.completed,
   );
 
+  /// Выполнение в текущем дне; прежние решения сохраняются для значков.
+  TaskProgress? taskProgressToday(String taskId) => taskProgress
+      .where((entry) => entry.taskId == taskId && entry.period == period)
+      .lastOrNull;
+
+  bool completedTaskToday(String taskId) =>
+      taskProgressToday(taskId)?.completed == true;
+
   LearningTopicProgress learningTopic(String topic) =>
       learningTopics.where((entry) => entry.topic == topic).firstOrNull ??
       LearningTopicProgress(topic: topic);
 
   int savedFor(String goalId) => goalSavings[goalId] ?? 0;
+
+  bool purchasedGoal(String goalId) => transactions.any(
+    (entry) =>
+        entry.referenceId == goalId &&
+        entry.kind == TransactionKind.wantPurchase &&
+        entry.label.startsWith('Цель куплена:'),
+  );
+
+  /// Значок остаётся после снятия накоплений или покупки цели.
+  bool reachedGoal(String goalId, int price) {
+    if (purchasedGoal(goalId) || savedFor(goalId) >= price) return true;
+    var saved = 0;
+    for (final entry in transactions) {
+      if (entry.referenceId != goalId) continue;
+      if (entry.kind == TransactionKind.deposit) saved += entry.amount;
+      if (entry.kind == TransactionKind.withdrawal) saved -= entry.amount;
+      if (saved >= price) return true;
+    }
+    return false;
+  }
 
   int get reserveSavings => savedFor(reserveId);
 

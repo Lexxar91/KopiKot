@@ -65,6 +65,32 @@ class GoalDefinition {
 
 /// Проверенный набор определений. Цены берутся из каталога, а не из команды UI.
 class GameCatalog {
+  // Только для уже сохранённых профилей; новые покупки берутся из списков ниже.
+  static const legacyGoal = GoalDefinition(
+    id: 'tree_bank',
+    title: 'Дерево-копилка',
+    price: 400,
+    description: 'Ранее выбранная цель.',
+  );
+  static const legacySaplings = <String, SaplingDefinition>{
+    'sapling_10': SaplingDefinition(
+      id: 'sapling_10',
+      title: 'Саженец на 10 дней',
+      price: 20,
+      term: 10,
+      reward: 50,
+      description: 'Ранее посаженный саженец.',
+    ),
+    'sapling_15': SaplingDefinition(
+      id: 'sapling_15',
+      title: 'Саженец на 15 дней',
+      price: 20,
+      term: 15,
+      reward: 80,
+      description: 'Ранее посаженный саженец.',
+    ),
+  };
+
   GameCatalog({
     required this.version,
     required List<ShopProduct> products,
@@ -84,7 +110,9 @@ class GameCatalog {
 
   ShopProduct product(String id) =>
       products.firstWhere((product) => product.id == id);
-  GoalDefinition goal(String id) => goals.firstWhere((goal) => goal.id == id);
+  GoalDefinition goal(String id) => id == legacyGoal.id
+      ? legacyGoal
+      : goals.firstWhere((goal) => goal.id == id);
   SaplingDefinition sapling(String id) =>
-      saplings.firstWhere((sapling) => sapling.id == id);
+      legacySaplings[id] ?? saplings.firstWhere((sapling) => sapling.id == id);
 }

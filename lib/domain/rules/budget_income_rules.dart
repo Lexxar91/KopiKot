@@ -63,7 +63,7 @@ abstract final class BudgetIncomeRules {
       final paid = entries
           .where((entry) => entry.referenceId == task.id)
           .firstOrNull;
-      if (profile.completedTask(task.id) && paid == null) continue;
+      if (profile.completedTaskToday(task.id) && paid == null) continue;
       result.add(
         BudgetIncomeOption(
           id: 'task:${task.id}',

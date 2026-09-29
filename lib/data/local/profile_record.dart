@@ -6,7 +6,7 @@ part 'profile_record.g.dart';
 @collection
 class ProfileRecord {
   Id id = 1;
-  int schemaVersion = 8;
+  int schemaVersion = 9;
   late String petName;
   late String coat;
   late String accessory;
@@ -17,6 +17,8 @@ class ProfileRecord {
   int satiety = 70;
   int mood = 70;
   int energy = 70;
+  DateTime? vitalsUpdatedAt;
+  DateTime? lastVetCheckupAt;
   int streak = 1;
   DateTime? lastRewardAt;
   String? dayKey;
@@ -96,6 +98,7 @@ class TransactionRecord {
 @embedded
 class TaskProgressRecord {
   late String taskId;
+  int period = 0;
   int attempts = 0;
   bool completed = false;
   bool hintUsed = false;

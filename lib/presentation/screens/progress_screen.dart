@@ -441,7 +441,7 @@ class ProgressScreen extends ConsumerWidget {
           ),
         ),
         Text(
-          'Успешных игровых дней: ${GrowthRules.qualifyingPeriods(profile)}',
+          '${profile.isTest ? 'Пройдено игровых дней' : 'Успешных игровых дней'}: ${GrowthRules.qualifyingPeriods(profile)}',
         ),
         const SizedBox(height: 5),
         Text(GrowthRules.nextStep(profile)),

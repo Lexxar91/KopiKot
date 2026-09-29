@@ -26,12 +26,9 @@
   "goals": [
     {"id":"tent","title":"Беговая дорожка","price":400,"description":"Для активных игр вместе с котиком."},
     {"id":"telescope","title":"Лежанка","price":300,"description":"Уютное место для отдыха котика."},
-    {"id":"garden","title":"Редкий саженец","price":500,"description":"Особенное деревце для котика."},
-    {"id":"tree_bank","title":"Дерево-копилка","price":400,"description":"Большая цель для долгих накоплений."}
+    {"id":"garden","title":"Редкий саженец","price":500,"description":"Особенное деревце для котика."}
   ],
   "saplings": [
-    {"id":"sapling_5","title":"Деревце","price":20,"term":5,"reward":50,"description":"Собрать раньше — 30, через пять дней — 50 коткоинов."},
-    {"id":"sapling_10","title":"Саженец на 10 дней","price":20,"term":10,"reward":50,"description":"Средний урожай: ждать дольше — получить больше."},
-    {"id":"sapling_15","title":"Саженец на 15 дней","price":20,"term":15,"reward":80,"description":"Большой урожай для терпеливых друзей."}
+    {"id":"sapling_5","title":"Деревце","price":20,"term":5,"reward":50,"description":"Собрать раньше — 30, через пять дней — 50 коткоинов."}
   ]
 }

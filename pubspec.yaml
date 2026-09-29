@@ -32,6 +32,8 @@ flutter:
     - assets/content/catalog.json
     - assets/content/tasks.json
     - assets/images/fairytale_background.png
+    - assets/images/story_reference.png
+    - assets/images/daily_tip_reference.png
     - assets/images/garden_background.png
     - assets/images/wardrobe_background.png
     - assets/images/orange_kitten.png
@@ -54,6 +56,7 @@ flutter:
     - assets/images/budget_hero_ginger.png
     - assets/images/cat_coin.png
     - assets/images/logo_wood.png
+    - assets/images/app_icon_source.jpg
     - assets/images/savings_treadmill.png
     - assets/images/savings_bed.png
     - assets/images/savings_rare_sapling.png

@@ -57,11 +57,8 @@ class LearningScenario {
               'В кошельке $budget коткоинов. Корм стоит $food, а золотая мышка — $toy. Выбери покупку, после которой останется ровно $target.',
           kind: LearningAnswerKind.choice,
           options: [
-            LearningOption('food', 'Сначала корм — останется $target'),
-            LearningOption(
-              'mouse',
-              'Сначала мышка — останется ${budget - toy}',
-            ),
+            const LearningOption('food', 'Сначала корм'),
+            const LearningOption('mouse', 'Сначала мышка'),
           ],
           correctChoice: 'food',
           hint: 'Сравни остаток после каждой покупки с числом $target.',
@@ -77,7 +74,6 @@ class LearningScenario {
         final ride = tier == 2 ? 15 : 0;
         final cheap = [5, 10, 12][tier];
         final expensive = [10, 20, 25][tier];
-        final reserve = tier == 2 ? 5 : 0;
         final options = [
           LearningOption('feed', 'Корм — $feed'),
           LearningOption('vet', 'Осмотр — $vet'),
@@ -100,24 +96,29 @@ class LearningScenario {
         final necessary = feed + vet + ride;
         return LearningScenario(
           prompt:
-              'У котика $budget коткоинов. Выбери все обязательные дела и ровно одно желание: ${tier == 2 ? 'самое дорогое, которое поместится после резерва $reserve' : 'то, которое поместится в бюджет'}.',
+              'У котика $budget коткоинов. Выбери все обязательные дела и ровно одно желание: ${tier == 2 ? 'самое дорогое, которое можно купить после обязательных дел' : 'то, которое поместится в бюджет'}.',
           kind: LearningAnswerKind.selection,
           options: options,
           correctSelection: correct,
           hint:
-              'Сначала сложи обязательные расходы: $necessary. ${reserve > 0 ? 'Оставь $reserve в резерве. ' : ''}Затем выбери одно желание.',
+              'Сначала сложи обязательные расходы. Затем посчитай, сколько осталось на одно желание.',
           steps:
-              'Нужное: $necessary.\nПосле нужного${reserve > 0 ? ' и резерва $reserve' : ''} остаётся ${budget - necessary - reserve}.\nПодходит ${tier == 2 ? 'домик' : 'игра'} за ${tier == 2 ? expensive : cheap}.',
+              'Нужное: $necessary.\nПосле нужного остаётся ${budget - necessary}.\nПодходит ${tier == 2 ? 'домик' : 'игра'} за ${tier == 2 ? expensive : cheap}.',
           explanation:
-              'Нужное стоит $necessary. ${reserve > 0 ? 'После резерва $reserve ' : 'После этого '}на желание остаётся ${budget - necessary - reserve}. Выбранный вариант помещается.',
+              'Нужное стоит $necessary. После обязательных покупок на желание остаётся ${budget - necessary}. Выбранный вариант помещается.',
         );
       case 'regular_saving':
         final days = [3, 6, 8][tier];
         final daily = practice ? 4 : 5;
         final total = days * daily;
+        final daysText = switch (days) {
+          3 => 'трёх',
+          6 => 'шести',
+          _ => 'восьми',
+        };
         return LearningScenario(
           prompt:
-              'Барсик откладывает по $daily коткоинов каждый день $days дней. Сколько он накопит? Хватит ли на саженец за $total?',
+              'Барсик откладывает по $daily коткоинов каждый день в течение $daysText дней. Сколько он накопит? Хватит ли на саженец за $total?',
           kind: LearningAnswerKind.amount,
           correctAmount: total,
           hint: 'Прибавь $daily столько раз, сколько прошло дней: $days.',
@@ -156,11 +157,8 @@ class LearningScenario {
               'Одинаковая книжка: киоск А — $a и доставка $delivery; киоск Б — $b и бесплатная доставка. В кошельке $wallet. Где полная цена меньше?',
           kind: LearningAnswerKind.choice,
           options: [
-            LearningOption(
-              'a',
-              'Киоск А: всего ${a + delivery}, останется ${wallet - a - delivery}',
-            ),
-            LearningOption('b', 'Киоск Б: всего $b, останется ${wallet - b}'),
+            const LearningOption('a', 'Киоск А'),
+            const LearningOption('b', 'Киоск Б'),
           ],
           correctChoice: winner,
           hint: 'К цене в киоске А добавь доставку.',

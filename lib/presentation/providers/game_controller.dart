@@ -83,9 +83,16 @@ final helpProvider = FutureProvider<List<HelpTopic>>((ref) => loadHelpTopics());
 class GameController extends AsyncNotifier<GameProfile?> {
   bool _busy = false;
 
+  /// Пересчитывает шкалы по часам, не прерывая другую операцию с профилем.
+  Future<void> refreshVitals() async {
+    if (_busy || state.isLoading || state.hasError) return;
+    await _perform((repository) => repository.loadProfile());
+  }
+
   Future<void> switchProfile({required bool testProfile}) => _perform(
     (repository) => repository.switchProfile(testProfile: testProfile),
   );
+  Future<void> startDemo() => _perform((repository) => repository.startDemo());
   Future<void> resetTestProfile() =>
       _perform((repository) => repository.resetTestProfile());
   Future<void> deleteRegularProfile() => _perform((repository) async {

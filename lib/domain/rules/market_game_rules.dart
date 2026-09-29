@@ -122,7 +122,7 @@ abstract final class MarketGameRules {
     if (remaining < 0) {
       return result(
         false,
-        'В корзине больше бюджета на ${-remaining} коткоинов. Сначала верни нужные товары, затем проверь, помещается ли желание и остаётся ли ${scenario.reserve} для копилки.',
+        'В корзине больше бюджета на ${-remaining} коткоинов. Сначала выбери нужные товары, затем проверь, хватит ли на желание и останется ли ${scenario.reserve} коткоинов в кошельке.',
       );
     }
     final missing = scenario.items
@@ -137,7 +137,7 @@ abstract final class MarketGameRules {
     if (remaining < scenario.reserve) {
       return result(
         false,
-        'В корзине больше, чем разрешает план, на ${scenario.reserve - remaining} коткоинов. Проверь, остаётся ли ${scenario.reserve} для копилки.',
+        'Чтобы оставить ${scenario.reserve} коткоинов в кошельке, убери из корзины товар на ${scenario.reserve - remaining} коткоинов.',
       );
     }
     final target = targetIds(scenario);
@@ -149,7 +149,7 @@ abstract final class MarketGameRules {
       final want = item(target.last, scenario: scenario);
       return result(
         false,
-        'Нужное стоит $neededTotal. После резерва ${scenario.reserve} на радость хватает ${scenario.budget - neededTotal - scenario.reserve}. Выбери ${want.title.toLowerCase()}.',
+        'Нужное стоит $neededTotal. Если оставить ${scenario.reserve} коткоинов в кошельке, на радость хватит ${scenario.budget - neededTotal - scenario.reserve}. Выбери ${want.title.toLowerCase()}.',
       );
     }
     final neededTotal = scenario.items
@@ -158,7 +158,7 @@ abstract final class MarketGameRules {
     final want = item(target.last, scenario: scenario);
     return result(
       true,
-      'Нужное стоит $neededTotal. После покупки ${want.title.toLowerCase()} вся корзина стоит $total, поэтому $remaining коткоинов остаются в копилке.',
+      'Нужное стоит $neededTotal. После покупки ${want.title.toLowerCase()} вся корзина стоит $total, поэтому $remaining коткоинов остаются в кошельке.',
     );
   }
 

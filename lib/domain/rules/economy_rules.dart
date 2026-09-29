@@ -114,6 +114,15 @@ abstract final class EconomyRules {
   };
 
   static GameProfile selectGoal(GameProfile profile, GoalDefinition goal) {
+    if (profile.purchasedGoal(goal.id)) {
+      throw const GameRuleException(
+        'Эта цель уже получена и остаётся в значках.',
+      );
+    }
+    if (goal.id == GameCatalog.legacyGoal.id &&
+        profile.selectedGoalId != goal.id) {
+      throw const GameRuleException('Эта цель больше не предлагается.');
+    }
     if (!profile.goalChoicesUnlocked &&
         goal.id != (profile.selectedGoalId ?? 'tent')) {
       throw const GameRuleException(
@@ -156,6 +165,11 @@ abstract final class EconomyRules {
     }
     GameRules.requirePlan(profile);
     GameRules.requirePositive(amount);
+    if (!withdraw && profile.purchasedGoal(goal.id)) {
+      throw const GameRuleException(
+        'Эта цель уже получена. Копить на неё снова не нужно.',
+      );
+    }
     if (profile.selectedGoalId != goal.id) {
       throw const GameRuleException(
         'Цель изменилась. Открой её заново перед переводом.',
@@ -223,12 +237,12 @@ abstract final class EconomyRules {
     )) {
       return profile;
     }
-    GameRules.requirePlan(profile);
+    if (!withdraw) GameRules.requirePlan(profile);
     GameRules.requirePositive(amount);
     final saved = profile.reserveSavings;
     if (withdraw && amount > saved) {
       throw GameRuleException(
-        'В резерве только $saved коткоинов. Уменьши сумму снятия.',
+        'Отдельно от целей отложено только $saved коткоинов. Уменьши сумму снятия.',
       );
     }
     if (!withdraw) GameRules.requireBalance(profile, amount);
@@ -240,15 +254,15 @@ abstract final class EconomyRules {
         commandId,
         kind,
         amount,
-        '${withdraw ? 'Снятие из' : 'Пополнение'} резерва',
+        withdraw ? 'Возврат старых накоплений' : 'Отдельные накопления',
         GameProfile.reserveId,
         profile.copyWith(
           balance: profile.balance - delta,
           savings: profile.savings + delta,
           goalSavings: {...profile.goalSavings, GameProfile.reserveId: after},
           feedback: withdraw
-              ? 'Из резерва снято $amount. В резерве осталось $after, в кошельке ${profile.balance + amount}.'
-              : 'В резерве теперь $after коткоинов. Накопления на выбранную цель не изменились.',
+              ? 'В кошелёк возвращено $amount коткоинов. Отдельно от целей осталось $after.'
+              : 'Отдельно от целей теперь $after коткоинов. Накопления на выбранную цель не изменились.',
         ),
       ),
     );
@@ -271,6 +285,11 @@ abstract final class EconomyRules {
     }
     GameRules.requirePlan(profile);
     GameRules.requirePositive(goal.price);
+    if (profile.purchasedGoal(goal.id)) {
+      throw const GameRuleException(
+        'Эта цель уже получена. Купить её повторно нельзя.',
+      );
+    }
     if (profile.selectedGoalId != goal.id) {
       throw const GameRuleException('Цель изменилась. Открой её заново.');
     }

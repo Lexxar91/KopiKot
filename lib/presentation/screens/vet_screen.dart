@@ -95,8 +95,6 @@ class _VetScreenState extends ConsumerState<VetScreen> {
                               _hero(profile, compact),
                               _checkupPanel(profile, checkup, compact),
                               const SizedBox(height: 8),
-                              _helpPanel(profile, checkup),
-                              const SizedBox(height: 8),
                               FilledButton.icon(
                                 onPressed:
                                     profile.plan == null ||
@@ -325,42 +323,6 @@ class _VetScreenState extends ConsumerState<VetScreen> {
         if (!compact) const SizedBox(height: 8),
         if (profile.plan == null)
           const Text('Сначала сохрани бюджет, чтобы запланировать осмотр.'),
-      ],
-    ),
-  );
-
-  Widget _helpPanel(GameProfile profile, ShopProduct checkup) => Container(
-    padding: const EdgeInsets.all(12),
-    decoration: BoxDecoration(
-      color: const Color(0xFFE7F8FF),
-      borderRadius: BorderRadius.circular(22),
-      border: Border.all(color: Colors.white, width: 2),
-    ),
-    child: Row(
-      children: [
-        Image.asset('assets/images/budget_savings.png', width: 68),
-        const SizedBox(width: 8),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'Резерв помощи',
-                style: TextStyle(
-                  color: _brown,
-                  fontSize: 18,
-                  fontWeight: FontWeight.w900,
-                ),
-              ),
-              Text(
-                profile.balance < checkup.price
-                    ? 'Пока не хватает ${checkup.price - profile.balance} коткоинов. Можно выполнить задание и вернуться к осмотру — котик в безопасности.'
-                    : 'Небольшой запас коткоинов помогает заранее позаботиться о здоровье котика.',
-                style: const TextStyle(color: _brown),
-              ),
-            ],
-          ),
-        ),
       ],
     ),
   );

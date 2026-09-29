@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../domain/models/game_profile.dart';
+import 'goal_medal.dart';
 import 'home_section_navigation.dart';
 import 'pet_portrait.dart';
 import 'story_logo.dart';
@@ -23,7 +24,11 @@ class HomeScene extends StatefulWidget {
     required this.onShop,
     required this.onVet,
     required this.onTasks,
+    required this.onDemo,
     required this.onWalk,
+    required this.onBadges,
+    required this.onDailyTip,
+    required this.onStory,
     required this.onSavings,
     required this.onReward,
     super.key,
@@ -39,7 +44,11 @@ class HomeScene extends StatefulWidget {
   final VoidCallback onShop;
   final VoidCallback onVet;
   final VoidCallback onTasks;
+  final VoidCallback onDemo;
   final VoidCallback onWalk;
+  final VoidCallback onBadges;
+  final VoidCallback onDailyTip;
+  final VoidCallback onStory;
   final VoidCallback onSavings;
   final VoidCallback onReward;
 
@@ -135,10 +144,10 @@ class _HomeSceneState extends State<HomeScene> {
                             height: _useCompactHomeLayout(context) ? 5 : 9,
                           ),
                           _CareActions(
-                            onFeed: widget.onShop,
-                            onPlay: widget.onTasks,
-                            onWalk: widget.onWalk,
-                            onCare: widget.onShop,
+                            onBadges: widget.onBadges,
+                            onDemo: widget.onDemo,
+                            onDailyTip: widget.onDailyTip,
+                            onStory: widget.onStory,
                           ),
                           SizedBox(
                             height: _useCompactHomeLayout(context) ? 5 : 9,
@@ -468,93 +477,226 @@ class _Meter extends StatelessWidget {
 
 class _CareActions extends StatelessWidget {
   const _CareActions({
-    required this.onFeed,
-    required this.onPlay,
-    required this.onWalk,
-    required this.onCare,
+    required this.onBadges,
+    required this.onDemo,
+    required this.onDailyTip,
+    required this.onStory,
   });
-  final VoidCallback onFeed;
-  final VoidCallback onPlay;
-  final VoidCallback onWalk;
-  final VoidCallback onCare;
+  final VoidCallback onBadges;
+  final VoidCallback onDemo;
+  final VoidCallback onDailyTip;
+  final VoidCallback onStory;
 
   @override
   Widget build(BuildContext context) => Row(
     children: [
       _CareTile(
-        label: 'Кормить',
-        imagePath: 'assets/images/action_feed.png',
-        color: const Color(0xFFB7253C),
-        onTap: onFeed,
+        label: 'Значки',
+        icon: const GoalMedal(size: 43, accent: Color(0xFFFF9E07)),
+        onTap: onBadges,
       ),
       const SizedBox(width: 5),
-      _CareTile(
-        label: 'Играть',
-        imagePath: 'assets/images/action_play.png',
-        color: const Color(0xFF8E2BC0),
-        onTap: onPlay,
+      _DemoTile(onTap: onDemo),
+      const SizedBox(width: 5),
+      _PreviewActionTile(
+        label: 'Совет дня',
+        isAdvice: true,
+        colors: const [Color(0xFF49E996), Color(0xFF00A977)],
+        onTap: onDailyTip,
       ),
       const SizedBox(width: 5),
-      _CareTile(
-        label: 'Гулять',
-        imagePath: 'assets/images/action_walk.png',
-        color: const Color(0xFF087B53),
-        onTap: onWalk,
-      ),
-      const SizedBox(width: 5),
-      _CareTile(
-        label: 'Уход',
-        imagePath: 'assets/images/action_care.png',
-        color: const Color(0xFF1764B2),
-        onTap: onCare,
+      _PreviewActionTile(
+        label: 'История',
+        isAdvice: false,
+        colors: const [Color(0xFF61C4FF), Color(0xFF0879DC)],
+        onTap: onStory,
       ),
     ],
   );
 }
 
-class _CareTile extends StatelessWidget {
-  const _CareTile({
-    required this.label,
-    required this.imagePath,
-    required this.color,
-    required this.onTap,
-  });
-  final String label;
-  final String imagePath;
-  final Color color;
+/// Кнопка входа в деморежим повторяет фиолетовую плитку с иконкой Play.
+class _DemoTile extends StatelessWidget {
+  const _DemoTile({required this.onTap});
+
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) => Expanded(
     child: Material(
-      color: color,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(21),
-        side: const BorderSide(color: Colors.white, width: 2),
-      ),
+      color: Colors.transparent,
+      borderRadius: BorderRadius.circular(21),
       elevation: 4,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(21),
+      child: Ink(
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Color(0xFFC456F9), Color(0xFF7C1BDD)],
+          ),
+          borderRadius: BorderRadius.circular(21),
+          border: Border.all(color: Colors.white, width: 2),
+        ),
+        child: InkWell(
+          key: const Key('demo-button'),
+          borderRadius: BorderRadius.circular(21),
+          onTap: onTap,
+          child: SizedBox(
+            height: _useCompactHomeLayout(context)
+                ? 58
+                : 67 +
+                      (MediaQuery.textScalerOf(context).scale(1) - 1).clamp(
+                            0,
+                            2,
+                          ) *
+                          20,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                SizedBox(
+                  width: _useCompactHomeLayout(context) ? 34 : 40,
+                  height: _useCompactHomeLayout(context) ? 34 : 40,
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: const [
+                      Icon(Icons.circle, color: Color(0xFF7E25CD), size: 39),
+                      Icon(
+                        Icons.circle_outlined,
+                        color: Color(0xFFF4EAFF),
+                        size: 39,
+                      ),
+                      Icon(
+                        Icons.play_arrow_rounded,
+                        color: Colors.white,
+                        size: 29,
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 2),
+                const FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    'Демо',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    ),
+  );
+}
+
+/// Яркая плитка действия на главном экране.
+class _PreviewActionTile extends StatelessWidget {
+  const _PreviewActionTile({
+    required this.label,
+    required this.isAdvice,
+    required this.colors,
+    this.onTap,
+  });
+
+  final String label;
+  final bool isAdvice;
+  final List<Color> colors;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final compact = _useCompactHomeLayout(context);
+    final iconSize = compact ? 30.0 : 38.0;
+    final height = compact
+        ? 58.0
+        : 67.0 +
+              (MediaQuery.textScalerOf(context).scale(1) - 1).clamp(0, 2) * 20;
+    return Expanded(
+      child: GestureDetector(
         onTap: onTap,
-        child: SizedBox(
-          height: _useCompactHomeLayout(context)
-              ? 58
-              : 67 +
-                    (MediaQuery.textScalerOf(context).scale(1) - 1).clamp(
-                          0,
-                          2,
-                        ) *
-                        20,
+        child: Container(
+          height: height,
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: colors,
+            ),
+            borderRadius: BorderRadius.circular(21),
+            border: Border.all(color: Colors.white, width: 2),
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0x663D3519),
+                blurRadius: 6,
+                offset: Offset(0, 3),
+              ),
+            ],
+          ),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Image.asset(
-                imagePath,
-                width: _useCompactHomeLayout(context) ? 32 : 38,
-                height: _useCompactHomeLayout(context) ? 32 : 38,
-                fit: BoxFit.contain,
+              SizedBox(
+                width: iconSize + 8,
+                height: iconSize + 2,
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: isAdvice
+                      ? [
+                          Positioned(
+                            left: 0,
+                            top: 0,
+                            child: Icon(
+                              Icons.auto_awesome_rounded,
+                              size: 15,
+                              color: const Color(0xFFFFF381),
+                            ),
+                          ),
+                          Icon(
+                            Icons.lightbulb_rounded,
+                            size: iconSize,
+                            color: const Color(0xFFFFC526),
+                            shadows: const [
+                              Shadow(color: Color(0xFFB96108), blurRadius: 3),
+                            ],
+                          ),
+                          Positioned(
+                            top: iconSize * 0.25,
+                            child: Icon(
+                              Icons.pets_rounded,
+                              size: iconSize * 0.30,
+                              color: const Color(0xFFCA5B10),
+                            ),
+                          ),
+                        ]
+                      : [
+                          Icon(
+                            Icons.menu_book_rounded,
+                            size: iconSize + 2,
+                            color: const Color(0xFF344795),
+                          ),
+                          Icon(
+                            Icons.menu_book_rounded,
+                            size: iconSize - 2,
+                            color: const Color(0xFFFFF0D2),
+                          ),
+                          Positioned(
+                            right: 0,
+                            top: 0,
+                            child: Icon(
+                              Icons.auto_awesome_rounded,
+                              size: 15,
+                              color: const Color(0xFFFFDE52),
+                            ),
+                          ),
+                        ],
+                ),
               ),
-              const SizedBox(height: 2),
+              const SizedBox(height: 1),
               FittedBox(
                 fit: BoxFit.scaleDown,
                 child: Text(
@@ -563,10 +705,78 @@ class _CareTile extends StatelessWidget {
                     color: Colors.white,
                     fontSize: 15,
                     fontWeight: FontWeight.w900,
+                    shadows: [Shadow(color: Color(0x774B2D25), blurRadius: 2)],
                   ),
                 ),
               ),
             ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _CareTile extends StatelessWidget {
+  const _CareTile({
+    required this.label,
+    required this.icon,
+    required this.onTap,
+  });
+  final String label;
+  final Widget icon;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) => Expanded(
+    child: Material(
+      color: Colors.transparent,
+      borderRadius: BorderRadius.circular(21),
+      elevation: 4,
+      child: Ink(
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            colors: [Color(0xFFFF8488), Color(0xFFE92E44)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(21),
+          border: Border.all(color: Colors.white, width: 2),
+        ),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(21),
+          onTap: onTap,
+          child: SizedBox(
+            height: _useCompactHomeLayout(context)
+                ? 58
+                : 67 +
+                      (MediaQuery.textScalerOf(context).scale(1) - 1).clamp(
+                            0,
+                            2,
+                          ) *
+                          20,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                SizedBox(
+                  width: _useCompactHomeLayout(context) ? 32 : 42,
+                  height: _useCompactHomeLayout(context) ? 32 : 42,
+                  child: FittedBox(child: icon),
+                ),
+                const SizedBox(height: 2),
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    label,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
