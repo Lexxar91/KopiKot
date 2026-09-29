@@ -198,10 +198,10 @@ def build_html():
     companion = document("Питомец Финни — сопроводительная документация", cover + "</section>" + "".join(bodies))
     path = ROOT / "docs/presentation.md"
     sections = path.read_text(encoding="utf-8").split("\n## ")[1:]
-    if len(sections) != 10:
-        raise ValueError("Ожидалось 10 слайдов")
+    if len(sections) != 11:
+        raise ValueError("Ожидалось 11 слайдов")
     slides = "".join(
-        f'<article>{markdown("## " + section, path, internal_links=False)}<footer>Питомец Финни · Черновик MVP · {index} / 10</footer></article>'
+        f'<article>{markdown("## " + section, path, internal_links=False)}<footer>Питомец Финни · Черновик MVP · {index} / 11</footer></article>'
         for index, section in enumerate(sections, start=1)
     )
     return {"companion": companion, "presentation": document("Питомец Финни — презентация", slides, slides=True)}

@@ -1,4 +1,4 @@
-package com.example.kopikot
+package com.lexxar91.kopikot
 
 import io.flutter.embedding.android.FlutterActivity
 

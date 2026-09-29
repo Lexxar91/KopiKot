@@ -31,10 +31,10 @@ class DeliveryDocsTest(unittest.TestCase):
             with self.assertRaises(ValueError):
                 markdown(value, Path('example.md'))
 
-    def test_all_sources_and_ten_slides_render_without_external_assets(self):
+    def test_all_sources_and_eleven_slides_render_without_external_assets(self):
         pages = build_html()
         self.assertIn('НЕ ПРОВЕДЕНА', pages['companion'])
-        self.assertEqual(pages['presentation'].count('<article>'), 10)
+        self.assertEqual(pages['presentation'].count('<article>'), 11)
         self.assertEqual(pages['presentation'].count('src="data:image/png;base64,'), 3)
         for page in pages.values():
             self.assertNotIn('file://', page)
