@@ -10,7 +10,7 @@ import '../widgets/pet_portrait.dart';
 
 const _badgeInk = Color(0xFF642818);
 
-/// Значки за накопленные цели; состояние берётся из истории профиля.
+/// Значки за накопленные цели и завершённые учебные темы.
 class BadgesScreen extends ConsumerWidget {
   const BadgesScreen({super.key});
 
@@ -52,6 +52,27 @@ class BadgesScreen extends ConsumerWidget {
                         earned: profile.reachedGoal(goal.id, goal.price),
                       ),
                     ],
+                    const SizedBox(height: 18),
+                    const _TopicBadgesTitle(),
+                    for (final (topic, title, image) in const [
+                      ('Планирование', 'План', 'quest_badge_plan.png'),
+                      ('Покупки', 'Покупки', 'quest_badge_purchases.png'),
+                      ('Сбережения', 'Копилка', 'quest_badge_savings.png'),
+                    ]) ...[
+                      const SizedBox(height: 10),
+                      _TopicBadgeCard(
+                        title: title,
+                        imagePath: 'assets/images/$image',
+                        completed: catalog.tasks
+                            .where((task) => task.topic == topic)
+                            .where((task) => profile.completedTask(task.id))
+                            .length,
+                        total: catalog.tasks
+                            .where((task) => task.topic == topic)
+                            .length,
+                        earned: profile.earnedTopicBadge(catalog.tasks, topic),
+                      ),
+                    ],
                   ],
                 ),
               ),
@@ -70,7 +91,7 @@ class _BadgeHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => SizedBox(
-    height: 220,
+    height: 247,
     child: Stack(
       clipBehavior: Clip.none,
       children: [
@@ -127,7 +148,7 @@ class _BadgeHeader extends StatelessWidget {
         Positioned(
           top: 83,
           left: 48,
-          right: 29,
+          right: 12,
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
             decoration: BoxDecoration(
@@ -152,14 +173,14 @@ class _BadgeHeader extends StatelessWidget {
           ),
         ),
         Positioned(
-          right: -20,
-          bottom: -7,
+          right: 0,
+          bottom: 0,
           child: PetPortrait(
             coat: profile.coat,
             accessory: profile.accessory,
             emotion: PetEmotion.happy,
             stage: profile.growthStage,
-            size: 150,
+            size: 118,
           ),
         ),
       ],
@@ -289,6 +310,124 @@ class _GoalBadgeCard extends StatelessWidget {
             ],
           );
         },
+      ),
+    ),
+  );
+}
+
+class _TopicBadgesTitle extends StatelessWidget {
+  const _TopicBadgesTitle();
+
+  @override
+  Widget build(BuildContext context) => Container(
+    padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+    decoration: BoxDecoration(
+      color: const Color(0xFFFFF9E9),
+      borderRadius: BorderRadius.circular(23),
+      border: Border.all(color: const Color(0xFFFFD16D), width: 2),
+    ),
+    child: const Text(
+      'Значки за темы',
+      style: TextStyle(
+        color: _badgeInk,
+        fontSize: 23,
+        fontWeight: FontWeight.w900,
+      ),
+    ),
+  );
+}
+
+class _TopicBadgeCard extends StatelessWidget {
+  const _TopicBadgeCard({
+    required this.title,
+    required this.imagePath,
+    required this.completed,
+    required this.total,
+    required this.earned,
+  });
+
+  final String title;
+  final String imagePath;
+  final int completed;
+  final int total;
+  final bool earned;
+
+  @override
+  Widget build(BuildContext context) => Semantics(
+    label:
+        '$title. ${earned ? 'Значок получен' : 'Выполнено $completed из $total'}',
+    child: Container(
+      padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 9),
+      decoration: BoxDecoration(
+        color: earned ? const Color(0xFFE8FFE8) : const Color(0xFFFFF9E9),
+        borderRadius: BorderRadius.circular(23),
+        border: Border.all(
+          color: earned ? const Color(0xFF38C778) : const Color(0xFFFFD16D),
+          width: 2,
+        ),
+      ),
+      child: Row(
+        children: [
+          SizedBox.square(
+            dimension: 68,
+            child: earned
+                ? Image.asset(imagePath, fit: BoxFit.contain)
+                : ColorFiltered(
+                    colorFilter: const ColorFilter.matrix([
+                      0.2126,
+                      0.7152,
+                      0.0722,
+                      0,
+                      0,
+                      0.2126,
+                      0.7152,
+                      0.0722,
+                      0,
+                      0,
+                      0.2126,
+                      0.7152,
+                      0.0722,
+                      0,
+                      0,
+                      0,
+                      0,
+                      0,
+                      1,
+                      0,
+                    ]),
+                    child: Image.asset(imagePath, fit: BoxFit.contain),
+                  ),
+          ),
+          const SizedBox(width: 13),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    color: _badgeInk,
+                    fontSize: 21,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                Text(
+                  earned ? 'Получен!' : 'Выполнено $completed из $total',
+                  style: TextStyle(
+                    color: earned ? const Color(0xFF078B50) : _badgeInk,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Icon(
+            earned ? Icons.check_rounded : Icons.lock_rounded,
+            color: earned ? const Color(0xFF0BB568) : const Color(0xFFAAA59D),
+            size: 28,
+          ),
+        ],
       ),
     ),
   );

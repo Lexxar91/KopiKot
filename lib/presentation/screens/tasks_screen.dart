@@ -477,12 +477,7 @@ class _TasksScreenState extends ConsumerState<TasksScreen> {
     GameCatalog catalog,
     bool compact,
   ) {
-    final entries = catalog.tasks
-        .where((task) => task.topic == topic.id)
-        .toList();
-    final earned =
-        entries.isNotEmpty &&
-        entries.every((task) => profile.completedTask(task.id));
+    final earned = profile.earnedTopicBadge(catalog.tasks, topic.id);
     final scaledText = MediaQuery.textScalerOf(context).scale(1) > 1.3;
     final badgeImage = Image.asset(topic.badgeImage, fit: BoxFit.contain);
     return Semantics(

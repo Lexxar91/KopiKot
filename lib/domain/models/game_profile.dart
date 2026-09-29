@@ -177,9 +177,23 @@ class GameProfile {
     2 => 'Исследователь',
     _ => 'Малыш',
   };
-  bool completedTask(String taskId) => taskProgress.any(
-    (progress) => progress.taskId == taskId && progress.completed,
-  );
+  bool completedTask(String taskId) =>
+      taskProgress.any(
+        (progress) => progress.taskId == taskId && progress.completed,
+      ) ||
+      transactions.any(
+        (entry) =>
+            entry.referenceId == taskId &&
+            entry.kind == TransactionKind.income &&
+            entry.id.startsWith('task-reward-'),
+      );
+
+  /// Значок темы остаётся доступным после смены игрового дня.
+  bool earnedTopicBadge(Iterable<LearningTask> tasks, String topic) {
+    final topicTasks = tasks.where((task) => task.topic == topic).toList();
+    return topicTasks.isNotEmpty &&
+        topicTasks.every((task) => completedTask(task.id));
+  }
 
   /// Выполнение в текущем дне; прежние решения сохраняются для значков.
   TaskProgress? taskProgressToday(String taskId) => taskProgress

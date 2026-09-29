@@ -20,8 +20,10 @@ import '../../domain/rules/mini_game_rules.dart';
 
 /// Точка сборки зависимостей: виджеты не знают ни о каталогах, ни об Isar.
 final gameRepositoryProvider = FutureProvider<GameRepository>((ref) async {
-  final catalog = await ref.watch(gameCatalogProvider.future);
-  final directory = await getApplicationSupportDirectory();
+  final catalogFuture = ref.watch(gameCatalogProvider.future);
+  final directoryFuture = getApplicationSupportDirectory();
+  final catalog = await catalogFuture;
+  final directory = await directoryFuture;
   final LocalGameStore store = await LocalGameStore.open(
     directory: directory.path,
   );

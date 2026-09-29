@@ -46,10 +46,11 @@ class PetPortrait extends StatelessWidget {
     image: true,
     label:
         '${coatLabels[coat]} кот, ${accessory == null ? 'без аксессуара' : accessoryLabels[accessory]}',
-    child: SizedBox.square(dimension: size, child: _storybookPortrait()),
+    child: SizedBox.square(dimension: size, child: _storybookPortrait(context)),
   );
 
-  Widget _storybookPortrait() {
+  Widget _storybookPortrait(BuildContext context) {
+    final pixelRatio = MediaQuery.devicePixelRatioOf(context);
     final path = switch ((coat, accessory == PetAccessory.scarf)) {
       (PetCoat.ginger, true) => 'assets/images/orange_kitten.png',
       (PetCoat.grey, true) => 'assets/images/grey_kitten.png',
@@ -62,22 +63,6 @@ class PetPortrait extends StatelessWidget {
       (PetCoat.dark, false) => 'assets/images/dark_kitten_no_scarf.png',
       (PetCoat.white, false) => 'assets/images/white_kitten_no_scarf.png',
     };
-    final emotionIcon = switch (emotion) {
-      PetEmotion.calm => null,
-      PetEmotion.happy => Icons.favorite_rounded,
-      PetEmotion.excited => Icons.celebration_rounded,
-      PetEmotion.hungry => Icons.restaurant_rounded,
-      PetEmotion.thoughtful => Icons.lightbulb_rounded,
-      PetEmotion.proud => Icons.star_rounded,
-    };
-    final emotionColor = switch (emotion) {
-      PetEmotion.calm => Colors.transparent,
-      PetEmotion.happy => const Color(0xFFFF6985),
-      PetEmotion.excited => const Color(0xFFAF65EC),
-      PetEmotion.hungry => const Color(0xFFFF9F4A),
-      PetEmotion.thoughtful => const Color(0xFF58BEE6),
-      PetEmotion.proud => const Color(0xFFFFC342),
-    };
     return Stack(
       alignment: Alignment.center,
       children: [
@@ -87,6 +72,7 @@ class PetPortrait extends StatelessWidget {
           fit: BoxFit.contain,
           width: size,
           height: size,
+          cacheWidth: (size * pixelRatio).ceil(),
           errorBuilder: (_, _, _) => CustomPaint(
             size: Size.square(size),
             painter: _CatPainter(coat, accessory, stage, emotion),
@@ -99,6 +85,7 @@ class PetPortrait extends StatelessWidget {
             child: Image.asset(
               'assets/images/wardrobe_bow.png',
               width: size * 0.2,
+              cacheWidth: (size * 0.2 * pixelRatio).ceil(),
             ),
           ),
         if (accessory == PetAccessory.headband)
@@ -108,6 +95,7 @@ class PetPortrait extends StatelessWidget {
             child: Image.asset(
               'assets/images/wardrobe_headband.png',
               width: size * 0.43,
+              cacheWidth: (size * 0.43 * pixelRatio).ceil(),
             ),
           ),
         if (accessory == PetAccessory.wristbands)
@@ -117,6 +105,7 @@ class PetPortrait extends StatelessWidget {
             child: Image.asset(
               'assets/images/wardrobe_wristbands.png',
               width: size * 0.42,
+              cacheWidth: (size * 0.42 * pixelRatio).ceil(),
             ),
           ),
         if (accessory == PetAccessory.cap)
@@ -127,38 +116,6 @@ class PetPortrait extends StatelessWidget {
               Icons.emoji_objects_rounded,
               size: size * 0.22,
               color: const Color(0xFFFFC342),
-            ),
-          ),
-        if (stage > 1)
-          Positioned(
-            left: size * 0.12,
-            top: size * 0.1,
-            child: CircleAvatar(
-              radius: size * 0.085,
-              backgroundColor: stage >= 4
-                  ? const Color(0xFF9747D9)
-                  : stage == 2
-                  ? const Color(0xFF40BDE0)
-                  : const Color(0xFFFFC342),
-              child: Icon(
-                stage >= 4
-                    ? Icons.diamond_rounded
-                    : stage == 2
-                    ? Icons.auto_awesome_rounded
-                    : Icons.workspace_premium_rounded,
-                size: size * 0.1,
-                color: Colors.white,
-              ),
-            ),
-          ),
-        if (emotionIcon != null)
-          Positioned(
-            right: size * 0.1,
-            bottom: size * 0.1,
-            child: CircleAvatar(
-              radius: size * 0.08,
-              backgroundColor: emotionColor,
-              child: Icon(emotionIcon, size: size * 0.09, color: Colors.white),
             ),
           ),
       ],

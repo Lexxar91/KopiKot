@@ -225,7 +225,13 @@ class _SceneHeader extends StatelessWidget {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       const SizedBox(width: 9),
-                      Image.asset('assets/images/cat_coin.png', width: 27),
+                      Image.asset(
+                        'assets/images/cat_coin.png',
+                        width: 27,
+                        cacheWidth:
+                            (27 * MediaQuery.devicePixelRatioOf(context))
+                                .ceil(),
+                      ),
                       const SizedBox(width: 4),
                       Text(
                         '$balance',
@@ -287,6 +293,8 @@ class _PetScene extends StatelessWidget {
                     'assets/images/home_coin_tree.png',
                     fit: BoxFit.contain,
                     alignment: Alignment.bottomLeft,
+                    cacheWidth: (125 * MediaQuery.devicePixelRatioOf(context))
+                        .ceil(),
                     excludeFromSemantics: true,
                   ),
                 ),
@@ -829,6 +837,7 @@ class _GoalPanel extends StatelessWidget {
               width: 52,
               height: 58,
               fit: BoxFit.contain,
+              cacheWidth: (52 * MediaQuery.devicePixelRatioOf(context)).ceil(),
             ),
             const SizedBox(width: 8),
             Expanded(

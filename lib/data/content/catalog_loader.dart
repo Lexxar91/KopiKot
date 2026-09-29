@@ -6,10 +6,11 @@ import '../../domain/models/game_catalog.dart';
 import '../../domain/models/game_profile.dart';
 import '../../domain/models/learning_task.dart';
 
-Future<GameCatalog> loadGameCatalog() async => parseGameCatalog(
-  await rootBundle.loadString('assets/content/catalog.json'),
-  taskSource: await rootBundle.loadString('assets/content/tasks.json'),
-);
+Future<GameCatalog> loadGameCatalog() async {
+  final catalogFuture = rootBundle.loadString('assets/content/catalog.json');
+  final tasksFuture = rootBundle.loadString('assets/content/tasks.json');
+  return parseGameCatalog(await catalogFuture, taskSource: await tasksFuture);
+}
 
 /// Некорректный контент блокирует запуск, но никогда не очищает сохранения.
 GameCatalog parseGameCatalog(String source, {String taskSource = '[]'}) {
